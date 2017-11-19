@@ -18,7 +18,7 @@ cov <- matrix(NA,nrow=n.traits,ncol=n.traits)
 V.hold <- matrix(NA,nrow=200,ncol=n.V)
 N.vec <- matrix(NA,nrow=1,ncol=n.V) 
 Liab.S <- matrix(1,nrow=1,ncol=n.traits) 
-
+I <- matrix(NA,nrow=n.traits,ncol=n.traits)
 
 
  
@@ -209,6 +209,7 @@ if(is.na(pop.prev)==F & is.na(samp.prev)==F){
 
 print(Liab.S)
 cov[j,j] <- reg.tot 
+I[j,j] <- intercept
 
 lambda.gc <- median(merged$chi1)/0.4549
 mean.Chi <- mean(merged$chi1)
@@ -378,6 +379,8 @@ s <- s+1
     
     cov[k,j] <- reg.tot 
     cov[j,k] <- reg.tot 
+    I[k,j] <- intercept
+    I[j,k] <- intercept
     
     mean.ZZ <- mean(merged$ZZ)
     cat("Results for covariance between:",chi1,"and",chi2,"\n")
@@ -405,6 +408,6 @@ print(time_all[3])
  V <- diag(as.vector(sqrt(liab.V))) %*% v.out %*% diag(as.vector(sqrt(liab.V)))
  
  
-return(list(V=V,S=S,N=N.vec,m=m))
+return(list(V=V,S=S,I=I,N=N.vec,m=m))
 
 }
