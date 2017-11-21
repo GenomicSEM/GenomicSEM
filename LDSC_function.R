@@ -405,9 +405,9 @@ print(time_all[3])
 ### Scale S and V to liability: 
  S <- diag(as.vector(sqrt(Liab.S))) %*% cov %*% diag(as.vector(sqrt(Liab.S)))
  liab.V <- lowerTriangle(t(sqrt(Liab.S)) %*% sqrt(Liab.S),diag =T)
- V <- (diag(as.vector(sqrt(liab.V))) %*% sqrt(v.out) %*% diag(as.vector(sqrt(liab.V))))^2
+ V <- (diag(as.vector(sqrt(liab.V))) %*% (sign(v.out) * sqrt(abs(v.out))) %*% diag(as.vector(sqrt(liab.V))))^2
  
  
-return(list(V=V,S=S,I=I,N=N.vec,m=m,l=liab.V))
+return(list(V=V,S=S,I=I,N=N.vec,m=m))
 
 }
