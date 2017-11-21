@@ -1,0 +1,7 @@
+exportPattern("^[[:alpha:]]+")
+import(plyr)
+import(e1071)
+import(readr)
+import(gdata)
+
+
