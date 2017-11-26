@@ -245,6 +245,11 @@ s <- s+1
 
 
     y <- merge(y1,y2,by="SNP")
+
+    y[y$A1.y == y$A1.x,]$Z.x <- y[y$A1.y == y$A1.x,]$Z.x
+    y[y$A1.y != y$A1.x,]$Z.x <-  -1* y[y$A1.y != y$A1.x,]$Z.x
+
+
     y$ZZ <- y$Z.y * y$Z.x
     y <- na.omit(y)
 
