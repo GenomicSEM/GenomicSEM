@@ -417,7 +417,7 @@ print(time_all[3])
   vcor<-cov2cor(v.out)
   
   #rescale the sampling correlation matrix by the appropriate diagonals
-  V<-diag(Dvcovl)%*%vcor%*%diag(Dvcovl
+  V<-diag(Dvcovl)%*%vcor%*%diag(Dvcovl)
 
 return(list(V=V,S=S,I=I,N=N.vec,m=m))
 
