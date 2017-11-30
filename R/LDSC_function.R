@@ -401,9 +401,23 @@ print(time_all[3])
 
 ### Scale S and V to liability:
  S <- diag(as.vector(sqrt(Liab.S))) %*% cov %*% diag(as.vector(sqrt(Liab.S)))
- liab.V <- lowerTriangle(t(sqrt(Liab.S)) %*% sqrt(Liab.S),diag =T)
- V <- (diag(as.vector(sqrt(liab.V))) %*% (sign(v.out) * sqrt(abs(v.out))) %*% diag(as.vector(sqrt(liab.V))))^2
 
+  ##Elliot Method
+  
+  #calculate the ratio of the rescaled and original S matrices
+  scaleO=as.vector(lowerTriangle((S/cov),diag=T))
+  
+  #obtain diagonals of the original V matrix and take their sqrt to get SE's
+  Dvcov<-sqrt(diag(v.out))
+  
+  #rescale the SEs by the same multiples that the S matrix was rescaled by
+  Dvcovl<-as.vector(Dvcov*t(scaleO))
+  
+  #obtain the sampling correlation matrix by standardizing the original V matrix
+  vcor<-cov2cor(v.out)
+  
+  #rescale the sampling correlation matrix by the appropriate diagonals
+  V<-diag(Dvcovl)%*%vcor%*%diag(Dvcovl
 
 return(list(V=V,S=S,I=I,N=N.vec,m=m))
 
