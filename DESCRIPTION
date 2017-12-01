@@ -8,6 +8,6 @@ Description: Later
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-Imports: plyr,e1071,readr,gdata
+Imports: plyr,e1071,readr,gdata,lavaan
 
 
