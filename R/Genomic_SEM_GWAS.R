@@ -13,7 +13,7 @@ require(lavaan)
 ##estimation options = "DWLS" or "ML", with default for DWLS
 
 Genomic_SEM_GWAS<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF, estimation = "DWLS"){
-  
+View(resultsp)
   time<-proc.time()
   
   S_LD<-as.matrix(S_LD)
@@ -29,7 +29,7 @@ Genomic_SEM_GWAS<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF, estimation =
   ##add in f column to match up lavaan results in case only a subset of SNPs are being run
   beta_SNP$f<-(1:f)
   SE_SNP$f<-(1:f)
-  
+
   #SNP variance (updated with 1KG phase 3 MAFs)
   varSNP=2*MAF*(1-MAF)  
   
@@ -98,6 +98,19 @@ Genomic_SEM_GWAS<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF, estimation =
   }
   
   S_names<-write.names(k=ncol(I_LD))
+  
+  tryCatch.W.E <- function(expr)
+  {
+    W <- NULL
+    w.handler <- function(w){ # warning handler
+      W <<- w
+      invokeRestart("muffleWarning")
+    }
+    list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
+                                     warning = w.handler),
+         warning = W)
+  }
+  
   
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the sampling covariance matrix
   for (i in 1) {
@@ -170,8 +183,8 @@ Genomic_SEM_GWAS<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF, estimation =
   colnames(RESULTS)=c("f","lhs","op","rhs","est","se", "se_c", "Q")
   
   ##create dataframe of runs that throw errors due to non-convergence or negative residuals
-  fail<-as.data.frame(matrix(NA,ncol=2,nrow=f))
-  colnames(fail)=c("fail", "run")
+  fail<-as.data.frame(matrix(NA,ncol=3,nrow=f))
+  colnames(fail)=c("fail", "warning", "run")
   
   if(estimation=="DWLS"){
   
@@ -238,13 +251,8 @@ Genomic_SEM_GWAS<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF, estimation =
     W <- solve(V_Full_Reorder) 
     
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-    tryCatch(Model1_Results <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2),
-             warning = function(w) {
-               print(w)
-               fail[i,]<<-cbind(1, i)},
-             error = function(e) { 
-               print(e)
-               fail[i,]<<-cbind(2, i)})
+    test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
+    fail[i,]<-cbind(ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1], i)
     
     #pull the delta matrix (this doesn't depend on N)
     S2.delt <- lavInspect(Model1_Results, "delta")
@@ -379,13 +387,8 @@ Genomic_SEM_GWAS<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF, estimation =
       W <- solve(V_Full_Reorder) 
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-      tryCatch(Model1_Results <- sem(Model1, sample.cov = S_Full, estimator = "ML", sample.nobs = 200),
-               warning = function(w) {
-                 print(w)
-                 fail[i,]<<-cbind(1, i)},
-               error = function(e) { 
-                 print(e)
-                 fail[i,]<<-cbind(2, i)})
+      test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Full, estimator = "ML", sample.nobs = 200))
+      fail[i,]<-cbind(ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1], i)
       
       #pull the delta matrix (this doesn't depend on N)
       S2.delt <- lavInspect(Model1_Results, "delta")
@@ -465,3 +468,4 @@ Genomic_SEM_GWAS<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF, estimation =
   
   
 }
+
