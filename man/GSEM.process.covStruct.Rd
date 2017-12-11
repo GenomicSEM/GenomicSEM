@@ -1,8 +1,8 @@
-\name{LDSC}
-\alias{LDSC}
-\title{LD score regression in R}
+\name{GSEM.process.covStruct}
+\alias{GSEM.process.covStruct}
+\title{build a convariance structure using LD score regression in R}
 \description{
-Function to run LD score regression (\link{https://github.com/bulik/ldsc}) to compute the genetic covariance between a series of traits based on genome wide summary statistics obtained ferom GWAS. The results generate by this function are necessary and sufficient to facilitate the fit of structural equation models (or other multivariate models) to the genetic covariance matrix.
+Function to run LD score regression (\link{https://github.com/bulik/ldsc}) to compute the genetic covariance between a series of traits based on genome wide summary statistics obtained from GWAS. The results generate by this function are necessary and sufficient to facilitate the fit of structural equation models (or other multivariate models) to the genetic covariance matrix.
 }
 \usage{
 LDSC(traits,sample.prev,population.prev,ld,wld, sep_weights = FALSE, \dots)
@@ -18,7 +18,7 @@ LDSC(traits,sample.prev,population.prev,ld,wld, sep_weights = FALSE, \dots)
 }
 
 \value{
-   The functin returns alist with 5 named entries
+   The function returns a list with 5 named entries
    \item{S}{estimated genetic covariance matrix}
    \item{V}{varianve covariance matrix of the parameter estimates in S}
    \item{I}{matrix containing the "cross trait intercepts", or the error covariance between traits induced by overlap, in terms of subjects, between the GWASes on which the analyses are based}
