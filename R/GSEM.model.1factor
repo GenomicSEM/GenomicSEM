@@ -1,5 +1,9 @@
-GSEM.model.1factor<-function(S_Full,V_Full,estimation="DWLS"){ 
+GSEM.model.1factor<-function(Output,estimation="DWLS"){ 
+  
   time<-proc.time()
+  
+  V_Full<-Output[[1]]
+  S_Full<-Output[[2]]
   
   #enter in k for number of phenotypes 
   k<-ncol(S_Full[[1]])-1
