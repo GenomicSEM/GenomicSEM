@@ -112,6 +112,6 @@ GSEM.process.addSNPs<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF){
   print(i)
 }
   
-  return(list(V_Full_List, S_Full_List))
+  return(Output <- list(V_Full=V_Full_List,S_Full=S_Full_List))
 
 }
