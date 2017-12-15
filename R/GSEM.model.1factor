@@ -1,16 +1,32 @@
-GSEM.model.1factor<-function(Output,estimation="DWLS"){ 
-  
+#require(foreach)
+#require(doParallel)
+#require(lavaan)
+
+GSEM.model.1factorp<-function(Output,estimation="DWLS"){ 
   time<-proc.time()
   
-  V_Full<-Output[[1]]
-  S_Full<-Output[[2]]
+  #create dependencies?
+  #devtools::use_package("lavaan")
+  #devtools::use_package("doParallel")
+  #devtools::use_package("foreach")
+  
+  ##use 1 less than the total number of cores available so your computer will still function
+  int <- detectCores() - 1
+  registerDoParallel(int)
+  
+  ##specify the cores should have access the local environment
+  makeCluster(int, type="FORK")
+  
+  ##split the V and S matrices into as many (cores - 1) as are aviailable on the local computer
+  V_Full<-split(Output[[1]],1:int)
+  S_Full<-split(Output[[2]],1:int)
   
   #enter in k for number of phenotypes 
-  k<-ncol(S_Full[[1]])-1
-  
+  k<-ncol(S_Full[[1]][[1]])-1
+ 
   #f = number of SNPs in dataset
-  f=length(S_Full)
-  
+  #f=length(Output[[2]])
+
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
   #'k' is the number of variables in the model
   #'fit' is the fit function of the regression model
@@ -57,9 +73,10 @@ GSEM.model.1factor<-function(Output,estimation="DWLS"){
     return(Model1)
   } 
   
+  ##create the model
   Model1 <- write.Model1(k)
-  
-  
+ 
+  ##modification of trycatch that allows the results of a failed run to still be saved
   tryCatch.W.E <- function(expr)
   {
     W <- NULL
@@ -72,42 +89,38 @@ GSEM.model.1factor<-function(Output,estimation="DWLS"){
          warning = W)
   }
   
-  ##run one model that specifies the factor structure so that lavaan knows how to rearrange the sampling covariance matrix
+  ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
     
     #transform sampling covariance matrix into a weight matrix: 
-    W <- solve(V_Full[[i]])
- 
-    S_Fullrun<-S_Full[[i]]
-   
+    W <- solve(V_Full[[1]][[i]])
+    
+    S_Fullrun<-S_Full[[1]][[i]]
+    
     ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
     
-    order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[i]]))
+    order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
   }
-  
-  ##create results dataset
-  RESULTS=as.data.frame(matrix(NA,ncol=8,nrow=f))
-  colnames(RESULTS)=c("f","lhs","op","rhs","est","se", "se_c", "Q")
-  
-  ##create dataframe of runs that throw errors due to non-convergence or negative residuals
-  fail<-as.data.frame(matrix(NA,ncol=3,nrow=f))
-  colnames(fail)=c("fail", "warning", "run")
 
+##estimation for 2S-DWLS-R
   if(estimation=="DWLS"){
     
-    for (i in 1:f) {
-      
+##foreach parallel processing that rbinds results across cores
+    results<-foreach(n = icount(int), .combine = 'rbind') %:% 
+    
+     foreach (i=1:length(V_Full[[n]]), .combine='rbind', .packages = "lavaan") %dopar% { 
+       
       #reorder sampling covariance matrix based on what lavaan expects given the specified model
-      V_Full_Reorder <- V_Full[[i]][order,order]
-      
+      V_Full_Reorder <- V_Full[[n]][[i]][order,order]
+    
       ##invert the reordered sampling covariance matrix to create a weight matrix 
       W <- solve(V_Full_Reorder) 
       
-      S_Fullrun<-S_Full[[i]]
+      #import the S_Full matrix for appropriate run
+      S_Fullrun<-S_Full[[n]][[i]]
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
-      fail[i,]<-cbind(ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1], i)
       
       #pull the delta matrix (this doesn't depend on N)
       S2.delt <- lavInspect(Model1_Results, "delta")
@@ -130,7 +143,7 @@ GSEM.model.1factor<-function(Output,estimation="DWLS"){
       ##pull the corrected SE for SNP effect on P-factor
       se_c<-SE[k,1] 
       
-      ##code to estimate Ronald's Q##
+      ##code to estimate Q_SNP##
       #First pull the estimates from Step 1
       ModelQ <- parTable(Model1_Results)
       
@@ -170,28 +183,32 @@ GSEM.model.1factor<-function(Output,estimation="DWLS"){
       #Ronald's magic combining all the pieces from above:
       Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta
       
-      ##put the corrected standard error and Q in same dataset
-      RESULTS[i,]=cbind(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q)
-      
-      print(i)
-    }
+      ##pull all the results into a single row
+      cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+    
+      }
   }
+
   
+  ##2S-ML-R estimation
   if(estimation=="ML"){
     
-    for (i in 1:f) {
+    ##foreach parallel processing that rbinds results across cores  
+    results<-foreach(n = icount(int), .combine = 'rbind') %:% 
       
+      foreach (i=1:length(V_Full[[n]]), .combine='rbind', .packages = "lavaan") %dopar% { 
+       
       #reorder sampling covariance matrix based on what lavaan expects given the specified model
-      V_Full_Reorder <- V_Full[[i]][order,order]
-      
+      V_Full_Reorder <- V_Full[[n]][[i]][order,order]
+        
       ##invert the reordered sampling covariance matrix to create a weight matrix 
       W <- solve(V_Full_Reorder) 
-      
-      S_Fullrun<-S_Full[[i]] 
+        
+      #import the S_Full matrix for appropriate run
+      S_Fullrun<-S_Full[[n]][[i]]
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200))
-      fail[i,]<-cbind(ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1], i)
       
       #pull the delta matrix (this doesn't depend on N)
       S2.delt <- lavInspect(Model1_Results, "delta")
@@ -214,7 +231,7 @@ GSEM.model.1factor<-function(Output,estimation="DWLS"){
       ##pull the corrected SE for SNP effect on P-factor
       se_c<-SE[k,1] 
       
-      ##code to estimate Ronald's Q##
+      ##code to estimate Q_SNP##
       #First pull the estimates from Step 1
       ModelQ <- parTable(Model1_Results)
       
@@ -255,18 +272,21 @@ GSEM.model.1factor<-function(Output,estimation="DWLS"){
       Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta
       
       ##put the corrected standard error and Q in same dataset
-      RESULTS[i,]=cbind(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q)
+      cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
       
-      print(i)
+
     }
   }
   
+  ##name the columns of the results file
+  colnames(results)=c("i","n","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning")
+  
+  ##sort results so it is in order of the output lists provided for the function
+  results<- results[order(results$i, results$n),] 
+
   time_all<-proc.time()-time
   print(time_all[3])
   
-  ##combine list of runs that produced errors/warnings
-  RESULTS<-cbind(RESULTS, fail)
-  
-  return(list(RESULTS))
+  return(list(results))
   
 }
