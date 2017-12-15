@@ -2,7 +2,7 @@
 #require(doParallel)
 #require(lavaan)
 
-GSEM.model.1factorp<-function(Output,estimation="DWLS"){ 
+GSEM.model.1factor<-function(Output,estimation="DWLS"){ 
   time<-proc.time()
   
   #create dependencies?
