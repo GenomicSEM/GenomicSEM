@@ -1,15 +1,6 @@
-#require(foreach)
-#require(doParallel)
-#require(lavaan)
-
 GSEM.model.1factor<-function(Output,estimation="DWLS"){ 
   time<-proc.time()
-  
-  #create dependencies?
-  #devtools::use_package("lavaan")
-  #devtools::use_package("doParallel")
-  #devtools::use_package("foreach")
-  
+    
   ##use 1 less than the total number of cores available so your computer will still function
   int <- detectCores() - 1
   registerDoParallel(int)
