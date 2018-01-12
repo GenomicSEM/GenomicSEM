@@ -1,10 +1,10 @@
 
-GSEM.process.addSNPs<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF){
+GSEM.process.addSNPs<-function(covstruc, beta_SNP, SE_SNP, MAF){
   time<-proc.time()
-  
-  S_LD<-as.matrix(S_LD)
-  V_LD<-as.matrix(V_LD)
-  I_LD<-as.matrix(I_LD) 
+
+  V_LD<-as.matrix(covstruc[[1]])
+  S_LD<-as.matrix(covstruc[[2]])
+  I_LD<-as.matrix(covstruc[[3]])
   
   #enter in k for number of phenotypes 
   k<-ncol(beta_SNP)
