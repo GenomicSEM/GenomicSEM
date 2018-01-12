@@ -4,5 +4,5 @@ import(e1071)
 import(readr)
 import(gdata)
 import(lavaan)
-
-
+import(doParallel)
+import(foreach)
