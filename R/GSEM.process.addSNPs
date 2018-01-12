@@ -1,14 +1,4 @@
 
-##example code##
-testing<-GSEM.process.addSNPs(S_LD, V_LD, I_LD, beta_SNP2, SE_SNP2, MAF2)
-##the function currently returns a list of 2 lists (V_Full and S_Full)
-##it seems that R function can't return two separate data.frames so it is on the
-##user to then save the first and second list into V_Full and S_Full as below:
-V_Full<-testing[[1]]
-S_Full<-testing[[2]]
-
-
-##start of the actual function
 GSEM.process.addSNPs<-function(S_LD, V_LD, I_LD, beta_SNP, SE_SNP, MAF){
   time<-proc.time()
   
