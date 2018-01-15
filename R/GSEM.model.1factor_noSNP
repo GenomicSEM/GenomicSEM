@@ -1,0 +1,223 @@
+##code for model fit to be added
+
+
+GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){ 
+  time<-proc.time()
+  
+  #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
+  #'k' is the number of variables in the model
+  #'fit' is the fit function of the regression model
+  #'names' is a vector of variable names in the order you used
+  rearrange <- function (k, fit, names) {
+    order1 <- names
+    order2 <- rownames(inspect(fit)[[1]]) #order of variables
+    kst <- k*(k+1)/2
+    covA <- matrix(NA, k, k)
+    covA[lower.tri(covA, diag = TRUE)] <- 1:kst
+    covA <- t(covA)
+    covA[lower.tri(covA, diag = TRUE)] <- 1:kst 
+    colnames(covA) <- rownames(covA) <- order1 #give A actual variable order from lavaan output
+    #reorder A by order2
+    covA <- covA[order2, order2] #rearrange rows/columns
+    vec2 <- lav_matrix_vech(covA) #grab new vectorized order
+    return(vec2)
+  }
+  
+  #function to create lavaan syntax for a 1 factor model given k phenotypes
+  write.Model1 <- function(k, label = "V") {  
+    Model1 <- ""
+    for (i in 1) {
+      linestart <- paste("F1"," =~ NA*",label, i, sep = "")  
+      if (k-i > 0) {
+        linemid <- ""
+        for (j in (i+1):k) {
+          linemid <- paste(linemid, " + ", label, j, sep = "")
+        }
+      } else {linemid <- ""}
+    }
+    
+    Model1 <- paste(Model1, linestart, linemid, " \n ", "F1 ~~ 1*F1", sep = "")
+    return(Model1)
+  } 
+  
+  ##read in the LD portion of the V (sampling covariance) matrix
+  V_LD<-as.matrix(covstruct[[1]])
+  
+  ##read in the LD portion of the S (covariance) matrix
+  S_LD<-as.matrix(covstruct[[2]])
+  
+  ##k = number of phenotypes in dataset (i.e., number of columns in LD portion of S matrix)
+  k<-ncol(S_LD)
+  
+  ##create the 1 factor model with k # of indicators
+  Model1 <- write.Model1(k)
+  
+  #function to creat row/column names for S_LD matrix
+  write.names <- function(k, label = "V") {  
+    varnames<-vector(mode="character",length=k)
+    
+    for (i in 1:k){
+      varnames[i]<-paste(label,i,sep="")}
+    
+    return(varnames)
+  }
+  
+  ##create the names
+  S_names<-write.names(k=k)
+  
+  ##name the columns and rows of the S matrix
+  rownames(S_LD) <- S_names
+  colnames(S_LD) <- S_names
+  
+  ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
+    
+    #transform V_LD matrix into a weight matrix: 
+    W <- solve(V_LD)
+
+    ##run the model
+    ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
+    
+    ##save the ordering
+    order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
+  
+    ##reorder the weight (inverted V_LD) matrix
+    V_Reorder<-V_LD[order,order]
+    W_Reorder<-solve(V_Reorder)
+  
+  ##estimation for 2S-DWLS-R
+  if(estimation=="DWLS"){
+        
+        ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
+        Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
+        
+        #pull the delta matrix (this doesn't depend on N)
+        S2.delt <- lavInspect(Model1_Results, "delta")
+        
+        ##weight matrix from stage 2
+        S2.W <- lavInspect(Model1_Results, "WLS.V") 
+        
+        #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+        bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt) 
+        
+        #create the "lettuce" part of the sandwich
+        lettuce <- S2.W%*%S2.delt
+        
+        #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+        Ohtt <- bread %*% t(lettuce)%*%V_Reorder%*%lettuce%*%bread  
+        
+        #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+        SE <- as.matrix(sqrt(diag(Ohtt)))
+        
+        ##transform the S covariance matrix to S correlation matrix
+        D=sqrt(diag(diag(S_LD)))
+        S_Stand=solve(D)%*%S_LD%*%solve(D)
+        rownames(S_Stand)<-rownames(S_LD)
+        colnames(S_Stand)<-colnames(S_Stand)
+        
+        #obtain diagonals of the original V matrix and take their sqrt to get SE's
+        Dvcov<-sqrt(diag(V_LD))
+        
+        #calculate the ratio of the rescaled and original S matrices
+        scaleO=as.vector(lowerTriangle((S_Stand/S_LD),diag=T))
+        
+        #rescale the SEs by the same multiples that the S matrix was rescaled by
+        Dvcovl<-as.vector(Dvcov*t(scaleO))
+        
+        #obtain the sampling correlation matrix by standardizing the original V matrix
+        Vcor<-cov2cor(V_LD)
+        
+        #rescale the sampling correlation matrix by the appropriate diagonals
+        V_stand<-diag(Dvcovl)%*%Vcor%*%diag(Dvcovl)
+        
+        W_stand<-solve(V_stand[order,order])
+        
+        DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2) 
+        
+        ##perform same procedures for sandwich correction as in the unstandardized case
+        DWLS.delt_stand <- lavInspect(DWLS.fit_stand, "delta") 
+        DWLS.W_stand <- lavInspect(DWLS.fit_stand, "WLS.V") 
+        bread_stand <- solve(t(DWLS.delt_stand)%*%DWLS.W_stand %*%DWLS.delt_stand) 
+        lettuce_stand <- DWLS.W_stand%*%DWLS.delt_stand
+        Vcov_stand<-as.matrix(V_stand[order,order])
+        Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
+        SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
+        
+        unstand<-as.matrix(inspect(Model1_Results,"list")[-c(6),c(2:4,14)])
+        stand<-as.matrix(inspect(DWLS.fit_stand,"list")[-c(6),c(14)])
+        results<-cbind(unstand,SE,stand,SE_stand)
+     
+      }
+  
+  ##2S-ML-R estimation
+  if(estimation=="ML"){
+    
+    ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
+    Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200)
+    
+    #pull the delta matrix (this doesn't depend on N)
+    S2.delt <- lavInspect(Model1_Results, "delta")
+    
+    ##weight matrix from stage 2
+    S2.W <- lavInspect(Model1_Results, "WLS.V") 
+    
+    #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+    bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt) 
+    
+    #create the "lettuce" part of the sandwich
+    lettuce <- S2.W%*%S2.delt
+    
+    #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+    Ohtt <- bread %*% t(lettuce)%*%V_Reorder%*%lettuce%*%bread  
+    
+    #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+    SE <- as.matrix(sqrt(diag(Ohtt)))
+    
+    ##transform the S covariance matrix to S correlation matrix
+    D=sqrt(diag(diag(S_LD)))
+    S_Stand=solve(D)%*%S_LD%*%solve(D)
+    rownames(S_Stand)<-rownames(S_LD)
+    colnames(S_Stand)<-colnames(S_Stand)
+    
+    #obtain diagonals of the original V matrix and take their sqrt to get SE's
+    Dvcov<-sqrt(diag(V_LD))
+    
+    #calculate the ratio of the rescaled and original S matrices
+    scaleO=as.vector(lowerTriangle((S_Stand/S_LD),diag=T))
+    
+    #rescale the SEs by the same multiples that the S matrix was rescaled by
+    Dvcovl<-as.vector(Dvcov*t(scaleO))
+    
+    #obtain the sampling correlation matrix by standardizing the original V matrix
+    Vcor<-cov2cor(V_LD)
+    
+    #rescale the sampling correlation matrix by the appropriate diagonals
+    V_stand<-diag(Dvcovl)%*%Vcor%*%diag(Dvcovl)
+    
+    W_stand<-solve(V_stand[order,order])
+    
+    ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200) 
+    
+    ##perform same procedures for sandwich correction as in the unstandardized case
+    ML.delt_stand <- lavInspect(ML.fit_stand, "delta") 
+    ML.W_stand <- lavInspect(ML.fit_stand, "WLS.V") 
+    bread_stand <- solve(t(ML.delt_stand)%*%ML.W_stand %*%ML.delt_stand) 
+    lettuce_stand <- ML.W_stand%*%ML.delt_stand
+    Vcov_stand<-as.matrix(V_stand[order,order])
+    Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
+    SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
+    
+    unstand<-as.matrix(inspect(Model1_Results,"list")[-c(6),c(2:4,14)])
+    stand<-as.matrix(inspect(DWLS.fit_stand,"list")[-c(6),c(14)])
+    results<-cbind(unstand,SE,stand,SE_stand)
+      
+    }
+  
+  ##name the columns of the results file
+  colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate","Unstandardized_SE","Standardized_Est","Standardized_SE")
+
+  time_all<-proc.time()-time
+  print(time_all[3])
+  
+  return(list(results))
+  
+}
