@@ -207,7 +207,7 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
     
     unstand<-as.matrix(inspect(Model1_Results,"list")[-c(6),c(2:4,14)])
-    stand<-as.matrix(inspect(DWLS.fit_stand,"list")[-c(6),c(14)])
+    stand<-as.matrix(inspect(ML.fit_stand,"list")[-c(6),c(14)])
     results<-cbind(unstand,SE,stand,SE_stand)
       
     }
