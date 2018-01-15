@@ -127,7 +127,7 @@ GSEM.model.userDefined_noSNP<-function(covstruc,estimation="DWLS", model = ""){
     Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
     SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
 
-    unstand<-data.frame(inspect(Model1_Results, "list")[,c(8,14)])
+    unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
     unstand<-subset(unstand, unstand$free != 0)                    
     unstand$free<-NULL
     
@@ -197,7 +197,7 @@ GSEM.model.userDefined_noSNP<-function(covstruc,estimation="DWLS", model = ""){
     Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
     SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
     
-    unstand<-data.frame(inspect(Model1_Results, "list")[,c(8,14)])
+    unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
     unstand<-subset(unstand, unstand$free != 0)                    
     unstand$free<-NULL
     
