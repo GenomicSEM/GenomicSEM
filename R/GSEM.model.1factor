@@ -14,9 +14,6 @@ GSEM.model.1factor<-function(Output,estimation="DWLS"){
   
   #enter in k for number of phenotypes 
   k<-ncol(S_Full[[1]][[1]])-1
- 
-  #f = number of SNPs in dataset
-  #f=length(Output[[2]])
 
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
   #'k' is the number of variables in the model
