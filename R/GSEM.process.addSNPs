@@ -6,6 +6,9 @@ GSEM.process.addSNPs<-function(covstruc, beta_SNP, SE_SNP, MAF){
   S_LD<-as.matrix(covstruc[[2]])
   I_LD<-as.matrix(covstruc[[3]])
   
+  #set univariate intercepts to 1 if estimated below 1
+  diag(I_LD)<-ifelse(diag(I_LD)<= 1, 1, diag(I_LD))
+  
   #enter in k for number of phenotypes 
   k<-ncol(beta_SNP)
   
