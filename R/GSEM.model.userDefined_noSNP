@@ -23,13 +23,12 @@ GSEM.model.userDefined_noSNP<-function(covstruc,estimation="DWLS", model = ""){
     return(vec2)
   }
   
-  
-  
+ 
   ##read in the LD portion of the V (sampling covariance) matrix
-  V_LD<-as.matrix(covstruct[[1]])
+  V_LD<-as.matrix(covstruc[[1]])
   
   ##read in the LD portion of the S (covariance) matrix
-  S_LD<-as.matrix(covstruct[[2]])
+  S_LD<-as.matrix(covstruc[[2]])
   
   ##k = number of phenotypes in dataset (i.e., number of columns in LD portion of S matrix)
   k<-ncol(S_LD)
