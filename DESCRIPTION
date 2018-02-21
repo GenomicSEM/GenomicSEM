@@ -2,7 +2,7 @@ Package: GenomicSEM
 Type: Package
 Title: Functions to facilitate analysis of GWAS summary statistics
 Version: 0.0.1
-Author: Andrew, Michel, Eliot
+Author: Andrew Grotzinger, Michel Nivard, Eliot Tucker-Drob
 Maintainer: Michel Nivard <m.g.nivard@vu.nl>
 Description: Later
 License: What license is it under?
