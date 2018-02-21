@@ -1,5 +1,5 @@
 
-GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit){
+GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filter = .6){
   
   length <- length(files)
   
@@ -35,7 +35,7 @@ GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit){
     hold_names[hold_names %in%c("a2","A2","allele2","ALLELE2","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","NEA")]  <- "A2"
     hold_names[hold_names %in%c("OR","or","B","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT")] <- "effect"
     hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
-    
+    hold_names[hold_names %in%c("INFO","info")] <- "INFO"
     
     names(files[[i]]) <- hold_names
     
@@ -52,6 +52,11 @@ GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit){
     files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y)  ,files[[i]]$effect*-1,files[[i]]$effect)
     files[[i]]$A2 <- ifelse(files[[i]]$A2.x == (files[[i]]$A1.y),files[[i]]$A1.y,files[[i]]$A2.y)
     files[[i]]$A1 <-ifelse(files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$A2.y,files[[i]]$A1.y)
+    
+    
+    # INFO filter
+    
+    files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
     
     
     varSNP<-2*files[[i]]$MAF*(1-files[[i]]$MAF)  
