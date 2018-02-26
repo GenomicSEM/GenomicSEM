@@ -214,7 +214,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     modelCFI<-paste(Modelsat, Model4)
     return(modelCFI)
   }
-  
+
   modeltest<-data.frame(write.test(k))
   modeltest$write.test.k.<-as.character(modeltest$write.test.k.)
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
