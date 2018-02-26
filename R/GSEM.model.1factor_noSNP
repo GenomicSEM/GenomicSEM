@@ -1,3 +1,4 @@
+
 GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){ 
   time<-proc.time()
   
@@ -92,15 +93,19 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     return(Model5)
   } 
   
-  
   ##code to write null model for calculation of CFI
-  write.null<-function(k, label = "V") {
+  write.null<-function(k, label = "V", label2 = "VF") {
     Model3<-""
     for (p in 1:k) {
       linestart3 <- paste(label, p, " ~~ ", label, p, sep = "")
       Model3<-paste(Model3, linestart3, " \n ", sep = "")}
     
-     Modelsat<-""
+    Model2<-""
+    for (p in 1:k) {
+      linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
+      Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+    
+    Modelsat<-""
     for (i in 1:(k-1)) {
       linestartc <- paste(label, i, "~~ 0*", label, i+1,  sep = "")
       if (k-i >= 2) {
@@ -111,11 +116,28 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
       } else {linemidc <- ""}
       Modelsat <- paste(Modelsat, linestartc, linemidc, " \n ", sep = "")
     }
-     
-     modelCFI<-paste(Model3, Modelsat)
-     return(modelCFI)
+    
+    ModelsatF<-""
+    for (i in 1:(k-1)) {
+      linestartc <- paste(" ", label2, i, "~~ 0*", label2, i+1,  sep = "")
+      if (k-i >= 2) {
+        linemidc <- ""
+        for (j in (i+2):k) {
+          linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+        }
+      } else {linemidc <- ""}
+      ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+    } 
+    
+    Model4<-""
+    for (p in 1:k) {
+      linestart4 <- paste(label2, p, " ~~ 0*", label2, p, sep = "")
+      Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+    
+    modelCFI<-paste(Model3, Model2, ModelsatF, Modelsat, Model4)
+    return(modelCFI)
   }
-
+  
   #function to creat row/column names for S_LD matrix
   write.names <- function(k, label = "V") {  
     varnames<-vector(mode="character",length=k)
@@ -137,7 +159,7 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
   
   ##create the 1 factor model with k # of indicators
   Model1 <- write.Model1(k)
-  
+
   ##create inependence model for calculation of CFI
   modelCFI<-write.null(k)
   
@@ -173,7 +195,7 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
   
   ##estimation for 2S-DWLS-R
   if(estimation=="DWLS"){
-    
+  
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
     
@@ -204,8 +226,9 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     ModelQ_WLS$free <- c(rep(0, f), 1:z)
 
     ModelQ_WLS$ustart <- ModelQ_WLS$est
-    
-    ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2) 
+    ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .05, ModelQ_WLS$ustart)
+   
+    ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart) 
     
     #pull the delta matrix (this doesn't depend on N)
     S2.delt_Q <- lavInspect(ModelQ_Results_WLS, "delta")
@@ -227,26 +250,30 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     Eig2<-as.matrix(eigen(V_eta)$values)
     Eig<-diag(z)
     diag(Eig)<-Eig2
-   
+
     #Pull P1 (the eigen vectors of V_eta)
     P1<-eigen(V_eta)$vectors
-    
-    ##Pull eta = vector of residual covariances
-    x<-k*8-8
-    eta<-cbind(inspect(ModelQ_Results_WLS,"list")[(x:(x+z-1)),14])
 
+    ##Pull eta = vector of residual covariances
+    eta_test<-parTable(ModelQ_Results_WLS)
+    eta_test<-subset(eta_test, eta_test$free != 0)
+    eta<-cbind(eta_test[,14])
+    
     #Ronald's magic combining all the pieces from above:
     Q_WLS<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta
- 
+    
+    ##now CFI
     ##run independence model
     fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2)
     
     ##code to estimate chi-square of independence model#
     #First pull the estimates from Step 2
     ModelQ_WLS_CFI <- parTable(fitCFI)
+    p2<-length(ModelQ_WLS_CFI$free)-z
     
     ##fix variances and freely estimate covariances
-    ModelQ_WLS_CFI$free <- c(rep(0, k), 1:(z-k)) 
+    ModelQ_WLS_CFI$free <- c(rep(0, p2), 1:z)
+    ModelQ_WLS_CFI$ustart <- ModelQ_WLS_CFI$est
     
     ModelQ_Results_WLS_CFI <- sem(model = ModelQ_WLS_CFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2)
     
@@ -268,14 +295,16 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     ##pull the sampling covariance matrix of the residual covariances and compute diagonal matrix of eigenvalues
     V_etaCFI<- Ohtt_Q_CFI
     Eig2_CFI<-as.matrix(eigen(V_etaCFI)$values)
-    Eig_CFI<-diag((z-k))
+    Eig_CFI<-diag(z)
     diag(Eig_CFI)<-Eig2_CFI
     
     #Pull P1 (the eigen vectors of V_eta)
     P1_CFI<-eigen(V_etaCFI)$vectors
     
     ##Pull eta = vector of residual covariances
-    eta_CFI<-cbind(inspect(ModelQ_Results_WLS_CFI,"list")[(k+1):z,14])
+    eta_test_CFI<-parTable(ModelQ_Results_WLS_CFI)
+    eta_test_CFI<-subset(eta_test_CFI, eta_test_CFI$free != 0)
+    eta_CFI<-cbind(eta_test_CFI[,14])
     
     #Ronald's magic combining all the pieces from above:
     Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI
@@ -369,8 +398,9 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     ModelQ_ML$free <- c(rep(0, f), 1:z)
     
     ModelQ_ML$ustart <- ModelQ_ML$est
+    ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .05, ModelQ_ML$ustart)
     
-    ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200) 
+    ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart) 
     
     #pull the delta matrix (this doesn't depend on N)
     S2.delt_Q <- lavInspect(ModelQ_Results_ML, "delta")
@@ -397,21 +427,25 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     P1<-eigen(V_eta)$vectors
     
     ##Pull eta = vector of residual covariances
-    x<-k*8-8
-    eta<-cbind(inspect(ModelQ_Results_ML,"list")[(x:(x+z-1)),14])
+    eta_test<-parTable(ModelQ_Results_ML)
+    eta_test<-subset(eta_test, eta_test$free != 0)
+    eta<-cbind(eta_test[,14])
     
     #Ronald's magic combining all the pieces from above:
     Q_ML<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta
     
+    ##now CFI
     ##run independence model
     fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML", sample.nobs=200)
     
-    ##code to estimate chi-square of independence model for CFI calculation#
+    ##code to estimate chi-square of independence model#
     #First pull the estimates from Step 2
     ModelQ_ML_CFI <- parTable(fitCFI)
+    p2<-length(ModelQ_ML_CFI$free)-z
     
     ##fix variances and freely estimate covariances
-    ModelQ_ML_CFI$free <- c(rep(0, k), 1:(z-k)) 
+    ModelQ_ML_CFI$free <- c(rep(0, p2), 1:z)
+    ModelQ_ML_CFI$ustart <- ModelQ_ML_CFI$est
     
     ModelQ_Results_ML_CFI <- sem(model = ModelQ_ML_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200)
     
@@ -433,14 +467,16 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     ##pull the sampling covariance matrix of the residual covariances and compute diagonal matrix of eigenvalues
     V_etaCFI<- Ohtt_Q_CFI
     Eig2_CFI<-as.matrix(eigen(V_etaCFI)$values)
-    Eig_CFI<-diag((z-k))
+    Eig_CFI<-diag(z)
     diag(Eig_CFI)<-Eig2_CFI
     
     #Pull P1 (the eigen vectors of V_eta)
     P1_CFI<-eigen(V_etaCFI)$vectors
     
     ##Pull eta = vector of residual covariances
-    eta_CFI<-cbind(inspect(ModelQ_Results_ML_CFI,"list")[(k+1):z,14])
+    eta_test_CFI<-parTable(ModelQ_Results_ML_CFI)
+    eta_test_CFI<-subset(eta_test_CFI, eta_test_CFI$free != 0)
+    eta_CFI<-cbind(eta_test_CFI[,14])
     
     #Ronald's magic combining all the pieces from above:
     Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI
@@ -511,7 +547,7 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
   time_all<-proc.time()-time
   print(time_all[3])
   
-  return(list(results=results,modelfit=modelfit))
+  return(list(modelfit=modelfit,results=results))
   
   }
   
