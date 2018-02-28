@@ -1,4 +1,5 @@
 
+
 GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filter = .6){
   
   length <- length(files)
@@ -48,11 +49,18 @@ GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filte
     
     files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
     
+
     # Flip all alleles to the ref
-    files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y)  ,files[[i]]$effect*-1,files[[i]]$effect)
+    files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y)        ,files[[i]]$effect*-1,files[[i]]$effect)
     files[[i]]$A2 <- ifelse(files[[i]]$A2.x == (files[[i]]$A1.y),files[[i]]$A1.y,files[[i]]$A2.y)
     files[[i]]$A1 <-ifelse(files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$A2.y,files[[i]]$A1.y)
-    
+  
+
+   #  Remove strand mismatched SNPS (jhust remove all, no correction of the strand yet)
+
+ files[[i]]$A2 <- ifelse(files[[i]]$A2.x != (files[[i]]$A2.y)  & files[[i]]$A2.x !=  (files[[i]]$A1.y),NA,files[[i]]$A2.y)
+files[[i]]$A1 <- ifelse(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x != (files[[i]]$A2.y),NA,files[[i]]$A1.y)
+  
     
     # INFO filter
     
@@ -64,14 +72,14 @@ GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filte
     if(se.logit[i] == F){
       output <- cbind.data.frame(files[[i]]$SNP,
                       (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                      (files[[i]]$SE/exp(files[[i]]$effect))/(((files[[i]]$SE/exp(files[[i]]$effect))^2) * varSNP + (pi^2)/3)^.5    )
+                      (files[[i]]$SE/exp(files[[i]]$effect))/(exp(files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5 )   )
     
       colnames(output) <- c("SNP",names.beta[i],names.se[i])
       
       } else{
       output <- cbind.data.frame(files[[i]]$SNP,
       (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-      (files[[i]]$SE)/(((files[[i]]$SE)^2) * varSNP + (pi^2)/3)^.5    )  
+      (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5    )  
  
       colnames(output) <- c("SNP",names.beta[i],names.se[i])
     }
