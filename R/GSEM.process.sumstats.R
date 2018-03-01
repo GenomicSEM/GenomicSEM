@@ -17,7 +17,7 @@ GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filte
   }
   
   
-  files = lapply(files, read.table, header=T, quote="\"")
+  files = lapply(files, read.table, header=T, quote="\"", fill=T)
   
   ref <- fread(ref,header=T,data.table=F)
   
