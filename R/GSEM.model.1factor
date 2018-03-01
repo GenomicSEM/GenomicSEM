@@ -105,7 +105,7 @@ GSEM.model.1factor<-function(Output,estimation="DWLS"){
         diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
         
         ##invert the reordered sampling covariance matrix to create a weight matrix 
-        W <- solve(V_Full_Reorder) 
+        W <- solve(V_Full_Reorderb) 
         
         #import the S_Full matrix for appropriate run
         S_Fullrun<-S_Full[[n]][[i]]
@@ -196,7 +196,7 @@ GSEM.model.1factor<-function(Output,estimation="DWLS"){
         diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
         
         ##invert the reordered sampling covariance matrix to create a weight matrix 
-        W <- solve(V_Full_Reorder) 
+        W <- solve(V_Full_Reorderb) 
         
         #import the S_Full matrix for appropriate run
         S_Fullrun<-S_Full[[n]][[i]]
