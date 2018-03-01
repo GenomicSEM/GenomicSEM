@@ -1,4 +1,3 @@
-
 GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){ 
   time<-proc.time()
   
@@ -172,11 +171,17 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
   
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   
-  #transform V_LD matrix into a weight matrix: 
-  W <- solve(V_LD)
+  #transform V_LD matrix into a diagonal weight matrix: 
+  z<-(k*(k+1))/2
+  V_LD2<-diag(z)
+  diag(V_LD2)<-diag(V_LD)
+  W <- solve(V_LD2)
   
   ##run the model
   ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
+  
+  S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat)
+  
   
   ##save the ordering
   order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
@@ -187,12 +192,16 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
   
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
-  W_Reorder<-solve(V_Reorder)
+  V_Reorderb<-diag(z)
+  diag(V_Reorderb)<-diag(V_Reorder)
+  W_Reorder<-solve(V_Reorderb)
   
   ##reorder matrix for independence (i.e., null) model for CFI calculation
   V_Reorder2 <- V_LD[orderCFI,orderCFI]
-  W_CFI<-solve(V_Reorder2)
-  
+  V_Reorder2b<-diag(z)
+  diag(V_Reorder2b)<-diag(V_Reorder2)
+  W_CFI<-solve(V_Reorder2b)
+ 
   ##estimation for 2S-DWLS-R
   if(estimation=="DWLS"){
   
@@ -550,4 +559,3 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
   return(list(modelfit=modelfit,results=results))
   
   }
-  
