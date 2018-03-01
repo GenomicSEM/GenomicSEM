@@ -31,7 +31,8 @@ GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filte
     
     hold_names <- names(files[[i]])
     
-    hold_names[hold_names %in%c("snp","SNP","snpid","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers")] <- "SNP"
+   
+    hold_names[hold_names %in%c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName", "markername", "MARKERNAME")] <- "SNP"
     hold_names[hold_names %in%c("a1","A1","allele1","ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA")] <- "A1"
     hold_names[hold_names %in%c("a2","A2","allele2","ALLELE2","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","NEA")]  <- "A2"
     hold_names[hold_names %in%c("OR","or","B","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT")] <- "effect"
