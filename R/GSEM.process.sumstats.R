@@ -72,7 +72,7 @@ files[[i]]$A1 <- ifelse(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x 
     if(se.logit[i] == F){
       output <- cbind.data.frame(files[[i]]$SNP,
                       (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                      (files[[i]]$SE/exp(files[[i]]$effect))/(exp(files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5 )   )
+                      (files[[i]]$SE/exp(files[[i]]$effect))/((files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5 )   
     
       colnames(output) <- c("SNP",names.beta[i],names.se[i])
       
