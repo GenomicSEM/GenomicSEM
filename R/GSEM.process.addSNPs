@@ -7,6 +7,13 @@ GSEM.process.addSNPs<-function(covstruc, SNPs){
   S_LD<-as.matrix(covstruc[[2]])
   I_LD<-as.matrix(covstruc[[3]])
   
+  ##smooth to near positive definite if either V or S are non-positive definite
+  k<-nrow(S_LD)
+  smooth1<-ifelse(eigen(S_LD)$values[k] <= 0, S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat), S_LD<-S_LD)
+  
+  k2<-nrow(V_LD)
+  smooth2<-ifelse(eigen(V_LD)$values[k2] <= 0, V_LD<-as.matrix((nearPD(V_LD, corr = FALSE))$mat), V_LD<-V_LD)
+
   beta_SNP<-SNPs[,grep("beta",colnames(SNPs))] 
   SE_SNP<-SNPs[,grep("se",colnames(SNPs))] 
     
