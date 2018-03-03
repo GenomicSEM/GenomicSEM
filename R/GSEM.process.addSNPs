@@ -7,6 +7,7 @@ GSEM.process.addSNPs<-function(covstruc, SNPs){
   S_LD<-as.matrix(covstruc[[2]])
   I_LD<-as.matrix(covstruc[[3]])
   
+  SNPs<-data.frame(SNPs)
   beta_SNP<-SNPs[,grep("beta",colnames(SNPs))] 
   SE_SNP<-SNPs[,grep("se",colnames(SNPs))] 
     
