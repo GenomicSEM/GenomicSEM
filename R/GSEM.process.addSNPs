@@ -119,7 +119,7 @@ GSEM.process.addSNPs<-function(covstruc, SNPs){
   }
   
   ##save the rsnumbers, MAF, A1/A2, and BP
-  SNPs2<-SNPs[,1:6]
+  SNPs2<-SNPs[,2:7]
   
   return(Output <- list(V_Full=V_Full_List,S_Full=S_Full_List,RS=SNPs2))
   
