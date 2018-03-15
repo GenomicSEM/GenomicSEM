@@ -36,18 +36,21 @@ GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filte
     hold_names[hold_names %in%c("OR","or","B","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect")] <- "effect"
     hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
-
+    ##rename common MAF labels so that it doesnt clash with ref file MAF
+    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF_other"
+    
     names(files[[i]]) <- hold_names
     
-
+    ##make sure all alleles are upper case for matching
     files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
     files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
     
-    files[[i]]$effect <- ifelse(rep(round(mean(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)  
-  
     ##merge with ref file
     files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
     
+    ##determine whether it is OR or logistic/continuous effect based on median effect size 
+    files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
+ 
     # Flip effect to match ordering in ref file
     files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
     
