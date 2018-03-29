@@ -1,5 +1,6 @@
 
 
+
 GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){ 
   time<-proc.time()
   
@@ -313,8 +314,8 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     eta_test<-subset(eta_test, eta_test$free != 0)
     eta<-cbind(eta_test[,14])
     
-    #Ronald's magic combining all the pieces from above:
-    Q_WLS<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_WLS<-"NA"}
+    #Combining all the pieces from above:
+    Q_WLS<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_WLS<-NA}
     
     ##now CFI
     ##run independence model
@@ -366,8 +367,8 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     eta_test_CFI<-subset(eta_test_CFI, eta_test_CFI$free != 0)
     eta_CFI<-cbind(eta_test_CFI[,14])
     
-    #Ronald's magic combining all the pieces from above:
-    Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}}else{Q_CFI_WLS<-"NA"}
+    #Combining all the pieces from above:
+    Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-"NA"}}
     
     ##transform the S covariance matrix to S correlation matrix
     D=sqrt(diag(diag(S_LD)))
@@ -413,8 +414,9 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     stand$free<-NULL
     
     if(Q_CFI_WLS != "NA"){
-    CFI<-as.numeric(((Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"])-(Q_WLS-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"]))}else{CFI_WLS<-"NA"}
-    CFI<-ifelse(CFI > 1, 1, CFI)
+    CFI<-as.numeric(((Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"])-(Q_WLS-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"]))
+    CFI<-ifelse(CFI > 1, 1, CFI)}else{CFI_WLS<-"NA"}
+
     chisq<-Q_WLS
     df<-lavInspect(Model1_Results, "fit")["df"]
     AIC<-(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"])
@@ -515,8 +517,8 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
       eta_test<-subset(eta_test, eta_test$free != 0)
       eta<-cbind(eta_test[,14])
       
-      #Ronald's magic combining all the pieces from above:
-      Q_ML<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_ML<-"NA"}
+      #Combining all the pieces from above:
+      Q_ML<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_ML<-NA}
     
     ##now CFI
     ##run independence model
@@ -568,8 +570,8 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
         eta_test_CFI<-subset(eta_test_CFI, eta_test_CFI$free != 0)
         eta_CFI<-cbind(eta_test_CFI[,14])
         
-        #Ronald's magic combining all the pieces from above:
-        Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}}else{Q_CFI_ML<-"NA"}
+        #Combining all the pieces from above:
+        Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-"NA"}}
     
     ##to get standardized output
     ##transform the S covariance matrix to S correlation matrix
@@ -608,8 +610,8 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
     
     if(Q_CFI_ML != "NA"){
-    CFI<-as.numeric(((Q_CFI_ML-lavInspect(fitCFI, "fit")["df"])-(Q_ML-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_ML-lavInspect(fitCFI, "fit")["df"]))}else{CFI<-"NA"}
-    CFI<-ifelse(CFI > 1, 1, CFI)
+    CFI<-as.numeric(((Q_CFI_ML-lavInspect(fitCFI, "fit")["df"])-(Q_ML-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_ML-lavInspect(fitCFI, "fit")["df"]))
+    CFI<-ifelse(CFI > 1, 1, CFI)}else{CFI<-"NA"}
     chisq<-Q_ML
     df<-lavInspect(Model1_Results, "fit")["df"]
     AIC<-(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"])
@@ -635,8 +637,8 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
   ##name model fit columns
   colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")
   modelfit<-data.frame(modelfit)
-  modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE)
-
+  modelfit$p_chisq<-ifelse(modelfit$chisq != 'NA', modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
+  
   order<-c(1,2,6,3,4,5)
   modelfit<-modelfit[,order]
 
@@ -656,5 +658,4 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
   return(list(modelfit=modelfit,results=results))
   
   }
-  
   
