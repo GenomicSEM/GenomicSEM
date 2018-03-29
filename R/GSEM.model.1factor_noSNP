@@ -1,4 +1,5 @@
 
+
 GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){ 
   time<-proc.time()
   
@@ -413,6 +414,7 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     
     if(Q_CFI_WLS != "NA"){
     CFI<-as.numeric(((Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"])-(Q_WLS-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"]))}else{CFI_WLS<-"NA"}
+    CFI<-ifelse(CFI > 1, 1, CFI)
     chisq<-Q_WLS
     df<-lavInspect(Model1_Results, "fit")["df"]
     AIC<-(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"])
@@ -607,6 +609,7 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
     
     if(Q_CFI_ML != "NA"){
     CFI<-as.numeric(((Q_CFI_ML-lavInspect(fitCFI, "fit")["df"])-(Q_ML-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_ML-lavInspect(fitCFI, "fit")["df"]))}else{CFI<-"NA"}
+    CFI<-ifelse(CFI > 1, 1, CFI)
     chisq<-Q_ML
     df<-lavInspect(Model1_Results, "fit")["df"]
     AIC<-(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"])
@@ -653,4 +656,5 @@ GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){
   return(list(modelfit=modelfit,results=results))
   
   }
+  
   
