@@ -48,8 +48,15 @@ GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .6,maf
     files[[i]]<-subset(files[[i]], !(files[[i]]$A2.x != (files[[i]]$A2.y)  & files[[i]]$A2.x !=  (files[[i]]$A1.y)))
     files[[i]]<-subset(files[[i]], !(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x != (files[[i]]$A2.y)))
     
+    # Validity checks:
     
-    #mCopute Z score
+    if((sum(files[[i]]$P > 1) + sum(files[[i]]$P < 0)) > 100){
+      
+      print("in excess of 100 SNPs have P val above 1 or below 0, column may be mislabled!")
+      
+      }
+    
+    #Compute Z score
     files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
       
       
@@ -57,8 +64,16 @@ GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .6,maf
     
     if("INFO" %in% colnames(files[[i]])) {
       files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
+      
+    }else{print("No INFO column, cant filter on INFO, may influence results")
+     
+     if("MAF" %in% colnames(files[[i]])) {
       files[[i]] <- files[[i]][files[[i]]$MAF >= maf.filter,]
-    }
+      
+    }else{print("No MAF column, cant filter on MAF, may influence results")
+               
+          
+   
 
       output <- cbind.data.frame(files[[i]]$SNP,N[i],files[[i]]$Z,files[[i]]$A1.x,files[[i]]$A2.x)
       
