@@ -2,7 +2,7 @@
 \alias{GSEM.process.munge}
 \title{Clean and munge files to enable LD score regression}
 \description{
-Function to process GWAS summary statistis files and pepair them for LD score regression 
+Function to process GWAS summary statistis files and prepair them for LD score regression 
 }
 \usage{
 GSEM.process.munge(files,hm3,trait.names=NULL,N,info.filter = .6,maf.filter=0.05, \dots)
@@ -11,7 +11,7 @@ GSEM.process.munge(files,hm3,trait.names=NULL,N,info.filter = .6,maf.filter=0.05
 \arguments{
    \item{files}{a list of file names, fuiles must be located in the working directory, or a path must be provided.}
    \item{hm3}{A file (UNZIPPED) of HAPMAP3 SNPs with some basic cleaning applied it is supplied and created by the original LD score regression developers and available here: https://data.broadinstitute.org/alkesgroup/LDSCORE/w_hm3.snplist.bz2: }
-   \item{trait.names}{ a vector of traqit nems which will be used as names for the munged files}
+   \item{trait.names}{ a vector of trait names which will be used as names for the munged files}
    \item{info.filter}{ Numeric value which is used aas a lower bound for inputation quality (INFO) }
      \item{maf.filter}{ Num,eric value used as a lower bound for minor allel frequency  }
     
