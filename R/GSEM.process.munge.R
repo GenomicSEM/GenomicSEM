@@ -24,7 +24,7 @@ GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .6,maf
     hold_names[hold_names %in%c("OR","or","B","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect")] <- "effect"
     hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
-    hold_names[hold_names %in%c("P","p","PVALUE","pvalue","P_VALUE","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE"."gc_pvalue" )] <- "P"
+    hold_names[hold_names %in%c("P","p","PVALUE","pvalue","P_VALUE","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue" )] <- "P"
 
     ##rename common MAF labels so that it doesnt clash with ref file MAF
     hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF_other"
