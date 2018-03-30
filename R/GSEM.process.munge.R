@@ -65,12 +65,12 @@ GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .6,maf
     if("INFO" %in% colnames(files[[i]])) {
       files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
       
-    }else{print("No INFO column, cant filter on INFO, may influence results")
+    }else{print("No INFO column, cant filter on INFO, may influence results")}
      
      if("MAF" %in% colnames(files[[i]])) {
       files[[i]] <- files[[i]][files[[i]]$MAF >= maf.filter,]
       
-    }else{print("No MAF column, cant filter on MAF, may influence results")
+    }else{print("No MAF column, cant filter on MAF, may influence results")}
                
           
    
