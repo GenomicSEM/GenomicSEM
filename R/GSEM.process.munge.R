@@ -1,16 +1,17 @@
 
 
-GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .6,maf.filter=0.05){
+
+GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01){
   
   length <- length(files)
-
+  
   
   
   files = lapply(files, read.table, header=T, quote="\"",fill=T)
   
   ref <- fread(hm3,header=T,data.table=F)
   
- 
+  
   
   data.frame.out <- ref
   
@@ -25,9 +26,9 @@ GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .6,maf
     hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
     hold_names[hold_names %in%c("P","p","PVALUE","pvalue","P_VALUE","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue" )] <- "P"
-
-    ##rename common MAF labels so that it doesnt clash with ref file MAF
-    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF_other"
+    
+    ##rename common MAF labels
+    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF"
     
     names(files[[i]]) <- hold_names
     
@@ -54,32 +55,32 @@ GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .6,maf
       
       print("in excess of 100 SNPs have P val above 1 or below 0, column may be mislabled!")
       
-      }
+    }
     
     #Compute Z score
     files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
-      
-      
-   
+    
+    
+    
     
     if("INFO" %in% colnames(files[[i]])) {
       files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
       
     }else{print("No INFO column, cant filter on INFO, may influence results")}
-     
-     if("MAF" %in% colnames(files[[i]])) {
+    
+    if("MAF" %in% colnames(files[[i]])) {
       files[[i]] <- files[[i]][files[[i]]$MAF >= maf.filter,]
       
     }else{print("No MAF column, cant filter on MAF, may influence results")}
-               
-          
-   
-
-      output <- cbind.data.frame(files[[i]]$SNP,N[i],files[[i]]$Z,files[[i]]$A1.x,files[[i]]$A2.x)
-      
-      colnames(output) <- c("SNP","N","Z","A1","A2")
-      
-
+    
+    
+    
+    
+    output <- cbind.data.frame(files[[i]]$SNP,N[i],files[[i]]$Z,files[[i]]$A1.x,files[[i]]$A2.x)
+    
+    colnames(output) <- c("SNP","N","Z","A1","A2")
+    
+    
     write.table(x = output,file = paste0(trait.names[i],".sumstats"))
     gzip(paste0(trait.names[i],".sumstats"))
     
@@ -89,3 +90,4 @@ GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .6,maf
   
   
 }
+
