@@ -27,7 +27,7 @@ LDSC(traits,sample.prev,population.prev,ld,wld, sep_weights = FALSE, \dots)
 
 }
 
-}
+
 
 \examples{
 
