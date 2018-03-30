@@ -1,6 +1,7 @@
 
 
 
+
 GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01){
   
   length <- length(files)
@@ -81,7 +82,7 @@ GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf
     colnames(output) <- c("SNP","N","Z","A1","A2")
     
     
-    write.table(x = output,file = paste0(trait.names[i],".sumstats"))
+    write.table(x = output,file = paste0(trait.names[i],".sumstats"), quotes = FALSE)
     gzip(paste0(trait.names[i],".sumstats"))
     
   }
@@ -90,4 +91,3 @@ GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf
   
   
 }
-
