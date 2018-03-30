@@ -3,7 +3,7 @@
 \title{Clean and munge files to enable LD score regression}
 \description{
 Function to process GWAS summary statistis files and pepair them for LD score regression 
-
+}
 \usage{
 GSEM.process.munge(files,hm3,trait.names=NULL,N,info.filter = .6,maf.filter=0.05, \dots)
 
