@@ -751,7 +751,10 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   modelfit<-data.frame(modelfit)
 
   modelfit$p_chisq<-ifelse(modelfit$chisq != 'NA', modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
-    
+  modelfit$chisq<-ifelse(modelfit$df == 0, modelfit$chisq == NA, modelfit$chisq)  
+  modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)  
+  modelfit$p_chisq<-ifelse(modelfit$df == 0, modelfit$p_chisq == NA, modelfit$p_chisq)  
+  
   order<-c(1,2,6,3,4,5)
   modelfit<-modelfit[,order]
   
