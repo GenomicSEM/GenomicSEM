@@ -1,7 +1,7 @@
 
 
 
-GSEM.model.1factor_noSNP<-function(covstruc,estimation="DWLS"){ 
+commonfactor <-function(covstruc,estimation="DWLS"){ 
   time<-proc.time()
   
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
