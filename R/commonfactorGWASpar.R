@@ -277,7 +277,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS"){
   
   ##sort results so it is in order of the output lists provided for the function
   results<- results[order(results$i, results$n),] 
-
+  results$se <- NULL
   results2<-cbind(Output[[3]],results)
 
   time_all<-proc.time()-time
