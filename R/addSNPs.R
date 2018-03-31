@@ -1,6 +1,6 @@
 
 
-GSEM.process.addSNPs<-function(covstruc, SNPs){
+addSNPs <-function(covstruc, SNPs){
   time<-proc.time()
  
   V_LD<-as.matrix(covstruc[[1]])
