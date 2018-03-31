@@ -1,4 +1,4 @@
-commonfactor <-function(Output,estimation="DWLS"){ 
+commonfactorGWAS <-function(Output,estimation="DWLS"){ 
   time<-proc.time()
   
   ##use 1 less than the total number of cores available so your computer will still function
