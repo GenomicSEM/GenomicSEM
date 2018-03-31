@@ -27,11 +27,24 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
     hold_names[hold_names %in%c("P","p","PVALUE","pvalue","P_VALUE","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue" )] <- "P"
+    hold_names[hold_names %in%c("N","WEIGHT")] <- "N"
+    hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
+    hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
+    
+
     
     ##rename common MAF labels
     hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF"
     
     names(files[[i]]) <- hold_names
+    
+    
+    # Compute N is N cases and N control is reported:
+    if("N_CAS" %in% colnames(files[[i]])) {
+      files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
+      
+    }
+    
     
     ##make sure all alleles are upper case for matching
     files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
@@ -76,8 +89,11 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     
     
     
+    if("N" %in% colnames(files[[i]])) {
+    output <- cbind.data.frame(files[[i]]$SNP,files[[i]]$N,files[[i]]$Z,files[[i]]$A1.x,files[[i]]$A2.x)
+    }else{utput <- cbind.data.frame(files[[i]]$SNP,N[i],files[[i]]$Z,files[[i]]$A1.x,files[[i]]$A2.x) }
     
-    output <- cbind.data.frame(files[[i]]$SNP,N[i],files[[i]]$Z,files[[i]]$A1.x,files[[i]]$A2.x)
+    
     
     colnames(output) <- c("SNP","N","Z","A1","A2")
     
