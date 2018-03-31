@@ -1,5 +1,5 @@
 
-GSEM.model.1factor_nonpar<-function(Output,estimation="DWLS"){ 
+commonfactorGWAS <-function(Output,estimation="DWLS"){ 
   time<-proc.time()
   
   ##split the V and S matrices into as many (cores - 1) as are aviailable on the local computer
