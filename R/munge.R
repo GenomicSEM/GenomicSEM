@@ -2,7 +2,7 @@
 
 
 
-GSEM.process.munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01){
+munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01){
   
   length <- length(files)
   
