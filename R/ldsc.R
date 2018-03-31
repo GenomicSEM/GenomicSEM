@@ -1,6 +1,6 @@
 
 
-GSEM.process.sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filter = .6,maf.filter=0.01){
+ldsc <- function(files,ref,trait.names=NULL,se.logit,info.filter = .6,maf.filter=0.01){
   
   length <- length(files)
   
