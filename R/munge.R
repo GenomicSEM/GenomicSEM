@@ -98,7 +98,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     colnames(output) <- c("SNP","N","Z","A1","A2")
     
     
-    write.table(x = output,file = paste0(trait.names[i],".sumstats"), quotes = FALSE)
+    write.table(x = output,file = paste0(trait.names[i],".sumstats"), quote = FALSE)
     gzip(paste0(trait.names[i],".sumstats"))
     
   }
