@@ -1,4 +1,4 @@
-GSEM.process.covStruct <- function(traits,sample.prev,population.prev,ld,wld, sep_weights = FALSE){
+ldsc <- function(traits,sample.prev,population.prev,ld,wld, sep_weights = FALSE){
 time <- proc.time()
 
 # Dimensions
