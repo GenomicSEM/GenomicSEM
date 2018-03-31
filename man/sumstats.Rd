@@ -1,6 +1,6 @@
 \name{sumstats}
 \alias{sumstats}
-\title{Allign summary statistics for a GWAS in GenomicSEM}
+\title{Allign summary statistics from univariate GWAS for a GWAS in GenomicSEM}
 \description{
 Function to process GWAS summary statistis files and prepair them for a GWAS in genomicSEM
 }
