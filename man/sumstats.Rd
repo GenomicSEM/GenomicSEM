@@ -14,7 +14,7 @@ sumstats(files,ref,trait.names=NULL,se.logit,info.filter = .6,maf.filter=0.01, \
    \item{trait.names}{ a vector of trait names which will be used as names for the munged files}
      \item{se.logt}{ a logical vector indivating whether the standard errors in each set of summary statistics is on the logit scale}
    \item{info.filter}{ Numeric value which is used aas a lower bound for inputation quality (INFO) }
-     \item{maf.filter}{ Num,eric value used as a lower bound for minor allel frequency  }
+     \item{maf.filter}{ Numeric value used as a lower bound for minor allel frequency  }
     
 }
 
