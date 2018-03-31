@@ -1,11 +1,11 @@
-\name{GSEM.process.covStruct}
-\alias{GSEM.process.covStruct}
+\name{ldsc}
+\alias{ldsc}
 \title{build a convariance structure using LD score regression in R}
 \description{
 Function to run LD score regression (\link{https://github.com/bulik/ldsc}) to compute the genetic covariance between a series of traits based on genome wide summary statistics obtained from GWAS. The results generate by this function are necessary and sufficient to facilitate the fit of structural equation models (or other multivariate models) to the genetic covariance matrix.
 }
 \usage{
-GSEM.process.covStruct(traits,sample.prev,population.prev,ld,wld, sep_weights = FALSE, \dots)
+ldsc(traits,sample.prev,population.prev,ld,wld, sep_weights = FALSE, \dots)
 
 }
 \arguments{
