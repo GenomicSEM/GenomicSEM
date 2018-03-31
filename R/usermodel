@@ -1,6 +1,6 @@
 
 
-GSEM.model.userDefined_noSNP<-function(covstruc,estimation="DWLS", model = ""){ 
+usermodel <-function(covstruc,estimation="DWLS", model = ""){ 
   time<-proc.time()
   
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
