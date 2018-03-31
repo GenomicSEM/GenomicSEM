@@ -1,4 +1,4 @@
-GSEM.model.1factor<-function(Output,estimation="DWLS"){ 
+commonfactor <-function(Output,estimation="DWLS"){ 
   time<-proc.time()
   
   ##use 1 less than the total number of cores available so your computer will still function
