@@ -334,7 +334,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
   
   time_all<-proc.time()-time
   print(time_all[3])
-  
+  results$se <- NULL
   results2<-cbind(Output[[3]],results)
   
   return(list(results2))
