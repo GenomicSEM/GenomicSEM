@@ -1,6 +1,6 @@
 
 
-sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,maf.filter=0.01){
+ssumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,maf.filter=0.01){
   
   length <- length(files)
   
@@ -18,14 +18,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,ma
   
   
   files = lapply(files, read.table, header=T, quote="\"",fill=T)
-
+  
   ref <- fread(ref,header=T,data.table=F)
-
+  
   ##filter ref file on user provided maf.filter
   ref<-subset(ref, ref$MAF >= maf.filter)
   
   data.frame.out <- ref
-
+  
   for(i in 1:length){
     
     hold_names <- names(files[[i]])
@@ -53,56 +53,54 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,ma
     
     ##determine whether it is OR or logistic/continuous effect based on median effect size 
     files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
- 
+    
     
     if(OLS[i] == T){
       
-     files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
-     
+      files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
       
-    files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF))
-     
-    }
-                                       
+      
+      files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}else{files[[i]]$effect<-files[[i]]$effect}
+    
     # Flip effect to match ordering in ref file
     files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
     
     ##remove SNPs that don't match A1 OR A2 in ref. confirm this works
     files[[i]]<-subset(files[[i]], !(files[[i]]$A2.x != (files[[i]]$A2.y)  & files[[i]]$A2.x !=  (files[[i]]$A1.y)))
     files[[i]]<-subset(files[[i]], !(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x != (files[[i]]$A2.y)))
-                                          
+    
     if("INFO" %in% colnames(files[[i]])) {
       files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
       
     }
-  
     
-
+    
+    
     varSNP<-2*files[[i]]$MAF*(1-files[[i]]$MAF)  
     
     if(OLS[i] == T){
-     output <- cbind.data.frame(files[[i]]$SNP,
-                                files[[i]]$effect,
-                                abs(files[[i]]$effect/files[[i]]$Z)
-                               ) 
+      output <- cbind.data.frame(files[[i]]$SNP,
+                                 files[[i]]$effect,
+                                 abs(files[[i]]$effect/files[[i]]$Z)
+      ) 
       
     }                                        
     if(OLS[i] == F){                                     
-    if(se.logit[i] == F){
-      output <- cbind.data.frame(files[[i]]$SNP,
-                                 (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                                 (files[[i]]$SE/exp(files[[i]]$effect))/(((files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5))
-
-colnames(output) <- c("SNP",names.beta[i],names.se[i])
-
-    } else{
-      output <- cbind.data.frame(files[[i]]$SNP,
-                                 (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                                 (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
-      
-      colnames(output) <- c("SNP",names.beta[i],names.se[i])
+      if(se.logit[i] == F){
+        output <- cbind.data.frame(files[[i]]$SNP,
+                                   (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
+                                   (files[[i]]$SE/exp(files[[i]]$effect))/(((files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5))
+        
+        colnames(output) <- c("SNP",names.beta[i],names.se[i])
+        
+      } else{
+        output <- cbind.data.frame(files[[i]]$SNP,
+                                   (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
+                                   (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
+        
+        colnames(output) <- c("SNP",names.beta[i],names.se[i])
+      }
     }
-   }
     
     
     if(i ==1){
