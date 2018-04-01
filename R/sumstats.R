@@ -82,6 +82,8 @@ ssumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,m
       output <- cbind.data.frame(files[[i]]$SNP,
                                  files[[i]]$effect,
                                  abs(files[[i]]$effect/files[[i]]$Z)
+                                 
+      colnames(output) <- c("SNP",names.beta[i],names.se[i])  
       ) 
       
     }                                        
