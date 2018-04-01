@@ -7,9 +7,9 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
   length <- length(files)
   
   
-  
+  print("Reading summary statistics")
   files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".","NA",""))
-  
+  print("Reading in reference file")
   ref <- fread(hm3,header=T,data.table=F)
   
   
