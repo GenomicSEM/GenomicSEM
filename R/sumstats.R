@@ -1,6 +1,5 @@
 
-
-ssumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,maf.filter=0.01){
+sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FALSE,info.filter = .6,maf.filter=0.01){
   
   length <- length(files)
   
@@ -86,7 +85,20 @@ ssumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,m
       colnames(output) <- c("SNP",names.beta[i],names.se[i])  
       ) 
       
-    }                                        
+    } 
+    
+        if(Hail[i] == T){
+      files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
+      files[[i]]$logistic <- files[[i]]$Z/sqrt((prop[i]*(1-prop[i])* (2*files[[i]]$N*files[[i]]*MAF*(1-files[[i]]*MAF))))
+      files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])* (2*files[[i]]$N*files[[i]]*MAF*(1-files[[i]]*MAF))))
+      cbind.data.frame(files[[i]]$SNP,
+      (files[[i]]$logistic)/((files[[i]]$logistic^2) * varSNP + (pi^2)/3)^.5,
+      (files[[i]]$SE)/(((files[[i]]$logistic)^2) * varSNP + (pi^2)/3)^.5)  
+                                               
+      colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
+    }
+    
+    
     if(OLS[i] == F){                                     
       if(se.logit[i] == F){
         output <- cbind.data.frame(files[[i]]$SNP,
