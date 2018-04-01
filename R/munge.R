@@ -17,7 +17,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
   data.frame.out <- ref
   
   for(i in 1:length){
-    
+    print("Munging file: files[[i]]")
     hold_names <- names(files[[i]])
     
     hold_names[hold_names %in%c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName", "markername", "MARKERNAME")] <- "SNP"
@@ -100,7 +100,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     
     write.table(x = output,file = paste0(trait.names[i],".sumstats"), quote = FALSE)
     gzip(paste0(trait.names[i],".sumstats"))
-    
+    print("I am done munging file: files[[i]]")
   }
   
   
