@@ -82,7 +82,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,ma
     if(OLS[i] == T){
      output <- cbind.data.frame(files[[i]]$SNP,
                                 files[[i]]$effect,
-                                files[[i]]$effect/files[[i]]$Z
+                                abs(files[[i]]$effect/files[[i]]$Z)
                                ) 
       
     }                                        
