@@ -82,6 +82,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     }else{print("No INFO column, cant filter on INFO, may influence results")}
     
     if("MAF" %in% colnames(files[[i]])) {
+      files[[i]]$MAF<-as.numeric(as.character(files[[i]]$MAF))
       files[[i]] <- files[[i]][files[[i]]$MAF >= maf.filter,]
       
     }else{print("No MAF column, cant filter on MAF, may influence results")}
