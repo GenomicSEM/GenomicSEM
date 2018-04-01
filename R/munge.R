@@ -11,10 +11,10 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
   files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".","NA",""))
   print("Reading in reference file")
   ref <- fread(hm3,header=T,data.table=F)
+  print("All files loaded into R!")
   
   
   
-  data.frame.out <- ref
   
   for(i in 1:length){
     print(paste("Munging file:", files[[i]]))
