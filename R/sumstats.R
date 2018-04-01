@@ -1,6 +1,6 @@
 
 
-sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filter = .6,maf.filter=0.01){
+sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,maf.filter=0.01){
   
   length <- length(files)
   
@@ -51,6 +51,16 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,info.filter = .6,maf.fi
     ##determine whether it is OR or logistic/continuous effect based on median effect size 
     files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
  
+    
+    if(OLS[i] == T){
+      
+     files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
+     
+      
+    files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF))
+     
+    }
+                                       
     # Flip effect to match ordering in ref file
     files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
     
