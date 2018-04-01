@@ -37,8 +37,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,ma
     hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
     old_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue" )] <- "P"
-    
+    old_names[hold_names %in%c("N","WEIGHT","nCompleteSamples")] <- "N"
     ##rename common MAF labels so that it doesnt clash with ref file MAF
+    
     hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF_other"
     
     names(files[[i]]) <- hold_names
