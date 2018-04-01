@@ -8,7 +8,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
   
   
   
-  files = lapply(files, read.table, header=T, quote="\"",fill=T)
+  files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".","NA",""))
   
   ref <- fread(hm3,header=T,data.table=F)
   
