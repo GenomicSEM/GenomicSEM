@@ -36,6 +36,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,ma
     hold_names[hold_names %in%c("OR","or","B","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect")] <- "effect"
     hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
+    old_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue" )] <- "P"
+    
     ##rename common MAF labels so that it doesnt clash with ref file MAF
     hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF_other"
     
@@ -72,11 +74,19 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,info.filter = .6,ma
       files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
       
     }
-    else {}
+  
     
 
     varSNP<-2*files[[i]]$MAF*(1-files[[i]]$MAF)  
     
+    if(OLS[i] == T){
+     output <- cbind.data.frame(files[[i]]$SNP,
+                                files[[i]]$effect,
+                                files[[i]]$effect/files[[i]]$Z
+                               ) 
+      
+    }                                        
+    if(OLS[i] == F){                                     
     if(se.logit[i] == F){
       output <- cbind.data.frame(files[[i]]$SNP,
                                  (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
@@ -91,7 +101,7 @@ colnames(output) <- c("SNP",names.beta[i],names.se[i])
       
       colnames(output) <- c("SNP",names.beta[i],names.se[i])
     }
-   
+   }
     
     
     if(i ==1){
