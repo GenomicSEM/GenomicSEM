@@ -81,22 +81,22 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
     
     
     varSNP<-2*files[[i]]$MAF*(1-files[[i]]$MAF)  
-    
+   
     if(OLS[i] == T){
       output <- cbind.data.frame(files[[i]]$SNP,
                                  files[[i]]$effect,
                                  abs(files[[i]]$effect/files[[i]]$Z))
-                                 
+      output<-na.omit(output)                           
       colnames(output) <- c("SNP",names.beta[i],names.se[i])                           
       ) 
       
     }
     
     if(Hail[i] == T){
-      cbind.data.frame(files[[i]]$SNP,
-      ( files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
+      output<-cbind.data.frame(files[[i]]$SNP,
+      (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
       (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
-                                               
+      output<-na.omit(output)                                          
       colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
     }
     
@@ -105,14 +105,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
         output <- cbind.data.frame(files[[i]]$SNP,
                                    (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
                                    (files[[i]]$SE/exp(files[[i]]$effect))/(((files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5))
-        
+        output<-na.omit(output)  
         colnames(output) <- c("SNP",names.beta[i],names.se[i])
         
       } else{
         output <- cbind.data.frame(files[[i]]$SNP,
                                    (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
                                    (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
-        
+        output<-na.omit(output)  
         colnames(output) <- c("SNP",names.beta[i],names.se[i])
       }
     }
