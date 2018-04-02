@@ -16,9 +16,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
   }
   
   
-  #files = lapply(files, read.table, header=T, quote="\"",fill=T)
-  #just for neuro
-  files = lapply(files, fread, header=T, data.table=F)
+  files = lapply(files, read.table, header=T, quote="\"",fill=T)
+
   ref <- fread(ref,header=T,data.table=F)
   
   ##filter ref file on user provided maf.filter
