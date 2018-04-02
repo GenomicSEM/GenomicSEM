@@ -95,7 +95,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
       output<-cbind.data.frame(files[[i]]$SNP,
       (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
       (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
-      output<-na.omit(output)                                          
+      output<-na.omit(output)
+      output<-output[apply(output!=0, 1, all),]
       colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
     }
     
