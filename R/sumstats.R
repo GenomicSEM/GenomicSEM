@@ -88,7 +88,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
                                  abs(files[[i]]$effect/files[[i]]$Z))
       output<-na.omit(output)                           
       colnames(output) <- c("SNP",names.beta[i],names.se[i])                           
-      ) 
+      
       
     }
     
