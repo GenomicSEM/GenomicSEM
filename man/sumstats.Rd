@@ -12,7 +12,7 @@ sumstats(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE,prop=FALSE,
    \item{ref}{A reference file of SNPs to keep in your GWAS, one based on 1000 genomes phase 3 is provided. }
    \item{trait.names}{ a vector of trait names which will be used as names for the munged files}
      \item{se.logit}{ a logical vector indicating whether the standard errors in each set of summary statistics is on the logit scale}
-   \item{OLS}{ a logical vector indicating whether the GWAS was for a continous trait and used OLS (or a LMM)}
+   \item{OLS}{ a logical vector indicating whether the GWAS was for a continuous trait and used OLS (or a LMM)}
    \item{linprob}{a logical vector indicating whether the GWAS used a linear probability model i.e. a dichotomous trait using OLS (or a LMM)}
    \item{info.filter}{ Numeric value which is used as a lower bound for inputation quality (INFO) }
      \item{maf.filter}{ Numeric value used as a lower bound for minor allel frequency  }
