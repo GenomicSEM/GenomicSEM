@@ -61,10 +61,11 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
       
       files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}else{files[[i]]$effect<-files[[i]]$effect}
     
-    if(Hail[i] == T){
+      if(Hail[i] == T){
       files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
-      files[[i]]$effect <- files[[i]]$Z/sqrt((prop[i]*(1-prop[i])* (2*files[[i]]$N*files[[i]]*MAF*(1-files[[i]]*MAF))))
-      files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])* (2*files[[i]]$N*files[[i]]*MAF*(1-files[[i]]*MAF))))}
+      files[[i]]$effect <- files[[i]]$Z/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))
+      files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))}
+    
     
     # Flip effect to match ordering in ref file
     files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
@@ -77,8 +78,6 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
       files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
       
     }
-    
-    
     
     varSNP<-2*files[[i]]$MAF*(1-files[[i]]$MAF)  
    
