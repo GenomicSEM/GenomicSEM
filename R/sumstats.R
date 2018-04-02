@@ -1,5 +1,5 @@
 
-sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FALSE,info.filter = .6,maf.filter=0.01){
+sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,Hail=FALSE,prop=FALSE,info.filter = .6,maf.filter=0.01){
   
   length <- length(files)
   
