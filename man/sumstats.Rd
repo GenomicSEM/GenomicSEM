@@ -5,8 +5,7 @@
 Function to process GWAS summary statistis files and prepair them for a GWAS in genomicSEM
 }
 \usage{
-sumstats(files,ref,trait.names=NULL,se.logit,info.filter = .6,maf.filter=0.01, \dots)
-files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE,prop=FALSE,info.filter = .6,maf.filter=0.01
+sumstats(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE,prop=FALSE,info.filter = .6,maf.filter=0.01, \dots)
 }
 \arguments{
    \item{files}{a list of file names, fuiles must be located in the working directory, or a path must be provided.}
