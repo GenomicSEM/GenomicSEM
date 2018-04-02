@@ -16,8 +16,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
   }
   
   
-  files = lapply(files, read.table, header=T, quote="\"",fill=T)
-  
+  #files = lapply(files, read.table, header=T, quote="\"",fill=T)
+  #just for neuro
+  files = lapply(files, fread, header=T, data.table=F)
   ref <- fread(ref,header=T,data.table=F)
   
   ##filter ref file on user provided maf.filter
@@ -61,6 +62,11 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
       
       files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}else{files[[i]]$effect<-files[[i]]$effect}
     
+    if(Hail[i] == T){
+      files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
+      files[[i]]$effect <- files[[i]]$Z/sqrt((prop[i]*(1-prop[i])* (2*files[[i]]$N*files[[i]]*MAF*(1-files[[i]]*MAF))))
+      files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])* (2*files[[i]]$N*files[[i]]*MAF*(1-files[[i]]*MAF))))}
+    
     # Flip effect to match ordering in ref file
     files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
     
@@ -80,24 +86,20 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
     if(OLS[i] == T){
       output <- cbind.data.frame(files[[i]]$SNP,
                                  files[[i]]$effect,
-                                 abs(files[[i]]$effect/files[[i]]$Z)
+                                 abs(files[[i]]$effect/files[[i]]$Z))
                                  
-      colnames(output) <- c("SNP",names.beta[i],names.se[i])  
+      colnames(output) <- c("SNP",names.beta[i],names.se[i])                           
       ) 
       
-    } 
+    }
     
-        if(Hail[i] == T){
-      files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
-      files[[i]]$logistic <- files[[i]]$Z/sqrt((prop[i]*(1-prop[i])* (2*files[[i]]$N*files[[i]]*MAF*(1-files[[i]]*MAF))))
-      files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])* (2*files[[i]]$N*files[[i]]*MAF*(1-files[[i]]*MAF))))
+    if(Hail[i] == T){
       cbind.data.frame(files[[i]]$SNP,
-      (files[[i]]$logistic)/((files[[i]]$logistic^2) * varSNP + (pi^2)/3)^.5,
-      (files[[i]]$SE)/(((files[[i]]$logistic)^2) * varSNP + (pi^2)/3)^.5)  
+      ( files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
+      (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
                                                
       colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
     }
-    
     
     if(OLS[i] == F){                                     
       if(se.logit[i] == F){
@@ -130,3 +132,4 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
   data.frame.out
   
 }
+
