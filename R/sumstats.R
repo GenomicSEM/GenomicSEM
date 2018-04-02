@@ -16,7 +16,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
   }
   
   
-  files = lapply(files, read.table, header=T, quote="\"",fill=T)
+  files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
 
   ref <- fread(ref,header=T,data.table=F)
   
