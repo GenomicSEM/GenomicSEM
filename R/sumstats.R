@@ -99,22 +99,21 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
       colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
     }
     
+    if(linprob[i] == F){
     if(OLS[i] == F){                                     
       if(se.logit[i] == F){
         output <- cbind.data.frame(files[[i]]$SNP,
                                    (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
                                    (files[[i]]$SE/exp(files[[i]]$effect))/(((files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5))
         output<-na.omit(output)  
-        colnames(output) <- c("SNP",names.beta[i],names.se[i])
-        
-      } else{
+        colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
+      
+    if(se.logit[i]== T){
         output <- cbind.data.frame(files[[i]]$SNP,
                                    (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
                                    (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
         output<-na.omit(output)  
-        colnames(output) <- c("SNP",names.beta[i],names.se[i])
-      }
-    }
+        colnames(output) <- c("SNP",names.beta[i],names.se[i])}
     
     
     if(i ==1){
