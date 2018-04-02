@@ -1,5 +1,5 @@
 
-sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,Hail=FALSE,prop=FALSE,info.filter = .6,maf.filter=0.01){
+sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE,prop=FALSE,info.filter = .6,maf.filter=0.01){
   
   length <- length(files)
   
@@ -61,7 +61,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,Hail=FALSE,pr
       
       files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}
     
-      if(Hail[i] == T){
+      if(linprob[i] == T){
       files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
       files[[i]]$effect <- files[[i]]$Z/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))
       files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))}
@@ -91,7 +91,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,Hail=FALSE,pr
       
     }
     
-    if(Hail[i] == T){
+    if(linprob[i] == T){
       output<-cbind.data.frame(files[[i]]$SNP,
       (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
       (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
