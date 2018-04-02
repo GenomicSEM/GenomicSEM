@@ -59,7 +59,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS,Hail=FALSE,prop=FAL
       files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
       
       
-      files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}else{files[[i]]$effect<-files[[i]]$effect}
+      files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}
     
       if(Hail[i] == T){
       files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
