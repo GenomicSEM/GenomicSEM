@@ -206,20 +206,19 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   
   
   write.test<-function(k, label = "V", label2 = "VF") {
- 
-    Modelsat<-""
-    for (i in 1:(k-1)) {
-      linestartc <- paste(label, i, "~~", label, i+1, " \n ", sep = "")
-      if (k-i >= 2) {
+
+    Modelsat<-"" 
+    for (i in 1:(k)) {
+      if (k-i >= 1) {
         linemidc <- ""
-        for (j in (i+2):k) {
-          linemidc <- paste(label, i, linemidc, "~~", label, j, " \n ", sep = "")
-        }
-      } else {linemidc <- ""}
-      Modelsat <- paste(Modelsat, linestartc, linemidc, sep = "")
+       for (j in (i+1):k) {
+          linemidc <- paste(linemidc, label, i, "~~", label, j, " \n ", sep = "")
+          }
+      }else{linemidc<-""} 
+     Modelsat <- paste(Modelsat, linemidc, sep = "")
     }
     
-    Model4<-""
+  Model4<-""
     for (p in 1:k) {
       linestart4 <- paste(label2, p, "~~", label2, p, sep = "")
       Model4<-paste(Model4, linestart4, " \n ", sep = "")}
@@ -227,7 +226,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     modelCFI<-paste(Modelsat, Model4)
     return(modelCFI)
   }
-
+  
   modeltest<-data.frame(write.test(k))
   modeltest$write.test.k.<-as.character(modeltest$write.test.k.)
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
