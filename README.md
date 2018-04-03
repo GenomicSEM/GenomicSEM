@@ -8,6 +8,8 @@ based on the summary statistics obtained from genome wide association studies (G
 
 Learn how to [install](https://github.com/MichelNivard/GenomicSEM/wiki/1.-Installing-GenomicSEM) `GenomicSEM`
 
+Consider some of the [nuances of summary data, and know where to find summary data.](https://github.com/MichelNivard/GenomicSEM/wiki/2.-Before-you-get-started...)
+
 Fit SEM models to GWAS summary data [without a SNP](https://github.com/MichelNivard/GenomicSEM/wiki/2.-Models-without-SNP-effects-(lavaan))
 
 Run a GWAS where the [SNP is included](https://github.com/MichelNivard/GenomicSEM/wiki/3.-Common-Factor-GWAS) in the structural equation model.
