@@ -235,7 +235,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   ##create inependence model for calculation of CFI
   modelCFI<-write.null(k)
   
-  ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2, std.lv=TRUE) 
+  ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
 
   ##save the ordering
   order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
@@ -262,7 +262,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   if(estimation=="DWLS"){
     
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-    Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, std.lv=TRUE)
+    Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
   
     #pull the delta matrix (this doesn't depend on N)
     ##note that while the delta matrix is reordered based on the ordering in the model specification
@@ -467,7 +467,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     diag(V_stand2)<-diag(V_stand)
     W_stand<-solve(V_stand2[order,order])
     
-    DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2,std.lv=TRUE) 
+    DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2) 
     
     ##perform same procedures for sandwich correction as in the unstandardized case
     DWLS.delt_stand <- lavInspect(DWLS.fit_stand, "delta") 
@@ -503,7 +503,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   if(estimation=="ML"){
     
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-    Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, std.lv= TRUE)
+    Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200)
     
     #pull the delta matrix (this doesn't depend on N)
     S2.delt <- lavInspect(Model1_Results, "delta")
@@ -710,7 +710,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     diag(V_stand2)<-diag(V_stand)
     W_stand<-solve(V_stand2[order,order])
     
-    ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200, std.lv = TRUE) 
+    ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200) 
     
     ##perform same procedures for sandwich correction as in the unstandardized case
     ML.delt_stand <- lavInspect(ML.fit_stand, "delta") 
