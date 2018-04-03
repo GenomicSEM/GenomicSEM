@@ -10,11 +10,11 @@ Learn how to [install](https://github.com/MichelNivard/GenomicSEM/wiki/1.-Instal
 
 Consider some of the [nuances of summary data, and know where to find summary data.](https://github.com/MichelNivard/GenomicSEM/wiki/2.-Before-you-get-started...)
 
-Fit SEM models to GWAS summary data [without a SNP](https://github.com/MichelNivard/GenomicSEM/wiki/2.-Models-without-SNP-effects-(lavaan))
+Fit SEM models to GWAS summary data [without a SNP](https://github.com/MichelNivard/GenomicSEM/wiki/3.-Models-without-SNP-effects-(lavaan))
 
-Run a GWAS where the [SNP is included](https://github.com/MichelNivard/GenomicSEM/wiki/3.-Common-Factor-GWAS) in the structural equation model.
+Run a GWAS where the [SNP is included](https://github.com/MichelNivard/GenomicSEM/wiki/4.-Common-Factor-GWAS) in the structural equation model.
 
-Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/4.-GenomicSEM-and-OpenMx)
+Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/5.-GenomicSEM-and-OpenMx)
 
 
 
