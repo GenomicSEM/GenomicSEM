@@ -9,7 +9,7 @@ addSNPs <-function(covstruc, SNPs){
   
   SNPs<-data.frame(SNPs)
   beta_SNP<-SNPs[,grep("beta.",colnames(SNPs))] 
-  SE_SNP<-SNPs[,grep("se.",colnames(SNPs))] 
+  SE_SNP<-SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))] 
     
   #set univariate intercepts to 1 if estimated below 1
   diag(I_LD)<-ifelse(diag(I_LD)<= 1, 1, diag(I_LD))
