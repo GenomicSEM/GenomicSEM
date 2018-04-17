@@ -125,7 +125,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
     
   }
   
-  
+  data.frame.out<-data.frame.out[!duplicated(data.frame.out$BP),]
   
   data.frame.out
   
