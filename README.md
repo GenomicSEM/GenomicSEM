@@ -16,5 +16,25 @@ Run a GWAS where the [SNP is included](https://github.com/MichelNivard/GenomicSE
 
 Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/5.-GenomicSEM-and-OpenMx)
 
+** Instalation: **
 
+We assume you are running R 3.4.1 or newer. We guarantee no backward or forward comparability. If something breaks please raise the issue on GitHub and we will try and fix it ASAP. 
 
+First, you need to install the `devtools` package. You can do this from CRAN, launch R and then type
+
+```[r]
+install.packages("devtools")
+```
+Load the `devtools` package.
+
+```[r]
+library(devtools)
+```
+
+Now your ready to install the latest version of `GenomicSEM`
+
+```[r]
+install_github("MichelNivard/GenomicSEM")
+```
+
+That's it! You  are ready to start using `GenomicSEM` 
