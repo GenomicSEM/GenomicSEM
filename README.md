@@ -39,7 +39,7 @@ install_github("MichelNivard/GenomicSEM")
 
 That's it! You  are ready to start using `GenomicSEM` 
 
-** Licence **
+**License**
 
  Copyright (C) 2018 Andrew Grotzinger, Michel Nivard & Elliot Tucker-Drob.
 
