@@ -26,7 +26,7 @@ read.fusion <- function(files,trait.names=NULL,OLS=FALSE,linprob=FALSE,prop=FALS
     if(linprob[i] == T){
       
        files[[i]]$effect <- files[[i]]$TWAS.Z /sqrt((prop[i]*(1-prop[i])*N[i] *files[[i]]$HSQ))
-      files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])*(N[i]*files[[i]]$HSQ)))}
+      files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])*(N[i]*files[[i]]$HSQ)))
     
     output <- cbind.data.frame(files[[i]]$ID,
                                files[[i]]$effect,
