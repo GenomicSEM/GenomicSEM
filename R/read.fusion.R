@@ -32,7 +32,9 @@ read.fusion <- function(files,trait.names=NULL,OLS=FALSE,linprob=FALSE,prop=FALS
                                files[[i]]$effect,
                                files[[i]]$SE )
     
-    colnames(output) <- c("Gene",names.beta[i],names.se[i])}}
+    colnames(output) <- c("Gene",names.beta[i],names.se[i])
+  
+  }
 
     
     if(OLS[i] == T){
