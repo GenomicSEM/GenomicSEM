@@ -72,7 +72,7 @@ read.fusion <- function(files,trait.names=NULL,OLS=FALSE,linprob=FALSE,prop=FALS
   
     
     if(i ==1){
-      data.frame.out <- cbind.data.frane(output,files[[i]]$HSQ)
+      data.frame.out <- cbind.data.frame(output,files[[i]]$HSQ)
       colnames(data.frame.out ) <- c("Gene",names.beta[i],names.se[i],"HSQ")
       data.frame.out <- na.omit(data.frame.out)
       
