@@ -1,6 +1,6 @@
 
 
-addSNPs <-function(covstruc, SNPs){
+addSNPs <-function(covstruc, SNPs, SNPSE = "F"){
   time<-proc.time()
  
   V_LD<-as.matrix(covstruc[[1]])
@@ -28,7 +28,13 @@ addSNPs <-function(covstruc, SNPs){
   varSNP=2*SNPs$MAF*(1-SNPs$MAF)  
   
   #small number because treating MAF as fixed
+  if(SNPSE == "F"){
   varSNPSE2=(.00000001)^2
+  }
+  
+  if(SNPSE != "F"){
+   varSNPSE2 = SNPSE^2
+    }
   
   #function to creat row/column names for S_full matrix
   write.names <- function(k, label = "V") {  
