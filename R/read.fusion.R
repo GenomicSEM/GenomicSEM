@@ -65,7 +65,7 @@ read.fusion <- function(files,trait.names=NULL,OLS=FALSE,linprob=FALSE,prop=FALS
         
           output <- cbind.data.frame(files[[i]]$ID,
                                  (files[[i]]$effect)/((files[[i]]$effect^2) * files[[i]]$HSQ + (pi^2)/3)^.5,
-                                  (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
+                                  (files[[i]]$SE)/(((files[[i]]$effect)^2) * files[[i]]$HSQ + (pi^2)/3)^.5)  
           
           colnames(output) <- c("Gene",names.beta[i],names.se[i])}}
     
