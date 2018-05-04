@@ -59,13 +59,13 @@ read.fusion <- function(files,trait.names=NULL,OLS=FALSE,linprob=FALSE,prop=FALS
         # placeholder, effective N from Willier et al. 2010.
         N[i] <-4/(1/(prop[i]*N[i]) + 1/((1-prop[i])*N[i]))
         
-        files[[i]]$effect <- files[[i]]$TWAS.Z /sqrt(N[i] *files[[i]]$HSQ)
-        files[[i]]$SE <-1/sqrt(N[i]*files[[i]]$HSQ)
+        files[[i]]$effect <- files[[i]]$TWAS.Z /sqrt(.25* N[i] *files[[i]]$HSQ)
+        files[[i]]$SE <-1/sqrt(.25* N[i]*files[[i]]$HSQ)
          
         
           output <- cbind.data.frame(files[[i]]$ID,
-                                 files[[i]]$effect,
-                                 files[[i]]$SE )
+                                 (files[[i]]$effect)/((files[[i]]$effect^2) * files[[i]]$HSQ + (pi^2)/3)^.5,
+                                  (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
           
           colnames(output) <- c("Gene",names.beta[i],names.se[i])}}
     
