@@ -1,8 +1,8 @@
 
 
-addSNPs <-function(covstruc, SNPs){
+addSNPs <-function(covstruc, SNPs, SNPSE = "F"){
   time<-proc.time()
- 
+  
   V_LD<-as.matrix(covstruc[[1]])
   S_LD<-as.matrix(covstruc[[2]])
   I_LD<-as.matrix(covstruc[[3]])
@@ -10,7 +10,7 @@ addSNPs <-function(covstruc, SNPs){
   SNPs<-data.frame(SNPs)
   beta_SNP<-SNPs[,grep("beta.",fixed=TRUE,colnames(SNPs))] 
   SE_SNP<-SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))] 
-    
+  
   #set univariate intercepts to 1 if estimated below 1
   diag(I_LD)<-ifelse(diag(I_LD)<= 1, 1, diag(I_LD))
   
@@ -28,28 +28,21 @@ addSNPs <-function(covstruc, SNPs){
   varSNP=2*SNPs$MAF*(1-SNPs$MAF)  
   
   #small number because treating MAF as fixed
-  varSNPSE2=(.00000001)^2
-  
-  #function to creat row/column names for S_full matrix
-  write.names <- function(k, label = "V") {  
-    varnames<-vector(mode="character",length=k+1)
-    
-    for (i in 1){
-      varnames[1]<-c("SNP")}
-    
-    for (j in i:k) { 
-      varnames[j+1]<-paste(label,j,sep="")}
-    
-    return(varnames)
+  if(SNPSE == "F"){
+    varSNPSE2=(.00000001)^2
   }
   
-  S_names<-write.names(k=ncol(I_LD))
+  if(SNPSE != "F"){
+    varSNPSE2 = SNPSE^2
+  }
+  
 
+  
   for (i in 1:f) {
     
     #create empty vector for S_SNP
     S_SNP<-vector(mode="numeric",length=k+1)
-  
+    
     #enter SNP variance from reference panel as first observation
     S_SNP[1]<-varSNP[i]
     
@@ -68,9 +61,11 @@ addSNPs <-function(covstruc, SNPs){
     S_Full[1:(k+1),1]<-S_SNP
     S_Full[1,1:(k+1)]<-t(S_SNP)
     
-    ##name the columns/rows using the naming function defined outside of the loop
-    rownames(S_Full) <- S_names
-    colnames(S_Full) <- S_names
+    ##pull in variables names specified in LDSC function and name first column as SNP
+    colnames(S_Full)<-c("SNP", colnames(S_LD))
+    
+    ##name rows like columns
+    rownames(S_Full)<-colnames(S_Full)
     
     ##smooth to near positive definite if either V or S are non-positive definite
     ks<-nrow(S_Full)
@@ -124,3 +119,4 @@ addSNPs <-function(covstruc, SNPs){
   return(Output <- list(V_Full=V_Full_List,S_Full=S_Full_List,RS=SNPs2))
   
 }
+
