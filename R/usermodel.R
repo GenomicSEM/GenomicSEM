@@ -31,9 +31,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   ##k = number of phenotypes in dataset (i.e., number of columns in LD portion of S matrix)
   k<-ncol(S_LD)
   
-  ##create the 1 factor model with k # of indicators
-  Model1 <- model
- 
   #function to creat row/column names for S_LD matrix
   write.names <- function(k, label = "V") {  
     varnames<-vector(mode="character",length=k)
@@ -46,6 +43,16 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   
   ##create the names
   S_names<-write.names(k=k)
+  
+  ##pull the column names specified in the munge function
+  traits<-colnames(S_LD)
+ 
+  ##replace trait names in user provided model with general form of V1-VX
+  for(i in 1:length(traits)){
+  model<-gsub(traits[[i]], S_names[[i]], model)
+  }
+  
+  Model1<-model
   
   ##name the columns and rows of the S matrix
   rownames(S_LD) <- S_names
@@ -73,7 +80,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   
   ##determine number of latent variables from writing extended model
   r<-nrow(lavInspect(ReorderModel, "cor.lv"))
-
+  
   write.Model1 <- function(k, label = "V", label2 = "VF") {  
     
     ModelsatF<-""
@@ -89,20 +96,20 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     } 
     
     if(r > 0){
-    Model1b <- ""
-    for (t in 1:r) {
-    for (i in 1) {
-      linestartb <- paste("F", t, " =~ 0*",label2, i, sep = "")  
-      if ((k-1)-i > 0) {
-        linemidb <- ""
-        for (j in (i+1):k) {
-          linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+      Model1b <- ""
+      for (t in 1:r) {
+        for (i in 1) {
+          linestartb <- paste("F", t, " =~ 0*",label2, i, sep = "")  
+          if ((k-1)-i > 0) {
+            linemidb <- ""
+            for (j in (i+1):k) {
+              linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+            }
+          } else {linemidb <- ""}
+          
         }
-      } else {linemidb <- ""}
-      
-    }
-    Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
-    }
+        Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
+      }
     }
     else {Model1b <- ""}
     
@@ -138,27 +145,27 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     return(Model5)
   } 
   
-Model1<-write.Model1(k)
-
-##function to remove duplicated elements between user/automatically specified Model Input
-tryCatch.W.E <- function(expr)
-{
-  W <- NULL
-  w.handler <- function(w){ # warning handler
-    W <<- w
-    invokeRestart("muffleWarning")
+  Model1<-write.Model1(k)
+  
+  ##function to remove duplicated elements between user/automatically specified Model Input
+  tryCatch.W.E <- function(expr)
+  {
+    W <- NULL
+    w.handler <- function(w){ # warning handler
+      W <<- w
+      invokeRestart("muffleWarning")
+    }
+    list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
+                                     warning = w.handler),
+         warning = W)
   }
-  list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
-                                   warning = w.handler),
-       warning = W)
-}
-
-while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
-  u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
-  t<-paste(strsplit(u, ": ")[[1]][3], " \n", sep = "")
-  Model1<-str_replace(Model1, t, "")}
-
-
+  
+  while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
+    u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
+    t<-paste(strsplit(u, ": ")[[1]][3], " \n", sep = "")
+    Model1<-str_replace(Model1, t, "")}
+  
+  
   ##code to write null model for calculation of CFI
   write.null<-function(k, label = "V", label2 = "VF") {
     Model3<-""
@@ -206,19 +213,19 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   
   
   write.test<-function(k, label = "V", label2 = "VF") {
-
+    
     Modelsat<-"" 
     for (i in 1:(k)) {
       if (k-i >= 1) {
         linemidc <- ""
-       for (j in (i+1):k) {
+        for (j in (i+1):k) {
           linemidc <- paste(linemidc, label, i, "~~", label, j, " \n ", sep = "")
-          }
+        }
       }else{linemidc<-""} 
-     Modelsat <- paste(Modelsat, linemidc, sep = "")
+      Modelsat <- paste(Modelsat, linemidc, sep = "")
     }
     
-  Model4<-""
+    Model4<-""
     for (p in 1:k) {
       linestart4 <- paste(label2, p, "~~", label2, p, sep = "")
       Model4<-paste(Model4, linestart4, " \n ", sep = "")}
@@ -231,12 +238,12 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   modeltest$write.test.k.<-as.character(modeltest$write.test.k.)
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
   modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
- 
+  
   ##create inependence model for calculation of CFI
   modelCFI<-write.null(k)
   
   ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
-
+  
   ##save the ordering
   order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
   
@@ -257,13 +264,13 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   V_Reorder2b<-diag(z)
   diag(V_Reorder2b)<-diag(V_Reorder2)
   W_CFI<-solve(V_Reorder2b)
-
+  
   ##estimation for DWLS
   if(estimation=="DWLS"){
     
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
-  
+    
     #pull the delta matrix (this doesn't depend on N)
     ##note that while the delta matrix is reordered based on the ordering in the model specification
     ##that the lavaan output is also reordered so that this actually ensures that the results match up 
@@ -274,7 +281,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     
     #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
     bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt) 
-  
+    
     #create the "lettuce" part of the sandwich
     lettuce <- S2.W%*%S2.delt
     
@@ -290,34 +297,34 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     ModelQ_WLS<-subset(ModelQ_WLS, ModelQ_WLS$plabel != "")
     
     for (i in 1:length(ModelQ_WLS)){
-    if(((paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% modeltest2$write.test.k)) & ModelQ_WLS$est[i] == 0)
-    {ModelQ_WLS$free[i] == 1} else{ModelQ_WLS$free[i] == 0} 
+      if(((paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% modeltest2$write.test.k)) & ModelQ_WLS$est[i] == 0)
+      {ModelQ_WLS$free[i] == 1} else{ModelQ_WLS$free[i] == 0} 
     }
-  
+    
     for (i in 1:nrow(ModelQ_WLS)){
-    ModelQ_WLS$free[i]<-ifelse((paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% modeltest2$write.test.k) & ModelQ_WLS$est[i] == 0, 1, 0)
+      ModelQ_WLS$free[i]<-ifelse((paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% modeltest2$write.test.k) & ModelQ_WLS$est[i] == 0, 1, 0)
     }
     
     for (i in 1:nrow(ModelQ_WLS)){
       ModelQ_WLS$free[i]<-ifelse((paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% modeltest2$write.test.k) & ModelQ_WLS$est[i] != 0, 2, ModelQ_WLS$free[i])
     }
-   
+    
     test<-vector(mode="list",length=nrow(ModelQ_WLS))
     
     for(i in 1:nrow(ModelQ_WLS)){
-    if(ModelQ_WLS$free[i] == 2) { 
-      t<-paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "")
-      t2<-gsub("V", "VF", t)
-      test[[i]]<-t2}else{}
+      if(ModelQ_WLS$free[i] == 2) { 
+        t<-paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "")
+        t2<-gsub("V", "VF", t)
+        test[[i]]<-t2}else{}
     }
     test2<-Filter(Negate(is.null), test)
-  
+    
     for (i in 1:nrow(ModelQ_WLS)){
       ModelQ_WLS$free[i]<-ifelse((paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% test2), 1, ModelQ_WLS$free[i])
     }
     
     ModelQ_WLS$free<-ifelse(ModelQ_WLS$free != 1, 0, ModelQ_WLS$free)
- 
+    
     #want to freely estimate the residual factor variances and the residual covariances
     z<-(k*(k+1))/2
     
@@ -477,7 +484,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     Vcov_stand<-as.matrix(V_stand[order,order])
     Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
     SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
-
+    
     unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
     unstand<-subset(unstand, unstand$free != 0)                    
     unstand$free<-NULL
@@ -507,7 +514,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     
     #pull the delta matrix (this doesn't depend on N)
     S2.delt <- lavInspect(Model1_Results, "delta")
-
+    
     ##weight matrix from stage 2. S2.W is not reordered by including something like model constraints
     S2.W <- lavInspect(Model1_Results, "WLS.V") 
     
@@ -522,7 +529,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     
     #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
     SE <- as.matrix(sqrt(diag(Ohtt)))
- 
+    
     ModelQ_ML <- parTable(Model1_Results)
     
     ##remove any parameter constraint labels
@@ -572,7 +579,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     
     testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
     testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
-
+    
     testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
     
     if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
@@ -648,7 +655,7 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
       ModelQ_ML_CFI$ustart <- ModelQ_ML_CFI$est
       
       testCFI2<-tryCatch.W.E(ModelQ_Results_ML_CFI <- sem(model = ModelQ_ML_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200))
-    
+      
       testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
       testCFI2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML_CFI , "se")$theta[1,2]) == TRUE, testCFI2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI2$warning$message[1])
       
@@ -744,11 +751,19 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   
   ##name the columns of the results file
   colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate","Unstandardized_SE","Standardized_Est","Standardized_SE")
-
+  
+  ##replace V1-VX general form in output with user provided trait names
+  for(i in 1:nrow(results)){
+    for(p in 1:length(traits)){
+    results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
+    results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+    }
+  }
+ 
   ##name model fit columns
   colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")
   modelfit<-data.frame(modelfit)
-
+  
   modelfit$p_chisq<-ifelse(modelfit$chisq != 'NA', modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
   modelfit$chisq<-ifelse(modelfit$df == 0, modelfit$chisq == NA, modelfit$chisq)  
   modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)  
@@ -774,5 +789,6 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
   
   return(list(modelfit=modelfit,results=results))
   
-}
+  }
+
 
