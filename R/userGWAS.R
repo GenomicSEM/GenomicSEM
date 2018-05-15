@@ -1,5 +1,3 @@
-
-
 userGWAS<-function(Output,estimation="DWLS",model=""){ 
   time<-proc.time()
   
@@ -138,7 +136,7 @@ userGWAS<-function(Output,estimation="DWLS",model=""){
       }else{
         if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
         se.ghost<-rep("SE could not be computed", count(":=" %in% Model_WLS$op)$freq)
-        ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,,11,14)]
+        ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
         ghost2<-cbind(ghost,se.ghost)
         colnames(ghost2)[7]<-"SE"}else{}} 
         
@@ -151,7 +149,7 @@ userGWAS<-function(Output,estimation="DWLS",model=""){
       }else{unstand2<-cbind(unstand,SE)}
       
       ##add in fixed effects and parameter constraints to output
-      other<-subset(Model_WLS, (Model_WLS$plabel == "" & Model_WLS$op != ":=") | (Model_WLS$free == 0 & Model_WLS$plabel != ""))[,c(2:4,8,14)]
+      other<-subset(Model_WLS, (Model_WLS$plabel == "" & Model_WLS$op != ":=") | (Model_WLS$free == 0 & Model_WLS$plabel != ""))[,c(2:4,8,11,14)]
       other$SE<-rep(NA, nrow(other))
      
       ##combine fixed effects and parameter constraints with output if there are any
@@ -259,7 +257,7 @@ userGWAS<-function(Output,estimation="DWLS",model=""){
       }else{unstand2<-cbind(unstand,SE)}
       
       ##add in fixed effects and parameter constraints to output
-      other<-subset(Model_ML, (Model_ML$plabel == "" & Model_ML$op != ":=") | (Model_ML$free == 0 & Model_ML$plabel != ""))[,c(2:4,8,14)]
+      other<-subset(Model_ML, (Model_ML$plabel == "" & Model_ML$op != ":=") | (Model_ML$free == 0 & Model_ML$plabel != ""))[,c(2:4,8,11,14)]
       other$SE<-rep(NA, nrow(other))
       
       ##combine fixed effects and parameter constraints with output if there are any
@@ -291,3 +289,4 @@ userGWAS<-function(Output,estimation="DWLS",model=""){
   return(Results_List)
   
 }
+
