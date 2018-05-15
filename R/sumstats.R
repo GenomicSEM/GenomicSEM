@@ -1,5 +1,5 @@
 
-sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE,prop=FALSE,info.filter = .6,maf.filter=0.01){
+sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE,prop=FALSE,N=NULL,info.filter = .6,maf.filter=0.01){
   
   length <- length(files)
   
@@ -32,7 +32,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
     hold_names[hold_names %in%c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName", "markername", "MARKERNAME")] <- "SNP"
     hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA")] <- "A1"
     hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","NEA")]  <- "A2"
-    hold_names[hold_names %in%c("OR","or","B","beta","BETA","Beta","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect")] <- "effect"
+    hold_names[hold_names %in%c("OR","or","B","beta","BETA","Beta", "LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect")] <- "effect"
     hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
     hold_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue" )] <- "P"
@@ -42,6 +42,11 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
     hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF_other"
     
     names(files[[i]]) <- hold_names
+    
+     #if user provides N then add it in
+    if(!(is.null(N))){
+      files[[i]]$N<-N[i]
+    }
     
     ##make sure all alleles are upper case for matching
     files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
@@ -54,17 +59,20 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
     files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
     
     
-    if(OLS[i] == T){
+      if(OLS[i] == T){
       
       files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
       
-      
-      files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}
+      if("N" %in% colnames(files[[i]])){
+      files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}else{print("ERROR: A Sample Size (N) is needed for OLS Standardization")}}
+    
     
       if(linprob[i] == T){
       files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
+      
+      if("N" %in% colnames(files[[i]])){
       files[[i]]$effect <- files[[i]]$Z/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))
-      files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))}
+      files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))}else{print("ERROR: A Sample Size (N) is needed for LPM Standardization")}}
     
     
     # Flip effect to match ordering in ref file
