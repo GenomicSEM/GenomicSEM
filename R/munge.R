@@ -33,10 +33,12 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
 
     
     ##rename common MAF labels
-    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF"
+    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF")] <- "MAF"
     
     names(files[[i]]) <- hold_names
     
+    ##make sure MAF is actually MAF (i.e., max value is .5)
+    files[[i]]$MAF<-ifelse(files[[i]]$MAF <= .5, files[[i]]$MAF, (1-files[[i]]$MAF))
     
     # Compute N is N cases and N control is reported:
     if("N_CAS" %in% colnames(files[[i]])) {
