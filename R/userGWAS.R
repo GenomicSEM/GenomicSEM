@@ -1,4 +1,5 @@
 
+
 userGWAS<-function(Output,estimation="DWLS",model=""){ 
   time<-proc.time()
   
@@ -129,20 +130,20 @@ userGWAS<-function(Output,estimation="DWLS",model=""){
       se.ghost <- sqrt(diag(var.ind))
       
       #pull the ghost parameter point estiamte
-      ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,14)]
+      ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
       
       ##combine with delta method SE
       ghost2<-cbind(ghost,se.ghost)
-      colnames(ghost2)[6]<-"SE"
+      colnames(ghost2)[7]<-"SE"
       }else{
         if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
         se.ghost<-rep("SE could not be computed", count(":=" %in% Model_WLS$op)$freq)
-        ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,14)]
+        ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,,11,14)]
         ghost2<-cbind(ghost,se.ghost)
-        colnames(ghost2)[6]<-"SE"}else{}} 
+        colnames(ghost2)[7]<-"SE"}else{}} 
         
       ##remove parameter constraints, ghost parameters, and fixed effects from output to merge with SEs
-      unstand<-subset(Model_WLS, Model_WLS$plabel != "" & Model_WLS$free > 0)[,c(2:4,8,14)]
+      unstand<-subset(Model_WLS, Model_WLS$plabel != "" & Model_WLS$free > 0)[,c(2:4,8,11,14)]
       
       ##combine ghost parameters with rest of output
       if(exists("ghost2") == "TRUE"){
@@ -237,20 +238,20 @@ userGWAS<-function(Output,estimation="DWLS",model=""){
         se.ghost <- sqrt(diag(var.ind))
         
         #pull the ghost parameter point estiamte
-        ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,14)]
+        ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
         
         ##combine with delta method SE
         ghost2<-cbind(ghost,se.ghost)
-        colnames(ghost2)[6]<-"SE"
+        colnames(ghost2)[7]<-"SE"
       }else{
         if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
           se.ghost<-rep("SE could not be computed", count(":=" %in% Model_ML$op)$freq)
-          ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,14)]
+          ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
           ghost2<-cbind(ghost,se.ghost)
-          colnames(ghost2)[6]<-"SE"}else{}}
+          colnames(ghost2)[7]<-"SE"}else{}}
       
       ##remove parameter constraints, ghost parameters, and fixed effects from output to merge with SEs
-      unstand<-subset(Model_ML, Model_ML$plabel != "" & Model_ML$free > 0)[,c(2:4,8,14)]
+      unstand<-subset(Model_ML, Model_ML$plabel != "" & Model_ML$free > 0)[,c(2:4,8,11,14)]
       
       ##combine ghost parameters with rest of output
       if(exists("ghost2") == "TRUE"){
