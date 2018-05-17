@@ -37,8 +37,11 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     
     names(files[[i]]) <- hold_names
     
+    
+     if("MAF" %in% colnames(files[[i]])) {
     ##make sure MAF is actually MAF (i.e., max value is .5)
     files[[i]]$MAF<-ifelse(files[[i]]$MAF <= .5, files[[i]]$MAF, (1-files[[i]]$MAF))
+    }
     
     # Compute N is N cases and N control is reported:
     if("N_CAS" %in% colnames(files[[i]])) {
