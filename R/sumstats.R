@@ -58,6 +58,10 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
     ##determine whether it is OR or logistic/continuous effect based on median effect size 
     files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
     
+     ##remove any rows with missing p-values
+     if("P" %in% colnames(files[[i]])) {
+   files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
+    }
     
       if(OLS[i] == T){
       
