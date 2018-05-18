@@ -55,14 +55,16 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
     ##merge with ref file
     files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
     
-    ##determine whether it is OR or logistic/continuous effect based on median effect size 
-    files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
-    
-     ##remove any rows with missing p-values
+   ##remove any rows with missing p-values
      if("P" %in% colnames(files[[i]])) {
    files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
     }
     
+    
+    ##determine whether it is OR or logistic/continuous effect based on median effect size 
+    files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
+    
+
       if(OLS[i] == T){
       
       files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
