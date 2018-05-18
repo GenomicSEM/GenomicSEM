@@ -68,6 +68,11 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     files[[i]]<-subset(files[[i]], !(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x != (files[[i]]$A2.y)))
     
     # Validity checks:
+     ##remove any rows with missing p-values
+     if("P" %in% colnames(files[[i]])) {
+   files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
+    }
+    
     
     if((sum(files[[i]]$P > 1) + sum(files[[i]]$P < 0)) > 100){
       
