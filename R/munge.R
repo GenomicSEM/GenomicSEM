@@ -82,6 +82,11 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     ##merge with ref file
     files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
     
+    ##remove any rows with missing p-values
+     if("P" %in% colnames(files[[i]])) {
+   files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
+    }
+    
     ##determine whether it is OR or logistic/continuous effect based on median effect size 
     files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
     
@@ -92,11 +97,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     files[[i]]<-subset(files[[i]], !(files[[i]]$A2.x != (files[[i]]$A2.y)  & files[[i]]$A2.x !=  (files[[i]]$A1.y)))
     files[[i]]<-subset(files[[i]], !(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x != (files[[i]]$A2.y)))
     
-    # Validity checks:
-     ##remove any rows with missing p-values
-     if("P" %in% colnames(files[[i]])) {
-   files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
-    }
+    # Validity checks
     
     if((sum(files[[i]]$P > 1) + sum(files[[i]]$P < 0)) > 100){
       
