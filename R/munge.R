@@ -8,7 +8,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
   filenames <- as.vector(files)
   
   print("Reading summary statistics")
-  files = lapply(files, read_table2,na.string=c(".","NA",""))
+  files = lapply(files, read_table2,na=c(".","NA",""))
   print("Reading in reference file")
   ref <- fread(hm3,header=T,data.table=F)
   print("All files loaded into R!")
