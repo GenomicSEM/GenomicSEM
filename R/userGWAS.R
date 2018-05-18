@@ -102,7 +102,6 @@ userGWAS<-function(Output,estimation="DWLS",model=""){
       #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
       SE <- as.matrix(sqrt(diag(Ohtt)))}
      
-      ifelse(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se), 1, 0)
       
       #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
       if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
