@@ -37,6 +37,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
     hold_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue" )] <- "P"
     hold_names[hold_names %in%c("N","WEIGHT","nCompleteSamples")] <- "N"
+    hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
+    hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
+    
     ##rename common MAF labels so that it doesnt clash with ref file MAF
     
     hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF_other"
@@ -47,6 +50,13 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE
     if(!(is.null(N))){
       files[[i]]$N<-N[i]
     }
+    
+    # Compute N is N cases and N control is reported:
+    if("N_CAS" %in% colnames(files[[i]])) {
+      files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
+      
+    }
+    
     
     ##make sure all alleles are upper case for matching
     files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
