@@ -21,7 +21,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     vec2 <- lav_matrix_vech(covA) #grab new vectorized order
     return(vec2)
   }
-  
+ 
   ##read in the LD portion of the V (sampling covariance) matrix
   V_LD<-as.matrix(covstruc[[1]])
   
@@ -49,7 +49,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
  
   ##replace trait names in user provided model with general form of V1-VX
   for(i in 1:length(traits)){
-  model<-gsub(traits[[i]], S_names[[i]], model)
+    model<-gsub(traits[[i]], S_names[[i]], model)
   }
   
   Model1<-model
@@ -85,11 +85,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     
     ModelsatF<-""
     for (i in 1:(k-1)) {
-      linestartc <- paste(" ", label2, i, "~~ 0*", label2, i+1,  sep = "")
+      linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
       if (k-i >= 2) {
         linemidc <- ""
         for (j in (i+2):k) {
-          linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+          linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
         }
       } else {linemidc <- ""}
       ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
@@ -125,19 +125,20 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     
     Model4<-""
     for (p in 1:k) {
-      linestart4 <- paste(label2, p, " ~~ 0*", label2, p, sep = "")
+      linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
       Model4<-paste(Model4, linestart4, " \n ", sep = "")}
     
     Modelsat<-""
     for (i in 1:(k-1)) {
-      linestartc <- paste(label, i, "~~ 0*", label, i+1,  sep = "")
+      linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
       if (k-i >= 2) {
         linemidc <- ""
         for (j in (i+2):k) {
-          linemidc <- paste(linemidc, " + 0*", label, j, sep = "")
+          linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
+          
         }
       } else {linemidc <- ""}
-      Modelsat <- paste(Modelsat, linestartc, linemidc, " \n ", sep = "")
+      Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
     } 
     
     Model5<-paste(model, " \n ", ModelsatF, Model1b, Model2, Model3, Model4, Modelsat, sep = "")
@@ -160,11 +161,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
          warning = W)
   }
   
+  
   while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
-    t<-paste(strsplit(u, ": ")[[1]][3], " \n", sep = "")
-    Model1<-str_replace(Model1, t, "")}
-  
+    t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
+    Model1<-str_replace(Model1, fixed(t), "")
+    }
   
   ##code to write null model for calculation of CFI
   write.null<-function(k, label = "V", label2 = "VF") {
@@ -492,10 +494,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     stand<-data.frame(inspect(DWLS.fit_stand,"list")[,c(8,14)])
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
+   
+    ##df of independence Model
+    dfCFI<-(((k*(k+1))/2)-k)
     
     if(Q_CFI_WLS != "NA"){
-      CFI<-as.numeric(((Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"])-(Q_WLS-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"]))}else{CFI_WLS<-"NA"}
-    CFI<-ifelse(CFI > 1, 1, CFI)
+      CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_WLS-dfCFI))
+      CFI<-ifelse(CFI > 1, 1, CFI)
+      }else{CFI_WLS<-"NA"}
     chisq<-Q_WLS
     df<-lavInspect(Model1_Results, "fit")["df"]
     AIC<-(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"])
@@ -736,8 +742,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
     
+    ##df of independence Model
+    dfCFI<-(((k*(k+1))/2)-k)
+    
     if(Q_CFI_ML != "NA"){
-      CFI<-as.numeric(((Q_CFI_ML-lavInspect(fitCFI, "fit")["df"])-(Q_ML-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_ML-lavInspect(fitCFI, "fit")["df"]))
+      CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_ML-dfCFI))
       CFI<-ifelse(CFI > 1, 1, CFI)}else{CFI<-"NA"}
     chisq<-Q_ML
     df<-lavInspect(Model1_Results, "fit")["df"]
@@ -755,11 +764,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   ##replace V1-VX general form in output with user provided trait names
   for(i in 1:nrow(results)){
     for(p in 1:length(traits)){
-    results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
-    results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+      results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
+      results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
     }
   }
- 
+  
   ##name model fit columns
   colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")
   modelfit<-data.frame(modelfit)
@@ -789,6 +798,5 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   
   return(list(modelfit=modelfit,results=results))
   
-  }
-
+}
 
