@@ -73,36 +73,36 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   
   ##determine number of latent variables from writing extended model
   r<-nrow(lavInspect(ReorderModel, "cor.lv"))
-
+  
   write.Model1 <- function(k, label = "V", label2 = "VF") {  
     
     ModelsatF<-""
     for (i in 1:(k-1)) {
-      linestartc <- paste(" ", label2, i, "~~ 0*", label2, i+1,  sep = "")
+      linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
       if (k-i >= 2) {
         linemidc <- ""
         for (j in (i+2):k) {
-          linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+          linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
         }
       } else {linemidc <- ""}
       ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
     } 
     
     if(r > 0){
-    Model1b <- ""
-    for (t in 1:r) {
-    for (i in 1) {
-      linestartb <- paste("F", t, " =~ 0*",label2, i, sep = "")  
-      if ((k-1)-i > 0) {
-        linemidb <- ""
-        for (j in (i+1):k) {
-          linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+      Model1b <- ""
+      for (t in 1:r) {
+        for (i in 1) {
+          linestartb <- paste("F", t, " =~ 0*",label2, i, sep = "")  
+          if ((k-1)-i > 0) {
+            linemidb <- ""
+            for (j in (i+1):k) {
+              linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+            }
+          } else {linemidb <- ""}
+          
         }
-      } else {linemidb <- ""}
-      
-    }
-    Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
-    }
+        Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
+      }
     }
     else {Model1b <- ""}
     
@@ -118,19 +118,20 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     
     Model4<-""
     for (p in 1:k) {
-      linestart4 <- paste(label2, p, " ~~ 0*", label2, p, sep = "")
+      linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
       Model4<-paste(Model4, linestart4, " \n ", sep = "")}
     
     Modelsat<-""
     for (i in 1:(k-1)) {
-      linestartc <- paste(label, i, "~~ 0*", label, i+1,  sep = "")
+      linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
       if (k-i >= 2) {
         linemidc <- ""
         for (j in (i+2):k) {
-          linemidc <- paste(linemidc, " + 0*", label, j, sep = "")
+          linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
+          
         }
       } else {linemidc <- ""}
-      Modelsat <- paste(Modelsat, linestartc, linemidc, " \n ", sep = "")
+      Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
     } 
     
     Model5<-paste(model, " \n ", ModelsatF, Model1b, Model2, Model3, Model4, Modelsat, sep = "")
@@ -138,26 +139,27 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     return(Model5)
   } 
   
-Model1<-write.Model1(k)
-
-##function to remove duplicated elements between user/automatically specified Model Input
-tryCatch.W.E <- function(expr)
-{
-  W <- NULL
-  w.handler <- function(w){ # warning handler
-    W <<- w
-    invokeRestart("muffleWarning")
+  Model1<-write.Model1(k)
+  
+  ##function to remove duplicated elements between user/automatically specified Model Input
+  tryCatch.W.E <- function(expr)
+  {
+    W <- NULL
+    w.handler <- function(w){ # warning handler
+      W <<- w
+      invokeRestart("muffleWarning")
+    }
+    list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
+                                     warning = w.handler),
+         warning = W)
   }
-  list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
-                                   warning = w.handler),
-       warning = W)
-}
-
-while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
-  u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
-  t<-paste(strsplit(u, ": ")[[1]][3], " \n", sep = "")
-  Model1<-str_replace(Model1, t, "")}
-
+  
+  
+  while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
+    u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
+    t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
+    Model1<-str_replace(Model1, fixed(t), "")
+    }
 
   ##code to write null model for calculation of CFI
   write.null<-function(k, label = "V", label2 = "VF") {
@@ -486,8 +488,11 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
     
+    ##df of independence Model
+    dfCFI<-(((k*(k+1))/2)-k)
+    
     if(Q_CFI_WLS != "NA"){
-      CFI<-as.numeric(((Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"])-(Q_WLS-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"]))}else{CFI_WLS<-"NA"}
+    CFI<-as.numeric(((Q_CFI_WLS- dfCFI)-(Q_WLS-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_WLS- dfCFI))}else{CFI_WLS<-"NA"}
     CFI<-ifelse(CFI > 1, 1, CFI)
     chisq<-Q_WLS
     df<-lavInspect(Model1_Results, "fit")["df"]
@@ -729,8 +734,11 @@ while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
     
+     ##df of independence Model
+    dfCFI<-(((k*(k+1))/2)-k)
+    
     if(Q_CFI_ML != "NA"){
-      CFI<-as.numeric(((Q_CFI_ML-lavInspect(fitCFI, "fit")["df"])-(Q_ML-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_ML-lavInspect(fitCFI, "fit")["df"]))
+      CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_ML-dfCFI))
       CFI<-ifelse(CFI > 1, 1, CFI)}else{CFI<-"NA"}
     chisq<-Q_ML
     df<-lavInspect(Model1_Results, "fit")["df"]
