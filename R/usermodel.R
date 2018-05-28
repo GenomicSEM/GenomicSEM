@@ -1,5 +1,6 @@
 
 
+
 usermodel <-function(covstruc,estimation="DWLS", model = ""){ 
   time<-proc.time()
   
@@ -270,6 +271,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   ##estimation for DWLS
   if(estimation=="DWLS"){
     
+    print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
     
@@ -339,6 +341,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     ModelQ_WLS$ustart <- ModelQ_WLS$est
     ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .05, ModelQ_WLS$ustart)
     
+    print("Calculating model chi-square")
     testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart)) 
     testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
     testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
@@ -397,6 +400,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
       #Ronald's magic combining all the pieces from above:
       Q_WLS<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_WLS<-NA}
     
+    print("Calculating CFI")
     ##now CFI
     ##run independence model
     testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2))
@@ -450,7 +454,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
         eta_CFI<-cbind(eta_test_CFI[,14])
         
         #Ronald's magic combining all the pieces from above:
-        Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-"NA"}}
+        Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-NA}}
     
     ##transform the S covariance matrix to S correlation matrix
     D=sqrt(diag(diag(S_LD)))
@@ -476,6 +480,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     diag(V_stand2)<-diag(V_stand)
     W_stand<-solve(V_stand2[order,order])
     
+    print("Calculating Standardized Results")
     DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2) 
     
     ##perform same procedures for sandwich correction as in the unstandardized case
@@ -498,13 +503,20 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     ##df of independence Model
     dfCFI<-(((k*(k+1))/2)-k)
     
-    if(Q_CFI_WLS != "NA"){
-      CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_WLS-dfCFI))
+    ##df of user Model
+    df<-(k*(k+1)/2)-max(parTable(Model1_Results)$free)
+  
+    if(!(is.na(Q_CFI_WLS)) & !(is.na(Q_WLS))){
+      CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-df))/(Q_CFI_WLS-dfCFI))
       CFI<-ifelse(CFI > 1, 1, CFI)
-      }else{CFI_WLS<-"NA"}
+    }else{CFI<-NA}
+ 
+    if(!(is.na(Q_WLS))){
     chisq<-Q_WLS
-    df<-lavInspect(Model1_Results, "fit")["df"]
-    AIC<-(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"])
+    AIC<-(Q_WLS + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
+    AIC<-NA}
+    
+    print("Calculating SRMR")
     SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
     
     modelfit<-cbind(chisq,df,AIC,CFI,SRMR)
@@ -515,6 +527,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   ##ML estimation
   if(estimation=="ML"){
     
+    print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200)
     
@@ -583,6 +596,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     
     ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .05, ModelQ_ML$ustart)
     
+    print("Calculating model chi-square")
     testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
     testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
     
@@ -643,6 +657,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
       #Combining all the pieces from above:
       Q_ML<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_ML<-NA}
     
+    print("Calculating CFI")
     ##now CFI
     ##run independence model
     testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML", sample.nobs=200))
@@ -697,7 +712,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
         eta_CFI<-cbind(eta_test_CFI[,14])
         
         #Ronald's magic combining all the pieces from above:
-        Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-"NA"}}
+        Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-NA}}
     
     ##transform the S covariance matrix to S correlation matrix
     D=sqrt(diag(diag(S_LD)))
@@ -723,6 +738,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     diag(V_stand2)<-diag(V_stand)
     W_stand<-solve(V_stand2[order,order])
     
+    print("Calculating Standardized Results")
     ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200) 
     
     ##perform same procedures for sandwich correction as in the unstandardized case
@@ -745,12 +761,20 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     ##df of independence Model
     dfCFI<-(((k*(k+1))/2)-k)
     
-    if(Q_CFI_ML != "NA"){
-      CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_ML-dfCFI))
-      CFI<-ifelse(CFI > 1, 1, CFI)}else{CFI<-"NA"}
-    chisq<-Q_ML
-    df<-lavInspect(Model1_Results, "fit")["df"]
-    AIC<-(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"])
+    ##df of user model
+    df<-(k*(k+1)/2)-max(parTable(Model1_Results)$free)
+    
+    if(!(is.na(Q_CFI_ML)) & !(is.na(Q_ML))){
+      CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-df))/(Q_CFI_ML-dfCFI))
+      CFI<-ifelse(CFI > 1, 1, CFI)
+    }else{CFI<-NA}
+    
+    if(!(is.na(Q_ML))){
+      chisq<-Q_ML
+      AIC<-(Q_ML + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
+      AIC<-NA}
+    
+    print("Calculating SRMR")
     SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
     
     modelfit<-cbind(chisq,df,AIC,CFI,SRMR)
@@ -772,8 +796,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   ##name model fit columns
   colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")
   modelfit<-data.frame(modelfit)
-  
-  modelfit$p_chisq<-ifelse(modelfit$chisq != 'NA', modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
+
+  modelfit$p_chisq<-ifelse(!(is.na(modelfit$chisq)), modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
   modelfit$chisq<-ifelse(modelfit$df == 0, modelfit$chisq == NA, modelfit$chisq)  
   modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)  
   modelfit$p_chisq<-ifelse(modelfit$df == 0, modelfit$p_chisq == NA, modelfit$p_chisq)  
@@ -799,4 +823,3 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   return(list(modelfit=modelfit,results=results))
   
 }
-
