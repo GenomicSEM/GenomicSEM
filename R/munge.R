@@ -31,7 +31,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
     
 
-    # Print a message for misisng P valuue, rs, effect or allele columns
+    # Print a message for misisng P value, rs, effect or allele columns
     
      
     
@@ -39,7 +39,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     if(sum(hold_names %in% "A1") == 0) print(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',filenames[i]))
     if(sum(hold_names %in% "A2") == 0) print(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',filenames[i]))
     if(sum(hold_names %in% "effect") == 0) print(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',filenames[i]))
-    if(sum(hold_names %in% "effect") == 0) print(paste0('Cannot rs-id column, try renaming it"SNP in the summary statistics file for:',filenames[i]))
+    if(sum(hold_names %in% "SNP") == 0) print(paste0('Cannot rs-id column, try renaming it"SNP in the summary statistics file for:',filenames[i]))
                                                            
                                                
     
@@ -50,7 +50,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     if(sum(hold_names %in% "A1") == 0) warning(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',filenames[i]))
     if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',filenames[i]))
     if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',filenames[i]))
-    if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot rs-id column, try renaming it SNP in the summary statistics file for:',filenames[i]))
+    if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot rs-id column, try renaming it SNP in the summary statistics file for:',filenames[i]))
                                                            
                                                
     
