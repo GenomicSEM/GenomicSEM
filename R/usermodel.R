@@ -483,7 +483,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     diag(V_stand2)<-diag(V_stand)
     
     ### make sure no value on the diagonal of V is 0 ### TEMP STUPID MICHEL FIX
-    diag(V_stand2)[diag(V_stand2) == 0] <- 1e-16
+    diag(V_stand2)[diag(V_stand2) == 0] <- 2e-9
     
     W_stand<-solve(V_stand2[order,order])
     
