@@ -481,6 +481,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     V_stand<-diag(Dvcovl)%*%Vcor%*%diag(Dvcovl)
     V_stand2<-diag(z)
     diag(V_stand2)<-diag(V_stand)
+    
+    ### make sure no value on the diagonal of V is 0 ### TEMP STUPID MICHEL FIX
+    diag(V_stand2)[diag(V_stand2) == 0] <- 1è-09
+    
     W_stand<-solve(V_stand2[order,order])
     
     print("Calculating Standardized Results")
