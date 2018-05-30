@@ -483,7 +483,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     diag(V_stand2)<-diag(V_stand)
     
     ### make sure no value on the diagonal of V is 0 ### TEMP STUPID MICHEL FIX
-    diag(V_stand2)[diag(V_stand2) == 0] <- 1e-09
+    diag(V_stand2)[diag(V_stand2) == 0] <- 1e-16
     
     W_stand<-solve(V_stand2[order,order])
     
@@ -733,6 +733,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     #calculate the ratio of the rescaled and original S matrices
     scaleO=as.vector(lowerTriangle((S_Stand/S_LD),diag=T))
     
+    ## MAke sure that if ratio in NaN (division by zero) we put the zero back in: ### TEMP STUPID MICHEL FIX!
+    scaleO[is.nan(scaleO)] <- 0
+    
     #rescale the SEs by the same multiples that the S matrix was rescaled by
     Dvcovl<-as.vector(Dvcov*t(scaleO))
     
@@ -743,6 +746,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     V_stand<-diag(Dvcovl)%*%Vcor%*%diag(Dvcovl)
     V_stand2<-diag(z)
     diag(V_stand2)<-diag(V_stand)
+    
+    ### make sure no value on the diagonal of V is 0 ### TEMP STUPID MICHEL FIX
+    diag(V_stand2)[diag(V_stand2) == 0] <- 1e-16
+    
     W_stand<-solve(V_stand2[order,order])
     
     print("Calculating Standardized Results")
