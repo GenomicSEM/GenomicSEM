@@ -469,7 +469,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     scaleO=as.vector(lowerTriangle((S_Stand/S_LD),diag=T))
     
     ## MAke sure that if ratio in NaN (devision by zero) we put the zero back in: ### TEMP STUPID MICHEL FIX!
-    scale0[is.nan(scale0)] <- 0
+    scaleO[is.nan(scaleO)] <- 0
     
     #rescale the SEs by the same multiples that the S matrix was rescaled by
     Dvcovl<-as.vector(Dvcov*t(scaleO))
