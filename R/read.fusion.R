@@ -76,13 +76,14 @@ read.fusion <- function(files,trait.names=NULL,OLS=FALSE,linprob=FALSE,prop=FALS
       colnames(data.frame.out ) <- c("Gene",names.beta[i],names.se[i],"HSQ")
       data.frame.out <- na.omit(data.frame.out)
       
+      
     }else{
       data.frame.out <- merge(data.frame.out,output,by=1,all.x=F,all.y=F) 
       data.frame.out <- na.omit(data.frame.out)
     }
     
   }
-  
+  data.frame.out <- unique(data.frame.out)
   data.frame.out
   
 }
