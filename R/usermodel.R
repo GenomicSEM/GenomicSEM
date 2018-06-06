@@ -1,7 +1,4 @@
-
-
-
-usermodel <-function(covstruc,estimation="DWLS", model = ""){ 
+usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){ 
   time<-proc.time()
   
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
@@ -22,7 +19,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     vec2 <- lav_matrix_vech(covA) #grab new vectorized order
     return(vec2)
   }
- 
+  
   ##read in the LD portion of the V (sampling covariance) matrix
   V_LD<-as.matrix(covstruc[[1]])
   
@@ -31,6 +28,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   
   ##k = number of phenotypes in dataset (i.e., number of columns in LD portion of S matrix)
   k<-ncol(S_LD)
+  
+  ##size of V matrix used later in code to create diagonal V matrix
+  z<-(k*(k+1))/2
   
   #function to creat row/column names for S_LD matrix
   write.names <- function(k, label = "V") {  
@@ -47,7 +47,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   
   ##pull the column names specified in the munge function
   traits<-colnames(S_LD)
- 
+  
   ##replace trait names in user provided model with general form of V1-VX
   for(i in 1:length(traits)){
     model<-gsub(traits[[i]], S_names[[i]], model)
@@ -167,8 +167,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
     t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
     Model1<-str_replace(Model1, fixed(t), "")
-    }
+  }
   
+ if(CFIcalc==TRUE){
   ##code to write null model for calculation of CFI
   write.null<-function(k, label = "V", label2 = "VF") {
     Model3<-""
@@ -214,7 +215,22 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     return(modelCFI)
   }
   
+  ##create inependence model for calculation of CFI
+  modelCFI<-write.null(k)
   
+  ##run CFI model so it knows the reordering for the independence model
+  fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2)
+  orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
+  
+  ##reorder matrix for independence (i.e., null) model for CFI calculation
+  V_Reorder2 <- V_LD[orderCFI,orderCFI]
+  V_Reorder2b<-diag(z)
+  diag(V_Reorder2b)<-diag(V_Reorder2)
+  W_CFI<-solve(V_Reorder2b)
+  }
+  
+  ##code to write saturated model to check there are no redundancies
+  ##with user provided model in later part of script
   write.test<-function(k, label = "V", label2 = "VF") {
     
     Modelsat<-"" 
@@ -242,32 +258,17 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
   modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
   
-  ##create inependence model for calculation of CFI
-  modelCFI<-write.null(k)
-  
   ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
   
   ##save the ordering
   order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
-  
-  ##run CFI model so itk know the reordering
-  fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2)
-  orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
-  
-  z<-(k*(k+1))/2
   
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
   V_Reorderb<-diag(z)
   diag(V_Reorderb)<-diag(V_Reorder)
   W_Reorder<-solve(V_Reorderb)
-  
-  ##reorder matrix for independence (i.e., null) model for CFI calculation
-  V_Reorder2 <- V_LD[orderCFI,orderCFI]
-  V_Reorder2b<-diag(z)
-  diag(V_Reorder2b)<-diag(V_Reorder2)
-  W_CFI<-solve(V_Reorder2b)
-  
+
   ##estimation for DWLS
   if(estimation=="DWLS"){
     
@@ -400,6 +401,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
       #Ronald's magic combining all the pieces from above:
       Q_WLS<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_WLS<-NA}
     
+    if(CFIcalc == TRUE){
     print("Calculating CFI")
     ##now CFI
     ##run independence model
@@ -456,6 +458,17 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
         #Ronald's magic combining all the pieces from above:
         Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-NA}}
     
+    ##df of independence Model
+    dfCFI<-(((k*(k+1))/2)-k)
+    
+    if(!(is.na(Q_CFI_WLS)) & !(is.na(Q_WLS))){
+      CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-df))/(Q_CFI_WLS-dfCFI))
+      CFI<-ifelse(CFI > 1, 1, CFI)
+    }else{CFI<-NA}
+    
+     }
+    
+    print("Calculating Standardized Results")
     ##transform the S covariance matrix to S correlation matrix
     D=sqrt(diag(diag(S_LD)))
     S_Stand=solve(D)%*%S_LD%*%solve(D)
@@ -486,8 +499,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     diag(V_stand2)[diag(V_stand2) == 0] <- 2e-9
     
     W_stand<-solve(V_stand2[order,order])
-    
-    print("Calculating Standardized Results")
+  
     DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2) 
     
     ##perform same procedures for sandwich correction as in the unstandardized case
@@ -506,27 +518,21 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     stand<-data.frame(inspect(DWLS.fit_stand,"list")[,c(8,14)])
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
-   
-    ##df of independence Model
-    dfCFI<-(((k*(k+1))/2)-k)
     
     ##df of user Model
     df<-(k*(k+1)/2)-max(parTable(Model1_Results)$free)
-  
-    if(!(is.na(Q_CFI_WLS)) & !(is.na(Q_WLS))){
-      CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-df))/(Q_CFI_WLS-dfCFI))
-      CFI<-ifelse(CFI > 1, 1, CFI)
-    }else{CFI<-NA}
- 
+    
     if(!(is.na(Q_WLS))){
-    chisq<-Q_WLS
-    AIC<-(Q_WLS + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
-    AIC<-NA}
+      chisq<-Q_WLS
+      AIC<-(Q_WLS + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
+      AIC<-NA}
     
     print("Calculating SRMR")
     SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
     
-    modelfit<-cbind(chisq,df,AIC,CFI,SRMR)
+    if(CFIcalc == TRUE){
+    modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
+    
     results<-cbind(unstand,SE,stand,SE_stand)
     
   }
@@ -664,6 +670,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
       #Combining all the pieces from above:
       Q_ML<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_ML<-NA}
     
+    if(CFIcalc == TRUE){
     print("Calculating CFI")
     ##now CFI
     ##run independence model
@@ -721,6 +728,16 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
         #Ronald's magic combining all the pieces from above:
         Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-NA}}
     
+    ##df of independence Model
+    dfCFI<-(((k*(k+1))/2)-k)
+    
+    if(!(is.na(Q_CFI_ML)) & !(is.na(Q_ML))){
+      CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-df))/(Q_CFI_ML-dfCFI))
+      CFI<-ifelse(CFI > 1, 1, CFI)
+    }else{CFI<-NA}
+    
+    }
+    
     ##transform the S covariance matrix to S correlation matrix
     D=sqrt(diag(diag(S_LD)))
     S_Stand=solve(D)%*%S_LD%*%solve(D)
@@ -772,16 +789,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
     
-    ##df of independence Model
-    dfCFI<-(((k*(k+1))/2)-k)
-    
     ##df of user model
     df<-(k*(k+1)/2)-max(parTable(Model1_Results)$free)
-    
-    if(!(is.na(Q_CFI_ML)) & !(is.na(Q_ML))){
-      CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-df))/(Q_CFI_ML-dfCFI))
-      CFI<-ifelse(CFI > 1, 1, CFI)
-    }else{CFI<-NA}
     
     if(!(is.na(Q_ML))){
       chisq<-Q_ML
@@ -791,7 +800,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
     print("Calculating SRMR")
     SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
     
-    modelfit<-cbind(chisq,df,AIC,CFI,SRMR)
+    if(CFIcalc == TRUE){
+      modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
+    
     results<-cbind(unstand,SE,stand,SE_stand)
     
   }
@@ -808,9 +819,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = ""){
   }
   
   ##name model fit columns
-  colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")
+  if(CFIcalc == TRUE){
+  colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")}else{colnames(modelfit)=c("chisq","df","AIC","SRMR")}
+  
   modelfit<-data.frame(modelfit)
-
+  
   modelfit$p_chisq<-ifelse(!(is.na(modelfit$chisq)), modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
   modelfit$chisq<-ifelse(modelfit$df == 0, modelfit$chisq == NA, modelfit$chisq)  
   modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)  
