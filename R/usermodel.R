@@ -459,8 +459,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
         Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-NA}}
     
     ##df of independence Model
-    dfCFI<-(((k*(k+1))/2)-k)
-    
+          ## MICHEL ADDED THE df line as a TEMP fix 
+      dfCFI <- (((k * (k + 1))/2) - k)
+      df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
+      
+      
     if(!(is.na(Q_CFI_WLS)) & !(is.na(Q_WLS))){
       CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-df))/(Q_CFI_WLS-dfCFI))
       CFI<-ifelse(CFI > 1, 1, CFI)
