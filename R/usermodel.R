@@ -459,8 +459,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
         Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-NA}}
     
     ##df of independence Model
-          ## MICHEL ADDED THE df line as a TEMP fix 
       dfCFI <- (((k * (k + 1))/2) - k)
+      
+    ##df of user model
       df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
       
       
@@ -470,6 +471,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     }else{CFI<-NA}
     
      }
+    
     
     print("Calculating Standardized Results")
     ##transform the S covariance matrix to S correlation matrix
@@ -521,9 +523,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     stand<-data.frame(inspect(DWLS.fit_stand,"list")[,c(8,14)])
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
-    
-    ##df of user Model
-    df<-(k*(k+1)/2)-max(parTable(Model1_Results)$free)
+     
+    ##df of user model
+    df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
     
     if(!(is.na(Q_WLS))){
       chisq<-Q_WLS
@@ -731,9 +733,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
         #Ronald's magic combining all the pieces from above:
         Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-NA}}
     
-    ##df of independence Model
-    dfCFI<-(((k*(k+1))/2)-k)
-    
+      ##df of independence Model
+      dfCFI <- (((k * (k + 1))/2) - k)
+      
+      ##df of user model
+      df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
+      
     if(!(is.na(Q_CFI_ML)) & !(is.na(Q_ML))){
       CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-df))/(Q_CFI_ML-dfCFI))
       CFI<-ifelse(CFI > 1, 1, CFI)
