@@ -33,7 +33,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
 
     
     ##rename common MAF labels
-    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF")] <- "MAF"
+    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap")] <- "MAF"
     
     names(files[[i]]) <- hold_names
     
