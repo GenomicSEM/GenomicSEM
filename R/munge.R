@@ -52,11 +52,9 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',filenames[i]))
     if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot rs-id column, try renaming it SNP in the summary statistics file for:',filenames[i]))
                                                            
-                                               
-    
+                                             
     ##rename common MAF labels
-    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF")] <- "MAF"
-    
+     hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap")] <- "MAF"
     
     #Replace the origonal names
     names(files[[i]]) <- hold_names
