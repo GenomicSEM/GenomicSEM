@@ -18,7 +18,7 @@ munge(files,hm3,trait.names=NULL,N,info.filter = .6,maf.filter=0.05, \dots)
 }
 
 \value{
-   The function writes files of the ".sumstats" format, which can be used to estimate SNP heritability and genetic correlatiion using the GSEM.process.CovStruct() function.  
+   The function writes files of the ".sumstats" format, which can be used to estimate SNP heritability and genetic covariance using the ldsc() function.  
 
 }
 
