@@ -5,7 +5,7 @@
 Function to run a common factor model based on output from multivariable LDSC
 }
 \usage{
-commonfactor <-function(covstruc,estimation="DWLS", \dots)
+commonfactor(covstruc,estimation="DWLS", \dots)
 
 }
 \arguments{
