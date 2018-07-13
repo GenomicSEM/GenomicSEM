@@ -1,10 +1,13 @@
 
-commonfactorGWASpar <-function(Output,estimation="DWLS"){ 
+commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){ 
   time<-proc.time()
   
-  ##use 1 less than the total number of cores available so your computer will still function
+  if(is.null(cores)){
+  ##if no default provided use 1 less than the total number of cores available so your computer will still function
   int <- detectCores() - 1
-  registerDoParallel(int)
+  }else{int<-cores}
+  
+   registerDoParallel(int)
   
   ##specify the cores should have access the local environment
   makeCluster(int, type="FORK")
