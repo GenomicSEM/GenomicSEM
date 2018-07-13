@@ -1,7 +1,15 @@
 
-sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=FALSE,linprob=FALSE,prop=FALSE,N=NULL,info.filter = .6,maf.filter=0.01){
+sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01){
   
   length <- length(files)
+  
+   if(is.null(OLS)){
+    OLS<-rep(FALSE,length)
+  }
+  
+  if(is.null(linprob)){
+    linprob<-rep(FALSE,length)
+  }
   
   if(is.null(trait.names)){
     
