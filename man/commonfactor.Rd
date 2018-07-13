@@ -10,7 +10,7 @@ commonfactor(covstruc,estimation="DWLS", \dots)
 }
 \arguments{
    \item{covstruc}{Output from the multivariable LDSC function of Genomic SEM}
-   \item{estimation}{Options are either Diagonally Weighted Least Squares ("DWLS"; the default) or Maximum Likelihood ("ML") 
+   \item{estimation}{Options are either Diagonally Weighted Least Squares ("DWLS"; the default) or Maximum Likelihood ("ML")} 
     
 }
 
