@@ -7,7 +7,7 @@ based on the summary statistics obtained from genome wide association studies (G
 
 This video provides a very clear introduction to the method/paper
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ECwQS5UD3YM/0.jpg)](https://www.youtube.com/watch?v=ECwQS5UD3YM)
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ECwQS5UD3YM/0.jpg)](https://www.youtube.com/watch?v=ECwQS5UD3YM?t=3m36s)
 
 **Contents of the wiki:**
 
