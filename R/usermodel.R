@@ -50,7 +50,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   
   ##rename in general form in case using previous verison of Genomic SEM
   if(is.null(traits)){
-  colnames(S_LD)<-S_names}
+    traits<-S_names}
 
   ##replace trait names in user provided model with general form of V1-VX
   for(i in 1:length(traits)){
