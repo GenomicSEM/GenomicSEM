@@ -182,7 +182,10 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   
   ##create the names
   S_names<-write.names(k=k)
-  
+       
+ if(is.null(traits)){
+  traits<-S_names} 
+         
   ##name the columns and rows of the S matrix
   rownames(S_LD) <- S_names
   colnames(S_LD) <- S_names
