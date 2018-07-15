@@ -48,6 +48,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   ##pull the column names specified in the munge function
   traits<-colnames(S_LD)
   
+  ##rename in general form in case using previous verison of Genomic SEM
+  if(is.null(traits)){
+  colnames(S_LD)<-S_names}
+
   ##replace trait names in user provided model with general form of V1-VX
   for(i in 1:length(traits)){
     model<-gsub(traits[[i]], S_names[[i]], model)
