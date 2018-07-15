@@ -23,7 +23,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     
   }
   
-  
+  print("Reading summary statistics")
   files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
 
   ref <- fread(ref,header=T,data.table=F)
