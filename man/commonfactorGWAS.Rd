@@ -5,7 +5,7 @@
 Function to obtain SNP effects on common factor along with index of SNP heterogeneity
 }
 \usage{
-commonfactorGWAS <-function(Output,estimation="DWLS", \dots)
+commonfactorGWAS(Output,estimation="DWLS", \dots)
 
 }
 \arguments{
