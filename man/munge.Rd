@@ -5,7 +5,7 @@
 Function to process GWAS summary statistis files and prepair them for LD score regression 
 }
 \usage{
-munge(files,hm3,trait.names=NULL,N,info.filter = .6,maf.filter=0.05, \dots)
+munge(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01, \dots)
 
 }
 \arguments{
