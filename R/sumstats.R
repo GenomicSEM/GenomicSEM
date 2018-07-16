@@ -3,7 +3,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   
   length <- length(files)
   
-  if(is.null(OLS)){
+
+   if(is.null(OLS)){
+
     OLS<-rep(FALSE,length)
   }
   
@@ -23,7 +25,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     
   }
   
-  
+  print("Reading summary statistics")
   files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
 
   ref <- fread(ref,header=T,data.table=F)
@@ -36,20 +38,42 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   for(i in 1:length){
     
     hold_names <- names(files[[i]])
-    
-    hold_names[hold_names %in%c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName", "markername", "MARKERNAME")] <- "SNP"
-    hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA")] <- "A1"
-    hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","NEA")]  <- "A2"
-    hold_names[hold_names %in%c("OR","or","B","beta","BETA","Beta", "LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect")] <- "effect"
-    hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
+
+    hold_names[hold_names %in%c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
+    hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","Effect_allele", "Effect_Allele")] <- "A1"
+    hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","NEA","Other_allele", "Other_Allele")]  <- "A2"
+    hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b")] <- "effect"
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
-    hold_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue" )] <- "P"
-    hold_names[hold_names %in%c("N","WEIGHT","nCompleteSamples")] <- "N"
+    hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
+    hold_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","P_value","P-value","p-value","P.value","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue", "P_Value", "Pvalue")] <- "P"
+    hold_names[hold_names %in%c("N","WEIGHT","nCompleteSamples", "TotalSampleSize")] <- "N"
     hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
     hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
-    ##rename common MAF labels so that it doesnt clash with ref file MAF
+
+    # Print a message for misisng P value, rs, effect or allele columns
     
-    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1")] <- "MAF_other"
+     
+    
+    if(sum(hold_names %in% "P") == 0) print(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i]))
+    if(sum(hold_names %in% "A1") == 0) print(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i]))
+    if(sum(hold_names %in% "A2") == 0) print(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]))
+    if(sum(hold_names %in% "effect") == 0) print(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]))
+    if(sum(hold_names %in% "SNP") == 0) print(paste0('Cannot rs-id column, try renaming it"SNP in the summary statistics file for:',trait.names[i]))
+                                                           
+                                               
+    
+    # Throw warnings for misisng P valuue, rs, effect or allele columns
+  
+    
+    if(sum(hold_names %in% "P") == 0) warning(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i]))
+    if(sum(hold_names %in% "A1") == 0) warning(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i]))
+    if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]))
+    if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]))
+    if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]))
+                                                          
+    ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
+    hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ")] <- "MAF_Other"
+   
     
     names(files[[i]]) <- hold_names
     
@@ -58,13 +82,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       files[[i]]$N<-N[i]
     }
     
-    
+
     # Compute N is N cases and N control is reported:
     if("N_CAS" %in% colnames(files[[i]])) {
       files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
       
     }
     
+
     ##make sure all alleles are upper case for matching
     files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
     files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
@@ -72,15 +97,18 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     ##merge with ref file
     files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
     
-      ##remove any rows with missing p-values
-      if("P" %in% colnames(files[[i]])) {
+
+   ##remove any rows with missing p-values
+     if("P" %in% colnames(files[[i]])) {
    files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
     }
     
+    
     ##determine whether it is OR or logistic/continuous effect based on median effect size 
     files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
-   
-   
+    
+
+
       if(OLS[i] == T){
       
       files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))

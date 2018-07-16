@@ -5,7 +5,7 @@
 Function to expand the S and V matrices to include SNP effects for multivariate GWAS in GenomicSEM
 }
 \usage{
-addSNPs <-function(covstruc, SNPs, \dots)
+addSNPs(covstruc, SNPs, \dots)
 
 }
 \arguments{

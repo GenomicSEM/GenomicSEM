@@ -1,14 +1,16 @@
 
+
 commonfactorGWAS <-function(Output,estimation="DWLS"){ 
   time<-proc.time()
   
-  ##split the V and S matrices into as many (cores - 1) as are aviailable on the local computer
+  ##pull the S and V matrices from Output list
   V_Full<-(Output[[1]])
   S_Full<-(Output[[2]])
-  
+ 
   #enter in k for number of phenotypes 
   k<-ncol(S_Full[[1]])-1
   
+  ##number of models being run
   f<-length(Output[[1]])
   
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
@@ -30,25 +32,28 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
     return(vec2)
   }
   
+  ##pull the column names specified in the munge function
+  traits<-colnames(S_Full[[1]])[2:(k+1)]
+
   #function to create lavaan syntax for a 1 factor model given k phenotypes
   write.Model1 <- function(k, label = "V") {  
     Model1 <- ""
     for (i in 1) {
-      lineSNP <- paste(label, i, " ~ 0*SNP",sep = "")
+      lineSNP <- paste(traits[[i]], " ~ 0*SNP",sep = "")
       if (k-i > 0) {
         lineSNP2 <- " \n "
         for (j in (i+1):k) {
-          lineSNP2 <- paste(lineSNP2, label, j, " ~ 0*SNP", " \n ", sep = "")
+          lineSNP2 <- paste(lineSNP2, traits[[j]], " ~ 0*SNP", " \n ", sep = "")
         }
       }
     } 
     
     for (i in 1) {
-      linestart <- paste("F1"," =~ ",label, i, sep = "")  
+      linestart <- paste("F1"," =~ ",traits[[i]], sep = "")  
       if (k-i > 0) {
         linemid <- ""
         for (j in (i+1):k) {
-          linemid <- paste(linemid, " + ", label, j, sep = "")
+          linemid <- paste(linemid, " + ", traits[[j]], sep = "")
         }
       } else {linemid <- ""}
     }
@@ -73,6 +78,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
          warning = W)
   }
   
+  
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
     
@@ -80,7 +86,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
     W <- solve(V_Full[[i]])
     
     S_Fullrun<-S_Full[[i]]
-    
+  
     ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
     
     order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]]))
@@ -92,7 +98,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
   
   ##estimation for 2S-DWLS-R
   if(estimation=="DWLS"){
-  
+    
     for (i in 1:f) { 
       
       #reorder sampling covariance matrix based on what lavaan expects given the specified model
@@ -106,7 +112,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       
       #import the S_Full matrix for appropriate run
       S_Fullrun<-S_Full[[i]]
-      
+
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
       
@@ -145,7 +151,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       for(t in 1:nrow(ModelQ)) {
         if(ModelQ$free[t] > 0 & ModelQ$free[t] <= k){
           ModelQ$ustart[t]<-SNPresid[ModelQ$free[t]]} else{}}
-
+      
       #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
       testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, start=ModelQ$ustart)) 
       testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
@@ -206,10 +212,10 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       
     }
   }
-
+  
   ##2S-ML-R estimation
   if(estimation=="ML"){
-
+    
     for (i in 1:f) { 
       
       #reorder sampling covariance matrix based on what lavaan expects given the specified model
@@ -223,7 +229,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       
       #import the S_Full matrix for appropriate run
       S_Fullrun<-S_Full[[i]]
-      
+
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200))
       
@@ -254,34 +260,34 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       
       #fix the indicator loadings from Step 1, free the direct effects of the SNP on the indicators, and fix the factor residual variance
       ModelQ$free <- c(rep(0, k+1), 1:(k*2), 0, 0) 
-
+      
       ##added##
       ModelQ$ustart <- ModelQ$est
       SNPresid<-resid(Model1_Results)$cov[k+1,1:k]
-
+      
       for(t in 1:nrow(ModelQ)) {
         if(ModelQ$free[t] > 0 & ModelQ$free[t] <= k){
           ModelQ$ustart[t]<-SNPresid[ModelQ$free[t]]} else{}}
       
-    #  for(n in 1:nrow(ModelQ)) {
-     #   if(ModelQ$free[n] > k & ModelQ$free[n] <= k*2){
-    #      for(y in 1:k){
-    #      ModelQ$ustart[n]<-VARresid[y]}} else{}}
-  
+      #  for(n in 1:nrow(ModelQ)) {
+      #   if(ModelQ$free[n] > k & ModelQ$free[n] <= k*2){
+      #      for(y in 1:k){
+      #      ModelQ$ustart[n]<-VARresid[y]}} else{}}
+      
       
       #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
       testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200,start=ModelQ$ustart)) 
       testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
       
-       if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
-      
-      for(n in 1:nrow(ModelQ)) {
-        if(ModelQ$free[n] > k & ModelQ$free[n] <= k*2){
-          ModelQ$ustart[n]<-ModelQ$ustart[n]-.01} else{}}
-      
-      testQ2<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200,start=ModelQ$ustart)) 
+      if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
+        
+        for(n in 1:nrow(ModelQ)) {
+          if(ModelQ$free[n] > k & ModelQ$free[n] <= k*2){
+            ModelQ$ustart[n]<-ModelQ$ustart[n]-.01} else{}}
+        
+        testQ2<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200,start=ModelQ$ustart)) 
       }else{testQ2<-testQ}
-     
+      
       testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
       
       if(as.character(testQ2$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
@@ -294,35 +300,35 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
       
       if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
-      #pull the delta matrix for Q (this doesn't depend on N)
-      S2.delt_Q <- lavInspect(ModelQ_Results, "delta")
-      
-      ##weight matrix from stage 2 for Q
-      S2.W_Q <- lavInspect(ModelQ_Results, "WLS.V") 
-      
-      #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-      bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q) 
-      
-      #create the "lettuce" part of the sandwich
-      lettuce_Q <- S2.W_Q%*%S2.delt_Q
-      
-      #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-      Ohtt_Q <- bread_Q %*% t(lettuce_Q)%*%V_Full_Reorder%*%lettuce_Q%*%bread_Q  
-      
-      ##compute diagonal matrix (Ron calls this lambda, we call it Eig) of eigenvalues of the sampling covariance matrix of the model residuals (V_eta) 
-      V_eta<- Ohtt_Q[1:k,1:k]
-      Eig2<-as.matrix(eigen(V_eta)$values)
-      Eig<-diag(k)
-      diag(Eig)<-Eig2
-      
-      #Pull P1 (the eigen vectors of V_eta)
-      P1<-eigen(V_eta)$vectors
-      
-      ##Pull eta = vector of direct effects of the SNP (Model Residuals)
-      eta<-cbind(inspect(ModelQ_Results,"list")[(k+2):(2*k+1),14])
-      
-      #Ronald's magic combining all the pieces from above:
-      Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta} else{Q<-"Not Computed"}
+        #pull the delta matrix for Q (this doesn't depend on N)
+        S2.delt_Q <- lavInspect(ModelQ_Results, "delta")
+        
+        ##weight matrix from stage 2 for Q
+        S2.W_Q <- lavInspect(ModelQ_Results, "WLS.V") 
+        
+        #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+        bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q) 
+        
+        #create the "lettuce" part of the sandwich
+        lettuce_Q <- S2.W_Q%*%S2.delt_Q
+        
+        #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+        Ohtt_Q <- bread_Q %*% t(lettuce_Q)%*%V_Full_Reorder%*%lettuce_Q%*%bread_Q  
+        
+        ##compute diagonal matrix (Ron calls this lambda, we call it Eig) of eigenvalues of the sampling covariance matrix of the model residuals (V_eta) 
+        V_eta<- Ohtt_Q[1:k,1:k]
+        Eig2<-as.matrix(eigen(V_eta)$values)
+        Eig<-diag(k)
+        diag(Eig)<-Eig2
+        
+        #Pull P1 (the eigen vectors of V_eta)
+        P1<-eigen(V_eta)$vectors
+        
+        ##Pull eta = vector of direct effects of the SNP (Model Residuals)
+        eta<-cbind(inspect(ModelQ_Results,"list")[(k+2):(2*k+1),14])
+        
+        #Ronald's magic combining all the pieces from above:
+        Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta} else{Q<-"Not Computed"}
       
       
       ##put the corrected standard error and Q in same dataset
