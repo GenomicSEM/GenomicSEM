@@ -20,7 +20,8 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     print(paste("Munging file:", filenames[i]))
     hold_names <- names(files[[i]])
     
-     hold_names[hold_names %in%c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
+
+    hold_names[hold_names %in% c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
     hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","Effect_allele", "Effect_Allele")] <- "A1"
     hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","NEA","Other_allele", "Other_Allele")]  <- "A2"
     hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b")] <- "effect"
@@ -32,8 +33,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     
 
     # Print a message for misisng P value, rs, effect or allele columns
-    
-     
+
     
     if(sum(hold_names %in% "P") == 0) print(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',filenames[i]))
     if(sum(hold_names %in% "A1") == 0) print(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',filenames[i]))
@@ -41,7 +41,6 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     if(sum(hold_names %in% "effect") == 0) print(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',filenames[i]))
     if(sum(hold_names %in% "SNP") == 0) print(paste0('Cannot rs-id column, try renaming it"SNP in the summary statistics file for:',filenames[i]))
                                                            
-                                               
     
     # Throw warnings for misisng P valuue, rs, effect or allele columns
   
@@ -64,7 +63,6 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     ##make sure MAF is actually MAF (i.e., max value is .5)
     files[[i]]$MAF<-ifelse(files[[i]]$MAF <= .5, files[[i]]$MAF, (1-files[[i]]$MAF))
     }
-    
     
     # Compute N is N cases and N control is reported:
     if("N_CAS" %in% colnames(files[[i]])) {

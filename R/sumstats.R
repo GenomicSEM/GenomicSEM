@@ -3,7 +3,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   
   length <- length(files)
   
+
    if(is.null(OLS)){
+
     OLS<-rep(FALSE,length)
   }
   
@@ -36,8 +38,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   for(i in 1:length){
     
     hold_names <- names(files[[i]])
-    
-     hold_names[hold_names %in%c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
+
+    hold_names[hold_names %in%c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
     hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","Effect_allele", "Effect_Allele")] <- "A1"
     hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","NEA","Other_allele", "Other_Allele")]  <- "A2"
     hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b")] <- "effect"
@@ -47,7 +49,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     hold_names[hold_names %in%c("N","WEIGHT","nCompleteSamples", "TotalSampleSize")] <- "N"
     hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
     hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
-    
+
     # Print a message for misisng P value, rs, effect or allele columns
     
      
@@ -80,13 +82,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       files[[i]]$N<-N[i]
     }
     
+
     # Compute N is N cases and N control is reported:
     if("N_CAS" %in% colnames(files[[i]])) {
       files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
       
     }
     
-    
+
     ##make sure all alleles are upper case for matching
     files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
     files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
@@ -94,6 +97,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     ##merge with ref file
     files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
     
+
    ##remove any rows with missing p-values
      if("P" %in% colnames(files[[i]])) {
    files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
@@ -103,6 +107,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     ##determine whether it is OR or logistic/continuous effect based on median effect size 
     files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
     
+
 
       if(OLS[i] == T){
       

@@ -171,9 +171,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
     t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
     Model1<-str_replace(Model1, fixed(t), "")
+
   }
   
  if(CFIcalc==TRUE){
+
   ##code to write null model for calculation of CFI
   write.null<-function(k, label = "V", label2 = "VF") {
     Model3<-""
@@ -461,6 +463,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
         
         #Ronald's magic combining all the pieces from above:
         Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-NA}}
+
     
     ##df of independence Model
       dfCFI <- (((k * (k + 1))/2) - k)
@@ -476,6 +479,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     
      }
     
+
     
     print("Calculating Standardized Results")
     ##transform the S covariance matrix to S correlation matrix
@@ -531,12 +535,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     ##df of user model
     df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
     
+
     if(!(is.na(Q_WLS))){
       chisq<-Q_WLS
       AIC<-(Q_WLS + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
       AIC<-NA}
     
     print("Calculating SRMR")
+
     SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
     
     if(CFIcalc == TRUE){
@@ -736,6 +742,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
         
         #Ronald's magic combining all the pieces from above:
         Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-NA}}
+
     
       ##df of independence Model
       dfCFI <- (((k * (k + 1))/2) - k)
@@ -749,6 +756,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     }else{CFI<-NA}
     
     }
+
     
     ##transform the S covariance matrix to S correlation matrix
     D=sqrt(diag(diag(S_LD)))
@@ -801,15 +809,18 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
     
+
     ##df of user model
     df<-(k*(k+1)/2)-max(parTable(Model1_Results)$free)
-    
+
     if(!(is.na(Q_ML))){
       chisq<-Q_ML
       AIC<-(Q_ML + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
       AIC<-NA}
+
     
     print("Calculating SRMR")
+
     SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
     
     if(CFIcalc == TRUE){
@@ -835,7 +846,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")}else{colnames(modelfit)=c("chisq","df","AIC","SRMR")}
   
   modelfit<-data.frame(modelfit)
-  
+
   modelfit$p_chisq<-ifelse(!(is.na(modelfit$chisq)), modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
   modelfit$chisq<-ifelse(modelfit$df == 0, modelfit$chisq == NA, modelfit$chisq)  
   modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)  

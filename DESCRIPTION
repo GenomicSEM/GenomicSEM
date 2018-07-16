@@ -5,7 +5,7 @@ Version: 0.0.1
 Author: Andrew Grotzinger, Michel Nivard, Elliot Tucker-Drob
 Maintainer: Michel Nivard <m.g.nivard@vu.nl>
 Description: Later
-License: What license is it under?
+License: GPL-3.0
 Encoding: UTF-8
 LazyData: true
 Imports: plyr,e1071,readr,gdata,lavaan,doParallel,foreach,data.table,stringr,splitstackshape,Matrix,R.utils,dplyr

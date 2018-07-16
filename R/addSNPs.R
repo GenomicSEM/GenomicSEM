@@ -29,12 +29,13 @@ addSNPs <-function(covstruc, SNPs, SNPSE = "F"){
   
   #small number because treating MAF as fixed
   if(SNPSE == "F"){
-    varSNPSE2=(.00000001)^2
+  varSNPSE2=(.00000001)^2
   }
   
   if(SNPSE != "F"){
-    varSNPSE2 = SNPSE^2
-  }
+   varSNPSE2 = SNPSE^2
+    }
+
   
 
   

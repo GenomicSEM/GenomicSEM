@@ -29,3 +29,5 @@ vignettes/*.pdf
 /*_cache/
 /cache/
 .Rproj.user
+^.*\.Rproj$
+^\.Rproj\.user$
