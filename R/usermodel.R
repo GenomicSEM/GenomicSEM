@@ -1,3 +1,4 @@
+
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){ 
   time<-proc.time()
   
@@ -51,7 +52,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   ##rename in general form in case using previous verison of Genomic SEM
   if(is.null(traits)){
     traits<-S_names}
-
+  
   ##replace trait names in user provided model with general form of V1-VX
   for(i in 1:length(traits)){
     model<-gsub(traits[[i]], S_names[[i]], model)
@@ -171,68 +172,68 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
     t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
     Model1<-str_replace(Model1, fixed(t), "")
-
+    
   }
   
- if(CFIcalc==TRUE){
-
-  ##code to write null model for calculation of CFI
-  write.null<-function(k, label = "V", label2 = "VF") {
-    Model3<-""
-    for (p in 1:k) {
-      linestart3 <- paste(label, p, " ~~ ", label, p, sep = "")
-      Model3<-paste(Model3, linestart3, " \n ", sep = "")}
+  if(CFIcalc==TRUE){
     
-    Model2<-""
-    for (p in 1:k) {
-      linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
-      Model2<-paste(Model2, linestart2, " \n ", sep = "")}
-    
-    Modelsat<-""
-    for (i in 1:(k-1)) {
-      linestartc <- paste(label, i, " ~~ 0*", label, i+1,  sep = "")
-      if (k-i >= 2) { 
-        linemidc <- ""
-        for (j in (i+2):k) {
-          linemidc <- paste(linemidc, " + 0*", label, j, sep = "")
-        }
-      } else {linemidc <- ""}
-      Modelsat <- paste(Modelsat, linestartc, linemidc, " \n ", sep = "")
+    ##code to write null model for calculation of CFI
+    write.null<-function(k, label = "V", label2 = "VF") {
+      Model3<-""
+      for (p in 1:k) {
+        linestart3 <- paste(label, p, " ~~ ", label, p, sep = "")
+        Model3<-paste(Model3, linestart3, " \n ", sep = "")}
+      
+      Model2<-""
+      for (p in 1:k) {
+        linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
+        Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+      
+      Modelsat<-""
+      for (i in 1:(k-1)) {
+        linestartc <- paste(label, i, " ~~ 0*", label, i+1,  sep = "")
+        if (k-i >= 2) { 
+          linemidc <- ""
+          for (j in (i+2):k) {
+            linemidc <- paste(linemidc, " + 0*", label, j, sep = "")
+          }
+        } else {linemidc <- ""}
+        Modelsat <- paste(Modelsat, linestartc, linemidc, " \n ", sep = "")
+      }
+      
+      ModelsatF<-""
+      for (i in 1:(k-1)) {
+        linestartc <- paste(" ", label2, i, " ~~ 0*", label2, i+1,  sep = "")
+        if (k-i >= 2) {
+          linemidc <- ""
+          for (j in (i+2):k) {
+            linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+          }
+        } else {linemidc <- ""}
+        ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+      } 
+      
+      Model4<-""
+      for (p in 1:k) {
+        linestart4 <- paste(label2, p, " ~~ 0*", label2, p, sep = "")
+        Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+      
+      modelCFI<-paste(Model3, Model2, ModelsatF, Modelsat, Model4)
+      return(modelCFI)
     }
     
-    ModelsatF<-""
-    for (i in 1:(k-1)) {
-      linestartc <- paste(" ", label2, i, " ~~ 0*", label2, i+1,  sep = "")
-      if (k-i >= 2) {
-        linemidc <- ""
-        for (j in (i+2):k) {
-          linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
-        }
-      } else {linemidc <- ""}
-      ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
-    } 
+    ##create inependence model for calculation of CFI
+    modelCFI<-write.null(k)
     
-    Model4<-""
-    for (p in 1:k) {
-      linestart4 <- paste(label2, p, " ~~ 0*", label2, p, sep = "")
-      Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+    ##run CFI model so it knows the reordering for the independence model
+    fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2)
+    orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
     
-    modelCFI<-paste(Model3, Model2, ModelsatF, Modelsat, Model4)
-    return(modelCFI)
-  }
-  
-  ##create inependence model for calculation of CFI
-  modelCFI<-write.null(k)
-  
-  ##run CFI model so it knows the reordering for the independence model
-  fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2)
-  orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
-  
-  ##reorder matrix for independence (i.e., null) model for CFI calculation
-  V_Reorder2 <- V_LD[orderCFI,orderCFI]
-  V_Reorder2b<-diag(z)
-  diag(V_Reorder2b)<-diag(V_Reorder2)
-  W_CFI<-solve(V_Reorder2b)
+    ##reorder matrix for independence (i.e., null) model for CFI calculation
+    V_Reorder2 <- V_LD[orderCFI,orderCFI]
+    V_Reorder2b<-diag(z)
+    diag(V_Reorder2b)<-diag(V_Reorder2)
+    W_CFI<-solve(V_Reorder2b)
   }
   
   ##code to write saturated model to check there are no redundancies
@@ -274,7 +275,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   V_Reorderb<-diag(z)
   diag(V_Reorderb)<-diag(V_Reorder)
   W_Reorder<-solve(V_Reorderb)
-
+  
   ##estimation for DWLS
   if(estimation=="DWLS"){
     
@@ -301,6 +302,44 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     
     #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
     SE <- as.matrix(sqrt(diag(Ohtt)))
+    
+    Model_WLS <- parTable(Model1_Results)
+    
+    #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
+    if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
+      #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
+      vcov <- lavInspect(Model1_Results, "vcov") 
+    
+      #internal lavaan representation of the model
+      lavmodel <- Model1_Results@Model 
+      
+      #lavaan representation of the indirect effect
+      func <- lavmodel@def.function
+      
+      #vector of parameter estimates
+      x <- lav_model_get_parameters(lavmodel, type = "free") 
+      
+      #vector of indirect effect derivatives evaluated @ parameter estimates 
+      Jac <- lav_func_jacobian_complex(func = func, x = x)
+ 
+      #replace vcov here with our corrected one. this gives parameter variance 
+      var.ind <- Jac %*% vcov %*% t(Jac) 
+      
+      #square root of parameter variance = parameter SE.
+      se.ghost <- sqrt(diag(var.ind))
+      
+      #pull the ghost parameter point estiamte
+      ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
+      
+      ##combine with delta method SE
+      ghost2<-cbind(ghost,se.ghost)
+      colnames(ghost2)[7]<-"SE"
+    }else{
+      if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
+        se.ghost<-rep("SE could not be computed", count(":=" %in% Model_WLS$op)$freq)
+        ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
+        ghost2<-cbind(ghost,se.ghost)
+        colnames(ghost2)[7]<-"SE"}else{}} 
     
     ModelQ_WLS <- parTable(Model1_Results)
     
@@ -408,78 +447,74 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       Q_WLS<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_WLS<-NA}
     
     if(CFIcalc == TRUE){
-    print("Calculating CFI")
-    ##now CFI
-    ##run independence model
-    testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2))
-    testCFI$warning$message[1]<-ifelse(is.null(testCFI$warning$message), testCFI$warning$message[1]<-"Safe", testCFI$warning$message[1])
-    testCFI$warning$message[1]<-ifelse(is.na(inspect(fitCFI, "se")$theta[1,2]) == TRUE, testCFI$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI$warning$message[1])
-    
-    if(as.character(testCFI$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+      print("Calculating CFI")
+      ##now CFI
+      ##run independence model
+      testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2))
+      testCFI$warning$message[1]<-ifelse(is.null(testCFI$warning$message), testCFI$warning$message[1]<-"Safe", testCFI$warning$message[1])
+      testCFI$warning$message[1]<-ifelse(is.na(inspect(fitCFI, "se")$theta[1,2]) == TRUE, testCFI$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI$warning$message[1])
       
-      ##code to estimate chi-square of independence model#
-      #First pull the estimates from Step 2
-      ModelQ_WLS_CFI <- parTable(fitCFI)
-      p2<-length(ModelQ_WLS_CFI$free)-z
+      if(as.character(testCFI$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+        
+        ##code to estimate chi-square of independence model#
+        #First pull the estimates from Step 2
+        ModelQ_WLS_CFI <- parTable(fitCFI)
+        p2<-length(ModelQ_WLS_CFI$free)-z
+        
+        ##fix variances and freely estimate covariances
+        ModelQ_WLS_CFI$free <- c(rep(0, p2), 1:z)
+        ModelQ_WLS_CFI$ustart <- ModelQ_WLS_CFI$est
+        
+        testCFI2<-tryCatch.W.E(ModelQ_Results_WLS_CFI <- sem(model = ModelQ_WLS_CFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2))
+        testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
+        testCFI2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS_CFI , "se")$theta[1,2]) == TRUE, testCFI2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI2$warning$message[1])
+        
+        if(as.character(testCFI2$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+          
+          #pull the delta matrix (this doesn't depend on N)
+          S2.delt_Q_CFI <- lavInspect(ModelQ_Results_WLS_CFI, "delta")
+          
+          ##weight matrix from stage 2
+          S2.W_Q_CFI <- lavInspect(ModelQ_Results_WLS_CFI, "WLS.V") 
+          
+          #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+          bread_Q_CFI <- solve(t(S2.delt_Q_CFI)%*%S2.W_Q_CFI%*%S2.delt_Q_CFI) 
+          
+          #create the "lettuce" part of the sandwich
+          lettuce_Q_CFI <- S2.W_Q_CFI%*%S2.delt_Q_CFI
+          
+          #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+          Ohtt_Q_CFI <- bread_Q_CFI %*% t(lettuce_Q_CFI)%*%V_Reorder2%*%lettuce_Q_CFI%*%bread_Q_CFI
+          
+          ##pull the sampling covariance matrix of the residual covariances and compute diagonal matrix of eigenvalues
+          V_etaCFI<- Ohtt_Q_CFI
+          Eig2_CFI<-as.matrix(eigen(V_etaCFI)$values)
+          Eig_CFI<-diag(z)
+          diag(Eig_CFI)<-Eig2_CFI
+          
+          #Pull P1 (the eigen vectors of V_eta)
+          P1_CFI<-eigen(V_etaCFI)$vectors
+          
+          ##Pull eta = vector of residual covariances
+          eta_test_CFI<-parTable(ModelQ_Results_WLS_CFI)
+          eta_test_CFI<-subset(eta_test_CFI, eta_test_CFI$free != 0)
+          eta_CFI<-cbind(eta_test_CFI[,14])
+          
+          #Ronald's magic combining all the pieces from above:
+          Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-NA}}
       
-      ##fix variances and freely estimate covariances
-      ModelQ_WLS_CFI$free <- c(rep(0, p2), 1:z)
-      ModelQ_WLS_CFI$ustart <- ModelQ_WLS_CFI$est
-      
-      testCFI2<-tryCatch.W.E(ModelQ_Results_WLS_CFI <- sem(model = ModelQ_WLS_CFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2))
-      testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
-      testCFI2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS_CFI , "se")$theta[1,2]) == TRUE, testCFI2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI2$warning$message[1])
-      
-      if(as.character(testCFI2$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
-        
-        #pull the delta matrix (this doesn't depend on N)
-        S2.delt_Q_CFI <- lavInspect(ModelQ_Results_WLS_CFI, "delta")
-        
-        ##weight matrix from stage 2
-        S2.W_Q_CFI <- lavInspect(ModelQ_Results_WLS_CFI, "WLS.V") 
-        
-        #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-        bread_Q_CFI <- solve(t(S2.delt_Q_CFI)%*%S2.W_Q_CFI%*%S2.delt_Q_CFI) 
-        
-        #create the "lettuce" part of the sandwich
-        lettuce_Q_CFI <- S2.W_Q_CFI%*%S2.delt_Q_CFI
-        
-        #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-        Ohtt_Q_CFI <- bread_Q_CFI %*% t(lettuce_Q_CFI)%*%V_Reorder2%*%lettuce_Q_CFI%*%bread_Q_CFI
-        
-        ##pull the sampling covariance matrix of the residual covariances and compute diagonal matrix of eigenvalues
-        V_etaCFI<- Ohtt_Q_CFI
-        Eig2_CFI<-as.matrix(eigen(V_etaCFI)$values)
-        Eig_CFI<-diag(z)
-        diag(Eig_CFI)<-Eig2_CFI
-        
-        #Pull P1 (the eigen vectors of V_eta)
-        P1_CFI<-eigen(V_etaCFI)$vectors
-        
-        ##Pull eta = vector of residual covariances
-        eta_test_CFI<-parTable(ModelQ_Results_WLS_CFI)
-        eta_test_CFI<-subset(eta_test_CFI, eta_test_CFI$free != 0)
-        eta_CFI<-cbind(eta_test_CFI[,14])
-        
-        #Ronald's magic combining all the pieces from above:
-        Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-NA}}
-
-    
-    ##df of independence Model
+      ##df of independence Model
       dfCFI <- (((k * (k + 1))/2) - k)
       
-    ##df of user model
+      ##df of user model
       df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
       
+      if(!(is.na(Q_CFI_WLS)) & !(is.na(Q_WLS))){
+        CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-df))/(Q_CFI_WLS-dfCFI))
+        CFI<-ifelse(CFI > 1, 1, CFI)
+      }else{CFI<-NA}
       
-    if(!(is.na(Q_CFI_WLS)) & !(is.na(Q_WLS))){
-      CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-df))/(Q_CFI_WLS-dfCFI))
-      CFI<-ifelse(CFI > 1, 1, CFI)
-    }else{CFI<-NA}
-    
-     }
-    
-
+    }
     
     print("Calculating Standardized Results")
     ##transform the S covariance matrix to S correlation matrix
@@ -512,7 +547,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     diag(V_stand2)[diag(V_stand2) == 0] <- 2e-9
     
     W_stand<-solve(V_stand2[order,order])
-  
+    
     DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2) 
     
     ##perform same procedures for sandwich correction as in the unstandardized case
@@ -524,31 +559,81 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
     SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
     
+    Model_WLS_Stand <- parTable(DWLS.fit_stand)
+    
+    #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
+    if(":=" %in% Model_WLS_Stand$op & !(NA %in% Model_WLS_Stand$se)){
+      #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
+      vcov <- lavInspect(DWLS.fit_stand, "vcov") 
+      
+      #internal lavaan representation of the model
+      lavmodel <- DWLS.fit_stand@Model 
+      
+      #lavaan representation of the indirect effect
+      func <- lavmodel@def.function
+      
+      #vector of parameter estimates
+      x <- lav_model_get_parameters(lavmodel, type = "free") 
+      
+      #vector of indirect effect derivatives evaluated @ parameter estimates 
+      Jac <- lav_func_jacobian_complex(func = func, x = x)
+      
+      #replace vcov here with our corrected one. this gives parameter variance 
+      var.ind <- Jac %*% vcov %*% t(Jac) 
+      
+      #square root of parameter variance = parameter SE.
+      se.ghost_stand <- sqrt(diag(var.ind))
+      
+      #pull the ghost parameter point estiamte
+      ghost_stand<-subset(Model_WLS_Stand,  Model_WLS_Stand$op == ":=")[,c(2:4,8,11,14)]
+      
+      ##combine with delta method SE
+      ghost2_stand<-cbind(ghost_stand,se.ghost_stand)
+      colnames(ghost2_stand)[7]<-"SE"
+    }else{
+      if(":=" %in% Model_WLS_Stand$op & (NA %in% Model_WLS_Stand$se)){
+        se.ghost_stand<-rep("SE could not be computed", count(":=" %in% Model_WLS_Stand$op)$freq)
+        ghost_stand<-subset(Model_WLS_Stand, Model_WLS_Stand$op == ":=")[,c(2:4,8,11,14)]
+        ghost2_stand<-cbind(ghost_stand,se.ghost_stand)
+        colnames(ghost2_stand)[7]<-"SE"}else{}} 
+    
     unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
     unstand<-subset(unstand, unstand$free != 0)                    
     unstand$free<-NULL
+
+    ##combine ghost parameters with rest of output
+    if(exists("ghost2") == "TRUE"){
+      ghost2$free<-NULL
+      ghost2$label<-NULL
+      unstand2<-rbind(cbind(unstand,SE),ghost2)
+    }else{unstand2<-cbind(unstand,SE)}
     
     stand<-data.frame(inspect(DWLS.fit_stand,"list")[,c(8,14)])
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
-     
+    
+    ##combine ghost parameters with rest of output
+    if(exists("ghost2_stand") == "TRUE"){
+      ghost2_stand[,1:5]<-NULL
+      stand2<-rbind(cbind(stand,SE),ghost2_stand)
+    }else{stand2<-cbind(stand,SE)}
+
     ##df of user model
     df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
     
-
     if(!(is.na(Q_WLS))){
       chisq<-Q_WLS
       AIC<-(Q_WLS + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
       AIC<-NA}
     
     print("Calculating SRMR")
-
+    
     SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
     
     if(CFIcalc == TRUE){
-    modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
-    
-    results<-cbind(unstand,SE,stand,SE_stand)
+      modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
+
+    results<-cbind(unstand2,stand2)
     
   }
   
@@ -576,6 +661,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     
     #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
     SE <- as.matrix(sqrt(diag(Ohtt)))
+    
+    Model_ML <- parTable(Model1_Results)
+    
+    #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
+    if(":=" %in% Model_ML$op){print("SEs of ghost parameters are not available for ML estimation")}
     
     ModelQ_ML <- parTable(Model1_Results)
     
@@ -637,7 +727,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
     }else{testQ2<-testQ}
     
-    
     testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
     testQ2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ2$warning$message[1])
     
@@ -686,77 +775,75 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       Q_ML<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_ML<-NA}
     
     if(CFIcalc == TRUE){
-    print("Calculating CFI")
-    ##now CFI
-    ##run independence model
-    testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML", sample.nobs=200))
-    testCFI$warning$message[1]<-ifelse(is.null(testCFI$warning$message), testCFI$warning$message[1]<-"Safe", testCFI$warning$message[1])
-    testCFI$warning$message[1]<-ifelse(is.na(inspect(fitCFI, "se")$theta[1,2]) == TRUE, testCFI$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI$warning$message[1])
-    
-    if(as.character(testCFI$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+      print("Calculating CFI")
+      ##now CFI
+      ##run independence model
+      testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML", sample.nobs=200))
+      testCFI$warning$message[1]<-ifelse(is.null(testCFI$warning$message), testCFI$warning$message[1]<-"Safe", testCFI$warning$message[1])
+      testCFI$warning$message[1]<-ifelse(is.na(inspect(fitCFI, "se")$theta[1,2]) == TRUE, testCFI$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI$warning$message[1])
       
-      ##code to estimate chi-square of independence model#
-      #First pull the estimates from Step 2
-      ModelQ_ML_CFI <- parTable(fitCFI)
-      p2<-length(ModelQ_ML_CFI$free)-z
+      if(as.character(testCFI$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+        
+        ##code to estimate chi-square of independence model#
+        #First pull the estimates from Step 2
+        ModelQ_ML_CFI <- parTable(fitCFI)
+        p2<-length(ModelQ_ML_CFI$free)-z
+        
+        ##fix variances and freely estimate covariances
+        ModelQ_ML_CFI$free <- c(rep(0, p2), 1:z)
+        ModelQ_ML_CFI$ustart <- ModelQ_ML_CFI$est
+        
+        testCFI2<-tryCatch.W.E(ModelQ_Results_ML_CFI <- sem(model = ModelQ_ML_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200))
+        
+        testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
+        testCFI2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML_CFI , "se")$theta[1,2]) == TRUE, testCFI2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI2$warning$message[1])
+        
+        if(as.character(testCFI2$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+          
+          #pull the delta matrix (this doesn't depend on N)
+          S2.delt_Q_CFI <- lavInspect(ModelQ_Results_ML_CFI, "delta")
+          
+          ##weight matrix from stage 2
+          S2.W_Q_CFI <- lavInspect(ModelQ_Results_ML_CFI, "WLS.V") 
+          
+          #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+          bread_Q_CFI <- solve(t(S2.delt_Q_CFI)%*%S2.W_Q_CFI%*%S2.delt_Q_CFI) 
+          
+          #create the "lettuce" part of the sandwich
+          lettuce_Q_CFI <- S2.W_Q_CFI%*%S2.delt_Q_CFI
+          
+          #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+          Ohtt_Q_CFI <- bread_Q_CFI %*% t(lettuce_Q_CFI)%*%V_Reorder2%*%lettuce_Q_CFI%*%bread_Q_CFI
+          
+          ##pull the sampling covariance matrix of the residual covariances and compute diagonal matrix of eigenvalues
+          V_etaCFI<- Ohtt_Q_CFI
+          Eig2_CFI<-as.matrix(eigen(V_etaCFI)$values)
+          Eig_CFI<-diag(z)
+          diag(Eig_CFI)<-Eig2_CFI
+          
+          #Pull P1 (the eigen vectors of V_eta)
+          P1_CFI<-eigen(V_etaCFI)$vectors
+          
+          ##Pull eta = vector of residual covariances
+          eta_test_CFI<-parTable(ModelQ_Results_ML_CFI)
+          eta_test_CFI<-subset(eta_test_CFI, eta_test_CFI$free != 0)
+          eta_CFI<-cbind(eta_test_CFI[,14])
+          
+          #Ronald's magic combining all the pieces from above:
+          Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-NA}}
       
-      ##fix variances and freely estimate covariances
-      ModelQ_ML_CFI$free <- c(rep(0, p2), 1:z)
-      ModelQ_ML_CFI$ustart <- ModelQ_ML_CFI$est
-      
-      testCFI2<-tryCatch.W.E(ModelQ_Results_ML_CFI <- sem(model = ModelQ_ML_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200))
-      
-      testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
-      testCFI2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML_CFI , "se")$theta[1,2]) == TRUE, testCFI2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI2$warning$message[1])
-      
-      if(as.character(testCFI2$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
-        
-        #pull the delta matrix (this doesn't depend on N)
-        S2.delt_Q_CFI <- lavInspect(ModelQ_Results_ML_CFI, "delta")
-        
-        ##weight matrix from stage 2
-        S2.W_Q_CFI <- lavInspect(ModelQ_Results_ML_CFI, "WLS.V") 
-        
-        #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-        bread_Q_CFI <- solve(t(S2.delt_Q_CFI)%*%S2.W_Q_CFI%*%S2.delt_Q_CFI) 
-        
-        #create the "lettuce" part of the sandwich
-        lettuce_Q_CFI <- S2.W_Q_CFI%*%S2.delt_Q_CFI
-        
-        #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-        Ohtt_Q_CFI <- bread_Q_CFI %*% t(lettuce_Q_CFI)%*%V_Reorder2%*%lettuce_Q_CFI%*%bread_Q_CFI
-        
-        ##pull the sampling covariance matrix of the residual covariances and compute diagonal matrix of eigenvalues
-        V_etaCFI<- Ohtt_Q_CFI
-        Eig2_CFI<-as.matrix(eigen(V_etaCFI)$values)
-        Eig_CFI<-diag(z)
-        diag(Eig_CFI)<-Eig2_CFI
-        
-        #Pull P1 (the eigen vectors of V_eta)
-        P1_CFI<-eigen(V_etaCFI)$vectors
-        
-        ##Pull eta = vector of residual covariances
-        eta_test_CFI<-parTable(ModelQ_Results_ML_CFI)
-        eta_test_CFI<-subset(eta_test_CFI, eta_test_CFI$free != 0)
-        eta_CFI<-cbind(eta_test_CFI[,14])
-        
-        #Ronald's magic combining all the pieces from above:
-        Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-NA}}
-
-    
       ##df of independence Model
       dfCFI <- (((k * (k + 1))/2) - k)
       
       ##df of user model
       df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
       
-    if(!(is.na(Q_CFI_ML)) & !(is.na(Q_ML))){
-      CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-df))/(Q_CFI_ML-dfCFI))
-      CFI<-ifelse(CFI > 1, 1, CFI)
-    }else{CFI<-NA}
-    
+      if(!(is.na(Q_CFI_ML)) & !(is.na(Q_ML))){
+        CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-df))/(Q_CFI_ML-dfCFI))
+        CFI<-ifelse(CFI > 1, 1, CFI)
+      }else{CFI<-NA}
+      
     }
-
     
     ##transform the S covariance matrix to S correlation matrix
     D=sqrt(diag(diag(S_LD)))
@@ -809,25 +896,23 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
     
-
     ##df of user model
     df<-(k*(k+1)/2)-max(parTable(Model1_Results)$free)
-
+    
     if(!(is.na(Q_ML))){
       chisq<-Q_ML
       AIC<-(Q_ML + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
       AIC<-NA}
-
+    
     
     print("Calculating SRMR")
-
+    
     SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
     
     if(CFIcalc == TRUE){
       modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
     
     results<-cbind(unstand,SE,stand,SE_stand)
-    
   }
   
   ##name the columns of the results file
@@ -840,13 +925,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
     }
   }
-  
+ 
   ##name model fit columns
   if(CFIcalc == TRUE){
-  colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")}else{colnames(modelfit)=c("chisq","df","AIC","SRMR")}
+    colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")}else{colnames(modelfit)=c("chisq","df","AIC","SRMR")}
   
   modelfit<-data.frame(modelfit)
-
+  
   modelfit$p_chisq<-ifelse(!(is.na(modelfit$chisq)), modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
   modelfit$chisq<-ifelse(modelfit$df == 0, modelfit$chisq == NA, modelfit$chisq)  
   modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)  
