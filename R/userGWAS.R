@@ -498,41 +498,23 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE){
           SE <- as.matrix(sqrt(diag(Ohtt)))}
       
       #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
-      if(":=" %in% Model_ML$op & !(NA %in% Model_ML$se)){
-        #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
-        vcov <- lavInspect(Model1_Results, "vcov") 
+      if(":=" %in% Model_ML$op){
         
-        #internal lavaan representation of the model
-        lavmodel <- Model1_Results@Model 
-        
-        #lavaan representation of the indirect effect
-        func <- lavmodel@def.function
-        
-        #vector of parameter estimates
-        x <- lav_model_get_parameters(lavmodel, type = "free") 
-        
-        #vector of indirect effect derivatives evaluated @ parameter estimates 
-        Jac <- lav_func_jacobian_complex(func = func, x = x)
-        
-        #replace vcov here with our corrected one. this gives parameter variance 
-        var.ind <- Jac %*% vcov %*% t(Jac) 
-        
-        #square root of parameter variance = parameter SE.
-        se.ghost <- sqrt(diag(var.ind))
+        print("SEs of ghost parameters are not available for ML estimation")
         
         #pull the ghost parameter point estiamte
         ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
-        
+        se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
+          
         ##combine with delta method SE
         ghost2<-cbind(ghost,se.ghost)
         colnames(ghost2)[7]<-"SE"
       }else{
         if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
-          se.ghost<-rep("SE could not be computed", count(":=" %in% Model_ML$op)$freq)
+          se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
           ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
           ghost2<-cbind(ghost,se.ghost)
           colnames(ghost2)[7]<-"SE"}else{}}
-      
       
       if(modelchi == TRUE){
         
