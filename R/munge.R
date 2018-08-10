@@ -21,7 +21,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     hold_names <- names(files[[i]])
     
 
-    hold_names[hold_names %in% c("snp","SNP","snpid","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
+    hold_names[hold_names %in% c("snp","SNP","snpid","rsID","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
     hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","Effect_allele", "Effect_Allele")] <- "A1"
     hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","NEA","Other_allele", "Other_Allele", "Non_Effect_allele")]  <- "A2"
     hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b")] <- "effect"
