@@ -1,4 +1,4 @@
-userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE){ 
+userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE){ 
   time<-proc.time()
   
   ##pull V and S matrices
@@ -47,142 +47,142 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE){
   
   
   if(modelchi == TRUE){
-  #function to creat row/column names for S_LD matrix
-  write.names <- function(k, label = "V") {  
-    varnames<-vector(mode="character",length=k)
+    #function to creat row/column names for S_LD matrix
+    write.names <- function(k, label = "V") {  
+      varnames<-vector(mode="character",length=k)
+      
+      for (i in 1:k){
+        varnames[i]<-paste(label,i,sep="")}
+      
+      return(varnames)
+    }
     
-    for (i in 1:k){
-      varnames[i]<-paste(label,i,sep="")}
+    W_test <- solve(V_Full[[1]])
     
-    return(varnames)
-  }
-  
-  W_test <- solve(V_Full[[1]])
-  
-  S_Fulltest<-S_Full[[1]]
-  
-  ##run the model to determine number of latent variables
-  ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2) 
-
-  ##pull the column names specified in the munge function
-  traits<-colnames(S_Full[[1]])
-  
-  ##create the names
-  S_names<-write.names(k=k)
-  
-  ##replace trait names in user provided model with general form of V1-VX
-  for(i in 1:length(traits)){
-    model<-gsub(traits[[i]], S_names[[i]], model)
-  }
-  
-  ##determine number of latent variables from writing extended model. Expects form of F1-FX for naming
-  r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
-  
-  write.Model1 <- function(k, label = "V", label2 = "VF") {  
+    S_Fulltest<-S_Full[[1]]
     
-    ModelsatF<-""
-    for (i in 1:(k-1)) {
-      linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
-      if (k-i >= 2) {
-        linemidc <- ""
-        for (j in (i+2):k) {
-          linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
+    ##run the model to determine number of latent variables
+    ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2) 
+    
+    ##pull the column names specified in the munge function
+    traits<-colnames(S_Full[[1]])
+    
+    ##create the names
+    S_names<-write.names(k=k)
+    
+    ##replace trait names in user provided model with general form of V1-VX
+    for(i in 1:length(traits)){
+      model<-gsub(traits[[i]], S_names[[i]], model)
+    }
+    
+    ##determine number of latent variables from writing extended model. Expects form of F1-FX for naming
+    r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
+    
+    write.Model1 <- function(k, label = "V", label2 = "VF") {  
+      
+      ModelsatF<-""
+      for (i in 1:(k-1)) {
+        linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
+        if (k-i >= 2) {
+          linemidc <- ""
+          for (j in (i+2):k) {
+            linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
+          }
+        } else {linemidc <- ""}
+        ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+      } 
+      
+      if(r > 0){
+        Model1b <- ""
+        for (t in 1:r) {
+          for (i in 1) {
+            linestartb <- paste("F", t, " =~ 0*",label2, i, sep = "")  
+            if ((k-1)-i > 0) {
+              linemidb <- ""
+              for (j in (i+1):k) {
+                linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+              }
+            } else {linemidb <- ""}
+            
+          }
+          Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
         }
-      } else {linemidc <- ""}
-      ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
-    } 
-    
-    if(r > 0){
-      Model1b <- ""
-      for (t in 1:r) {
-        for (i in 1) {
-          linestartb <- paste("F", t, " =~ 0*",label2, i, sep = "")  
-          if ((k-1)-i > 0) {
-            linemidb <- ""
-            for (j in (i+1):k) {
-              linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
-            }
-          } else {linemidb <- ""}
-          
-        }
-        Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
       }
-    }
-    else {Model1b <- ""}
-    
-    Model2<-""
-    for (p in 1:k) {
-      linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
-      Model2<-paste(Model2, linestart2, " \n ", sep = "")}
-    
-    Model3<-""
-    for (p in 1:k) {
-      linestart3 <- paste(label, p, "~~", label, p, sep = "")
-      Model3<-paste(Model3, linestart3, " \n ", sep = "")}
-    
-    Model4<-""
-    for (p in 1:k) {
-      linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
-      Model4<-paste(Model4, linestart4, " \n ", sep = "")}
-    
-    Modelsat<-""
-    for (i in 1:(k-1)) {
-      linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
-      if (k-i >= 2) {
-        linemidc <- ""
-        for (j in (i+2):k) {
-          linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
-          
-        }
-      } else {linemidc <- ""}
-      Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
+      else {Model1b <- ""}
+      
+      Model2<-""
+      for (p in 1:k) {
+        linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
+        Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+      
+      Model3<-""
+      for (p in 1:k) {
+        linestart3 <- paste(label, p, "~~", label, p, sep = "")
+        Model3<-paste(Model3, linestart3, " \n ", sep = "")}
+      
+      Model4<-""
+      for (p in 1:k) {
+        linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
+        Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+      
+      Modelsat<-""
+      for (i in 1:(k-1)) {
+        linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
+        if (k-i >= 2) {
+          linemidc <- ""
+          for (j in (i+2):k) {
+            linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
+            
+          }
+        } else {linemidc <- ""}
+        Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
+      } 
+      
+      Model5<-paste(model, " \n ", ModelsatF, Model1b, Model2, Model3, Model4, Modelsat, sep = "")
+      
+      return(Model5)
     } 
     
-    Model5<-paste(model, " \n ", ModelsatF, Model1b, Model2, Model3, Model4, Modelsat, sep = "")
+    Model1<-write.Model1(k)
     
-    return(Model5)
-  } 
-  
-  Model1<-write.Model1(k)
-  
-  while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
-    u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
-    t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
-    Model1<-str_replace(Model1, fixed(t), "")
-  }
-  
-  
-  ##code to write fake model to make sure elements estimated in user model
-  ##do not overlap with saturated model, in which case an alternative
-  ##specification is used that uses, for example, covariances among residual factors
-  write.test<-function(k, label = "V", label2 = "VF") {
-    
-    Modelsat<-"" 
-    for (i in 1:(k)) {
-      if (k-i >= 1) {
-        linemidc <- ""
-        for (j in (i+1):k) {
-          linemidc <- paste(linemidc, label, i, "~~", label, j, " \n ", sep = "")
-        }
-      }else{linemidc<-""} 
-      Modelsat <- paste(Modelsat, linemidc, sep = "")
+    while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
+      u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
+      t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
+      Model1<-str_replace(Model1, fixed(t), "")
     }
     
-    Model4<-""
-    for (p in 1:k) {
-      linestart4 <- paste(label2, p, "~~", label2, p, sep = "")
-      Model4<-paste(Model4, linestart4, " \n ", sep = "")}
     
-    modelCFI<-paste(Modelsat, Model4)
-    return(modelCFI)
-  }
-  
-  modeltest<-data.frame(write.test(k))
-  modeltest$write.test.k.<-as.character(modeltest$write.test.k.)
-  modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
-  modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
-  
-  z<-(k*(k+1))/2
+    ##code to write fake model to make sure elements estimated in user model
+    ##do not overlap with saturated model, in which case an alternative
+    ##specification is used that uses, for example, covariances among residual factors
+    write.test<-function(k, label = "V", label2 = "VF") {
+      
+      Modelsat<-"" 
+      for (i in 1:(k)) {
+        if (k-i >= 1) {
+          linemidc <- ""
+          for (j in (i+1):k) {
+            linemidc <- paste(linemidc, label, i, "~~", label, j, " \n ", sep = "")
+          }
+        }else{linemidc<-""} 
+        Modelsat <- paste(Modelsat, linemidc, sep = "")
+      }
+      
+      Model4<-""
+      for (p in 1:k) {
+        linestart4 <- paste(label2, p, "~~", label2, p, sep = "")
+        Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+      
+      modelCFI<-paste(Modelsat, Model4)
+      return(modelCFI)
+    }
+    
+    modeltest<-data.frame(write.test(k))
+    modeltest$write.test.k.<-as.character(modeltest$write.test.k.)
+    modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
+    modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
+    
+    z<-(k*(k+1))/2
   }
   
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
@@ -190,7 +190,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE){
     
     #transform sampling covariance matrix into a weight matrix: 
     W <- solve(V_Full[[i]])
-   
+    
     if(modelchi == TRUE){
       ##name the columns and rows of the S matrix in general format V1-VX
       rownames(S_Full[[i]]) <- S_names
@@ -225,9 +225,9 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE){
       S_Fullrun<-S_Full[[i]]
       
       if(modelchi == TRUE){
-      ##name the columns and rows of the S matrix in general format V1-VX
-      rownames(S_Fullrun) <- S_names
-      colnames(S_Fullrun) <- S_names
+        ##name the columns and rows of the S matrix in general format V1-VX
+        rownames(S_Fullrun) <- S_names
+        colnames(S_Fullrun) <- S_names
       }
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
@@ -335,7 +335,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE){
         
         ModelQ_WLS$ustart <- ModelQ_WLS$est
         ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .05, ModelQ_WLS$ustart)
-     
+        
         testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, start = ModelQ_WLS$ustart)) 
         testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
         testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
@@ -418,32 +418,33 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE){
       final$index<-NULL
       
       if(modelchi == TRUE){
-      ##replace V1-VX general form in output with user provided trait names
-      for(g in 1:nrow(final)){
-        for(p in 1:length(traits)){
-          final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
-          final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
-        }}
-          ##subest to only the pieces the user specified
-          ##this is overly long and confusing with the model fit components added in
-          Modeltest <- parTable(ReorderModel1)
-          for(t in 1:nrow(final)){
-            final$test[t]<-ifelse(paste(final$lhs[t], final$op[t], final$rhs[t], sep = "") %in% paste(Modeltest$lhs, Modeltest$op, Modeltest$rhs, sep = ""), 1, 0)
-            final$test[t]<-ifelse(paste(final$lhs[t], final$op[t], final$rhs[t], sep = "") %in% paste(Modeltest$rhs, Modeltest$op, Modeltest$lhs, sep = ""), 1, final$test[t])
-            }
-          final<-subset(final, final$test==1)
-          final$test<-NULL
-          
-          ##add in model fit components to each row
-          if(!(is.na(Q_WLS))){
-            final$chisq<-rep(Q_WLS,nrow(final))
-            final$AIC<-rep(Q_WLS + 2*max(parTable(Model1_Results)$free),nrow(final))}else{final$chisq<-rep(NA, nrow(final))
-            final$AIC<-rep(NA, nrow(final))}
+        ##replace V1-VX general form in output with user provided trait names
+        for(g in 1:nrow(final)){
+          for(p in 1:length(traits)){
+            final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
+            final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
+          }}
+        ##subest to only the pieces the user specified
+        ##this is overly long and confusing with the model fit components added in
+        Modeltest <- parTable(ReorderModel1)
+        for(t in 1:nrow(final)){
+          final$test[t]<-ifelse(paste(final$lhs[t], final$op[t], final$rhs[t], sep = "") %in% paste(Modeltest$lhs, Modeltest$op, Modeltest$rhs, sep = ""), 1, 0)
+          final$test[t]<-ifelse(paste(final$lhs[t], final$op[t], final$rhs[t], sep = "") %in% paste(Modeltest$rhs, Modeltest$op, Modeltest$lhs, sep = ""), 1, final$test[t])
         }
+        final<-subset(final, final$test==1)
+        final$test<-NULL
+        
+        ##add in model fit components to each row
+        if(!(is.na(Q_WLS))){
+          final$chisq<-rep(Q_WLS,nrow(final))
+          final$AIC<-rep(Q_WLS + 2*max(parTable(Model1_Results)$free),nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+          final$AIC<-rep(NA, nrow(final))}
+      }
       
       ##add in error and warning messages 
+      if(printwarn == TRUE){
       final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
-      final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]
+      final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
       
       ##combine results with SNP, CHR, BP, A1, A2 for particular model
       final2<-cbind(Output[[3]][i,],final,row.names=NULL)
@@ -505,7 +506,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE){
         #pull the ghost parameter point estiamte
         ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
         se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
-          
+        
         ##combine with delta method SE
         ghost2<-cbind(ghost,se.ghost)
         colnames(ghost2)[7]<-"SE"
@@ -668,8 +669,9 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE){
       }
       
       ##add in error and warning messages 
+      if(printwarn == TRUE){
       final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
-      final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]
+      final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
       
       ##combine results with SNP, CHR, BP, A1, A2 for particular model
       final2<-cbind(Output[[3]][i,],final,row.names=NULL)
