@@ -238,7 +238,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   
   ##code to write saturated model to check there are no redundancies
   ##with user provided model in later part of script
-  write.test<-function(k, label = "V", label2 = "VF") {
+   write.test<-function(k, label = "V", label2 = "VF") {
     
     Modelsat<-"" 
     for (i in 1:(k)) {
@@ -251,14 +251,26 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       Modelsat <- paste(Modelsat, linemidc, sep = "")
     }
     
+    Modelsat2<-"" 
+    for (i in 1:(k)) {
+      if (k-i >= 1) {
+        linemidc2 <- ""
+        for (j in (i+1):k) {
+          linemidc2 <- paste(linemidc2, label, j, "~~", label, i, " \n ", sep = "")
+        }
+      }else{linemidc2<-""} 
+      Modelsat2 <- paste(Modelsat2, linemidc2, sep = "")
+    }
+    
     Model4<-""
     for (p in 1:k) {
       linestart4 <- paste(label2, p, "~~", label2, p, sep = "")
       Model4<-paste(Model4, linestart4, " \n ", sep = "")}
     
-    modelCFI<-paste(Modelsat, Model4)
+    modelCFI<-paste(Modelsat, Modelsat2, Model4)
     return(modelCFI)
   }
+  
   
   modeltest<-data.frame(write.test(k))
   modeltest$write.test.k.<-as.character(modeltest$write.test.k.)
