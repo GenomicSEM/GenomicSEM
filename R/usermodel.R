@@ -139,15 +139,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     }
     else {Model1c <- ""}
     
-    #override lavaan default to correlate latent variables
-    if(r > 1){
-      Model1d <- ""
-      for(l in 1:(r-1)){
-        linestartd <- paste(lat_labs[l], " ~~ 0*", lat_labs[l+1], sep = "")
-        Model1d<-paste(Model1d, linestartd, " \n ", sep = "")
-      }
-    }else{Model1d<- ""}
-    
     Model2<-""
     for (p in 1:k) {
       linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
@@ -176,7 +167,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
     } 
     
-    Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model1d, Model2, Model3, Model4, Modelsat, sep = "")
+    Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model2, Model3, Model4, Modelsat, sep = "")
     
     return(Model5)
   } 
@@ -978,8 +969,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)  
   modelfit$p_chisq<-ifelse(modelfit$df == 0, modelfit$p_chisq == NA, modelfit$p_chisq)  
   
+  if(CFIcalc == TRUE){
   order<-c(1,2,6,3,4,5)
-  modelfit<-modelfit[,order]
+  modelfit<-modelfit[,order]}else{order<-c(1,2,5,3,4)
+  modelfit<-modelfit[,order]}
   
   time_all<-proc.time()-time
   print(time_all[3])
@@ -999,3 +992,4 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   return(list(modelfit=modelfit,results=results))
   
 }
+
