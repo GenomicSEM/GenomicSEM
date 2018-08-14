@@ -311,8 +311,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged$weights_cov <- merged$initial.w + merged$initial.w2  /sum(merged$initial.w + merged$initial.w2 )
         
         N.bar <- sqrt(mean(merged$N.x)*mean(merged$N.y))
-        merged$N <- sqrt((merged$N.x)*(merged$N.y))
-        
+         
         ## preweight LD and chi:
         
         weighted.LD <- as.matrix(cbind(merged$L2,merged$intercept)*merged$weights)
