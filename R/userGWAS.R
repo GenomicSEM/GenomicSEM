@@ -98,7 +98,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         for (t in 1:r) {
           for (i in 1) {
             linestartb <- paste(lat_labs[t], " =~ 0*",label2, i, sep = "")  
-            if ((k-1)-i > 0) {
+            if ((k-1)-i > 0 | k == 2) {
               linemidb <- ""
               for (j in (i+1):k) {
                 linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
@@ -110,6 +110,24 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         }
       }
       else {Model1b <- ""}
+      
+      if(r > 0){
+        Model1c <- ""
+        for (t in 1:r) {
+          for (i in 1) {
+            linestartc <- paste(lat_labs[t], " ~~ 0*",label2, i, sep = "")  
+            if ((k-1)-i > 0 | k == 2) {
+              linemidc <- ""
+              for (j in (i+1):k) {
+                linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+              }
+            } else {linemidc <- ""}
+            
+          }
+          Model1c <- paste(Model1c, linestartc, linemidc, " \n ", sep = "")
+        }
+      }
+      else {Model1c <- ""}
       
       Model2<-""
       for (p in 1:k) {
@@ -139,7 +157,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
       } 
       
-      Model5<-paste(model, " \n ", ModelsatF, Model1b, Model2, Model3, Model4, Modelsat, sep = "")
+      Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model2, Model3, Model4, Modelsat, sep = "")
       
       return(Model5)
     } 
