@@ -82,7 +82,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   W <- solve(V_LD)
   
   ##run the model
-  ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
+  ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE) 
   
   ##determine number of latent variables from writing extended model
   r<-nrow(lavInspect(ReorderModel, "cor.lv"))
@@ -101,13 +101,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       } else {linemidc <- ""}
       ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
     } 
-    
+  
     if(r > 0){
       Model1b <- ""
       for (t in 1:r) {
         for (i in 1) {
           linestartb <- paste(lat_labs[t], " =~ 0*",label2, i, sep = "")  
-          if ((k-1)-i > 0) {
+          if ((k-1)-i > 0 | k ==2) {
             linemidb <- ""
             for (j in (i+1):k) {
               linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
@@ -119,6 +119,34 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       }
     }
     else {Model1b <- ""}
+    
+    
+    if(r > 0){
+      Model1c <- ""
+      for (t in 1:r) {
+        for (i in 1) {
+          linestartc <- paste(lat_labs[t], " ~~ 0*",label2, i, sep = "")  
+          if ((k-1)-i > 0 | k == 2) {
+            linemidc <- ""
+            for (j in (i+1):k) {
+              linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+            }
+          } else {linemidc <- ""}
+          
+        }
+        Model1c <- paste(Model1c, linestartc, linemidc, " \n ", sep = "")
+      }
+    }
+    else {Model1c <- ""}
+    
+    #override lavaan default to correlate latent variables
+    if(r > 1){
+      Model1d <- ""
+      for(l in 1:(r-1)){
+        linestartd <- paste(lat_labs[l], " ~~ 0*", lat_labs[l+1], sep = "")
+        Model1d<-paste(Model1d, linestartd, " \n ", sep = "")
+      }
+    }else{Model1d<- ""}
     
     Model2<-""
     for (p in 1:k) {
@@ -148,7 +176,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
     } 
     
-    Model5<-paste(model, " \n ", ModelsatF, Model1b, Model2, Model3, Model4, Modelsat, sep = "")
+    Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model1d, Model2, Model3, Model4, Modelsat, sep = "")
     
     return(Model5)
   } 
@@ -175,7 +203,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     Model1<-str_replace(Model1, fixed(t), "")
     
   }
-  
+
   if(CFIcalc==TRUE){
     
     ##code to write null model for calculation of CFI
@@ -239,7 +267,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   
   ##code to write saturated model to check there are no redundancies
   ##with user provided model in later part of script
-   write.test<-function(k, label = "V", label2 = "VF") {
+  write.test<-function(k, label = "V", label2 = "VF") {
     
     Modelsat<-"" 
     for (i in 1:(k)) {
@@ -288,14 +316,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   V_Reorderb<-diag(z)
   diag(V_Reorderb)<-diag(V_Reorder)
   W_Reorder<-solve(V_Reorderb)
-  
+
   ##estimation for DWLS
   if(estimation=="DWLS"){
     
     print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
-    
+
     #pull the delta matrix (this doesn't depend on N)
     ##note that while the delta matrix is reordered based on the ordering in the model specification
     ##that the lavaan output is also reordered so that this actually ensures that the results match up 
@@ -322,7 +350,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
       #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
       vcov <- lavInspect(Model1_Results, "vcov") 
-    
+      
       #internal lavaan representation of the model
       lavmodel <- Model1_Results@Model 
       
@@ -334,7 +362,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       
       #vector of indirect effect derivatives evaluated @ parameter estimates 
       Jac <- lav_func_jacobian_complex(func = func, x = x)
- 
+      
       #replace vcov here with our corrected one. this gives parameter variance 
       var.ind <- Jac %*% vcov %*% t(Jac) 
       
@@ -613,7 +641,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
     unstand<-subset(unstand, unstand$free != 0)                    
     unstand$free<-NULL
-
+    
     ##combine ghost parameters with rest of output
     if(exists("ghost2") == "TRUE"){
       ghost2$free<-NULL
@@ -630,7 +658,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       ghost2_stand[,1:5]<-NULL
       stand2<-rbind(cbind(stand,SE),ghost2_stand)
     }else{stand2<-cbind(stand,SE)}
-
+    
     ##df of user model
     df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
     
@@ -645,7 +673,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     
     if(CFIcalc == TRUE){
       modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
-
+    
     results<-cbind(unstand2,stand2)
     
   }
@@ -938,7 +966,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
     }
   }
- 
+  
   ##name model fit columns
   if(CFIcalc == TRUE){
     colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")}else{colnames(modelfit)=c("chisq","df","AIC","SRMR")}
