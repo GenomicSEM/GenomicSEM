@@ -75,8 +75,9 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       model<-gsub(traits[[i]], S_names[[i]], model)
     }
     
-    ##determine number of latent variables from writing extended model. Expects form of F1-FX for naming
+    ##determine number of latent variables from writing extended model. 
     r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
+    lat_labs<-colnames(lavInspect(ReorderModel, "cor.lv"))
     
     write.Model1 <- function(k, label = "V", label2 = "VF") {  
       
@@ -96,7 +97,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         Model1b <- ""
         for (t in 1:r) {
           for (i in 1) {
-            linestartb <- paste("F", t, " =~ 0*",label2, i, sep = "")  
+            linestartb <- paste(lat_labs[t], " =~ 0*",label2, i, sep = "")  
             if ((k-1)-i > 0) {
               linemidb <- ""
               for (j in (i+1):k) {
