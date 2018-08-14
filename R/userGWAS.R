@@ -77,7 +77,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     
     ##determine number of latent variables from writing extended model. 
     r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
-    lat_labs<-colnames(lavInspect(ReorderModel, "cor.lv"))
+    lat_labs<-colnames(lavInspect(ReorderModel1, "cor.lv"))
     
     write.Model1 <- function(k, label = "V", label2 = "VF") {  
       
