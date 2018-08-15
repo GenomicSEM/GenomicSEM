@@ -647,8 +647,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     ##combine ghost parameters with rest of output
     if(exists("ghost2_stand") == "TRUE"){
       ghost2_stand[,1:5]<-NULL
-      stand2<-rbind(cbind(stand,SE),ghost2_stand)
-    }else{stand2<-cbind(stand,SE)}
+      stand2<-rbind(cbind(stand,SE_stand),ghost2_stand)
+    }else{stand2<-cbind(stand,SE_stand)}
     
     ##df of user model
     df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
