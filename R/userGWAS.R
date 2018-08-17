@@ -1,4 +1,5 @@
-userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE){ 
+
+userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE){ 
   time<-proc.time()
   
   ##pull V and S matrices
@@ -7,7 +8,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   
   #enter in k for number of columns in S matrix
   k<-ncol(S_Full[[1]])
-  
+
   ##number of models to run = number of distinct S/V matrices
   f<-length(Output[[1]])
   
@@ -56,14 +57,14 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       
       return(varnames)
     }
-    
+   
     W_test <- solve(V_Full[[1]])
     
     S_Fulltest<-S_Full[[1]]
     
     ##run the model to determine number of latent variables
-    ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2) 
-    
+    suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE)) 
+  
     ##pull the column names specified in the munge function
     traits<-colnames(S_Full[[1]])
     
@@ -74,7 +75,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     for(i in 1:length(traits)){
       model<-gsub(traits[[i]], S_names[[i]], model)
     }
-    
+   
     ##determine number of latent variables from writing extended model. 
     r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
     lat_labs<-colnames(lavInspect(ReorderModel1, "cor.lv"))
@@ -163,18 +164,18 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     } 
     
     Model1<-write.Model1(k)
-    
+
     while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
       u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
       t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
       Model1<-str_replace(Model1, fixed(t), "")
     }
     
-    
+ 
     ##code to write fake model to make sure elements estimated in user model
     ##do not overlap with saturated model, in which case an alternative
     ##specification is used that uses, for example, covariances among residual factors
- write.test<-function(k, label = "V", label2 = "VF") {
+    write.test<-function(k, label = "V", label2 = "VF") {
       
       Modelsat<-"" 
       for (i in 1:(k)) {
@@ -236,8 +237,9 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   }
   
   #make empty list object for model results
-  Results_List<-vector(mode="list",length=f)
-  
+  if(sub==FALSE){
+  Results_List<-vector(mode="list",length=f)}
+ 
   ##estimation for WLS
   if(estimation=="DWLS"){
     
@@ -474,16 +476,29 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       
       ##add in error and warning messages 
       if(printwarn == TRUE){
-      final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
-      final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+        final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+        final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
       
       ##combine results with SNP, CHR, BP, A1, A2 for particular model
       final2<-cbind(Output[[3]][i,],final,row.names=NULL)
       
-      ##pull results and put into list object
-      Results_List[[i]]<-final2
-      print(i)
-      
+      if(!(sub==FALSE)){
+        final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") == sub)
+        if(i == 1){
+          results=as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
+          colnames(results)<-colnames(final2)
+          results[i,]<-final2
+        }else{results[i,]<-final2}
+      }else{##pull results and put into list object
+        Results_List[[i]]<-final2}
+       
+      if(i == 1){
+        cat(paste0("Running Model: ", i, "\n"))
+      }else{
+      if(i %% 1000==0) {
+        cat(paste0("Running Model: ", i, "\n"))
+      }}
+
     }
   }
   
@@ -701,21 +716,35 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       
       ##add in error and warning messages 
       if(printwarn == TRUE){
-      final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
-      final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+        final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+        final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
       
       ##combine results with SNP, CHR, BP, A1, A2 for particular model
       final2<-cbind(Output[[3]][i,],final,row.names=NULL)
       
-      ##pull results and put into list object
-      Results_List[[i]]<-final2
-      print(i)
+      if(!(sub==FALSE)){
+        final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") == sub)
+        if(i == 1){
+          results=as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
+          colnames(results)<-colnames(final2)
+          results[i,]<-final2
+        }else{results[i,]<-final2}
+      }else{##pull results and put into list object
+        Results_List[[i]]<-final2}
+ 
+      if(i == 1){
+        cat(paste0("Running Model: ", i, "\n"))
+      }else{
+        if(i %% 1000==0) {
+          cat(paste0("Running Model: ", i, "\n"))
+        }}
     }
   }
   
   time_all<-proc.time()-time
   print(time_all[3])
   
-  return(Results_List)
+  if(sub==FALSE){
+  return(Results_List)}else{return(results)}
   
 }
