@@ -1,4 +1,5 @@
 
+
 userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE){ 
   time<-proc.time()
   
@@ -237,7 +238,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   }
   
   #make empty list object for model results
-  if(sub==FALSE){
+  if(sub[[1]]==FALSE){
   Results_List<-vector(mode="list",length=f)}
  
   ##estimation for WLS
@@ -482,13 +483,20 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       ##combine results with SNP, CHR, BP, A1, A2 for particular model
       final2<-cbind(Output[[3]][i,],final,row.names=NULL)
       
-      if(!(sub==FALSE)){
-        final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") == sub)
+      if(!(sub[[1]]==FALSE)){
+        final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
         if(i == 1){
-          results=as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
-          colnames(results)<-colnames(final2)
-          results[i,]<-final2
-        }else{results[i,]<-final2}
+          Results_List<-vector(mode="list",length=nrow(final2))
+          for(y in 1:nrow(final2)){
+            Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
+            colnames(Results_List[[y]])<-colnames(final2)
+            Results_List[[y]][1,]<-final2[y,]
+            }
+        }else{
+          for(y in 1:nrow(final2)){
+            Results_List[[y]][i,]<-final2[y,]
+          }
+        }
       }else{##pull results and put into list object
         Results_List[[i]]<-final2}
        
@@ -722,13 +730,20 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       ##combine results with SNP, CHR, BP, A1, A2 for particular model
       final2<-cbind(Output[[3]][i,],final,row.names=NULL)
       
-      if(!(sub==FALSE)){
-        final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") == sub)
+      if(!(sub[[1]]==FALSE)){
+        final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
         if(i == 1){
-          results=as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
-          colnames(results)<-colnames(final2)
-          results[i,]<-final2
-        }else{results[i,]<-final2}
+          Results_List<-vector(mode="list",length=nrow(final2))
+          for(y in 1:nrow(final2)){
+            Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
+            colnames(Results_List[[y]])<-colnames(final2)
+            Results_List[[y]][1,]<-final2[y,]
+          }
+        }else{
+          for(y in 1:nrow(final2)){
+            Results_List[[y]][i,]<-final2[y,]
+          }
+        }
       }else{##pull results and put into list object
         Results_List[[i]]<-final2}
  
@@ -743,8 +758,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   
   time_all<-proc.time()-time
   print(time_all[3])
-  
-  if(sub==FALSE){
-  return(Results_List)}else{return(results)}
-  
+
+  return(Results_List)
 }
+
