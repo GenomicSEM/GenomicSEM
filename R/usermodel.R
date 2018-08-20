@@ -101,7 +101,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       } else {linemidc <- ""}
       ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
     } 
-  
+    
     if(r > 0){
       Model1b <- ""
       for (t in 1:r) {
@@ -194,7 +194,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     Model1<-str_replace(Model1, fixed(t), "")
     
   }
-
+  
   if(CFIcalc==TRUE){
     
     ##code to write null model for calculation of CFI
@@ -307,14 +307,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   V_Reorderb<-diag(z)
   diag(V_Reorderb)<-diag(V_Reorder)
   W_Reorder<-solve(V_Reorderb)
-
+  
   ##estimation for DWLS
   if(estimation=="DWLS"){
     
     print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
-
+    
     #pull the delta matrix (this doesn't depend on N)
     ##note that while the delta matrix is reordered based on the ordering in the model specification
     ##that the lavaan output is also reordered so that this actually ensures that the results match up 
@@ -476,7 +476,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       eta<-cbind(eta_test[,14])
       
       #Ronald's magic combining all the pieces from above:
-      Q_WLS<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_WLS<-NA}
+      Q_WLS<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_WLS<-"The follow-up chi-square model did not converge"}
     
     if(CFIcalc == TRUE){
       print("Calculating CFI")
@@ -533,18 +533,18 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
           eta_CFI<-cbind(eta_test_CFI[,14])
           
           #Ronald's magic combining all the pieces from above:
-          Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-NA}}
+          Q_CFI_WLS<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_WLS<-"The null (i.e. independence) model did not converge"}}
       
       ##df of independence Model
       dfCFI <- (((k * (k + 1))/2) - k)
-      
+
       ##df of user model
       df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
       
-      if(!(is.na(Q_CFI_WLS)) & !(is.na(Q_WLS))){
+      if(!(is.character(Q_CFI_WLS)) & !(is.character(Q_WLS))){
         CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-df))/(Q_CFI_WLS-dfCFI))
         CFI<-ifelse(CFI > 1, 1, CFI)
-      }else{CFI<-NA}
+      }else{CFI<-Q_CFI_WLS}
       
     }
     
@@ -653,9 +653,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     ##df of user model
     df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
     
-    if(!(is.na(Q_WLS))){
+    if(!(is.character(Q_WLS))){
       chisq<-Q_WLS
-      AIC<-(Q_WLS + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
+      AIC<-(Q_WLS + 2*max(parTable(Model1_Results)$free))}else{chisq<-Q_WLS
       AIC<-NA}
     
     print("Calculating SRMR")
@@ -804,7 +804,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       eta<-cbind(eta_test[,14])
       
       #Combining all the pieces from above:
-      Q_ML<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_ML<-NA}
+      Q_ML<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_ML<-"The follow-up chi-square model did not converge"}
     
     if(CFIcalc == TRUE){
       print("Calculating CFI")
@@ -862,7 +862,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
           eta_CFI<-cbind(eta_test_CFI[,14])
           
           #Ronald's magic combining all the pieces from above:
-          Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-NA}}
+          Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-"The null (i.e. independence) model did not converge"}}
       
       ##df of independence Model
       dfCFI <- (((k * (k + 1))/2) - k)
@@ -870,10 +870,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       ##df of user model
       df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
       
-      if(!(is.na(Q_CFI_ML)) & !(is.na(Q_ML))){
+      if(!(is.character(Q_CFI_ML)) & !(is.character(Q_ML))){
         CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-df))/(Q_CFI_ML-dfCFI))
         CFI<-ifelse(CFI > 1, 1, CFI)
-      }else{CFI<-NA}
+      }else{CFI<-Q_CFI_ML}
       
     }
     
@@ -931,9 +931,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     ##df of user model
     df<-(k*(k+1)/2)-max(parTable(Model1_Results)$free)
     
-    if(!(is.na(Q_ML))){
+    if(!(is.character(Q_ML))){
       chisq<-Q_ML
-      AIC<-(Q_ML + 2*max(parTable(Model1_Results)$free))}else{chisq<-NA
+      AIC<-(Q_ML + 2*max(parTable(Model1_Results)$free))}else{chisq<-Q_ML
       AIC<-NA}
     
     
@@ -964,15 +964,15 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   
   modelfit<-data.frame(modelfit)
   
-  modelfit$p_chisq<-ifelse(!(is.na(modelfit$chisq)), modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
+  modelfit$p_chisq<-ifelse(!(is.character(modelfit$chisq)), modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
   modelfit$chisq<-ifelse(modelfit$df == 0, modelfit$chisq == NA, modelfit$chisq)  
   modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)  
   modelfit$p_chisq<-ifelse(modelfit$df == 0, modelfit$p_chisq == NA, modelfit$p_chisq)  
   
   if(CFIcalc == TRUE){
-  order<-c(1,2,6,3,4,5)
-  modelfit<-modelfit[,order]}else{order<-c(1,2,5,3,4)
-  modelfit<-modelfit[,order]}
+    order<-c(1,2,6,3,4,5)
+    modelfit<-modelfit[,order]}else{order<-c(1,2,5,3,4)
+    modelfit<-modelfit[,order]}
   
   time_all<-proc.time()-time
   print(time_all[3])
