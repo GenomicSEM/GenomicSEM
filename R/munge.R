@@ -27,7 +27,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b")] <- "effect"
     hold_names[hold_names %in%c("INFO","info")] <- "INFO"
     hold_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","P_value","P-value","p-value","P.value","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue", "P_Value", "Pvalue")] <- "P"
-    hold_names[hold_names %in%c("N","WEIGHT","nCompleteSamples", "TotalSampleSize")] <- "N"
+    hold_names[hold_names %in%c("N","WEIGHT","nCompleteSamples", "TotalSampleSize", "TotalN", "Total_N")] <- "N"
     hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
     hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
     
