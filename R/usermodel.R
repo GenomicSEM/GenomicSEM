@@ -1,4 +1,5 @@
 
+
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){ 
   time<-proc.time()
   
@@ -52,10 +53,16 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   ##rename in general form in case using previous verison of Genomic SEM
   if(is.null(traits)){
     traits<-S_names}
-  
+
+  ##add bracketing so gsub knows to replace exact cases
+  traits2<-traits
+  for(i in 1:length(traits)){
+    traits2[[i]]<-paste0("\\<", traits[[i]],"\\>",sep="")
+  }
+
   ##replace trait names in user provided model with general form of V1-VX
   for(i in 1:length(traits)){
-    model<-gsub(traits[[i]], S_names[[i]], model)
+    model<-gsub(traits2[[i]], S_names[[i]], model)
   }
   
   Model1<-model
@@ -537,7 +544,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       
       ##df of independence Model
       dfCFI <- (((k * (k + 1))/2) - k)
-
+      
       ##df of user model
       df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
       
@@ -992,4 +999,5 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   return(list(modelfit=modelfit,results=results))
   
 }
+
 
