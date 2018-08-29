@@ -1,5 +1,6 @@
 
 
+
 userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE){ 
   time<-proc.time()
   
@@ -9,7 +10,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   
   #enter in k for number of columns in S matrix
   k<-ncol(S_Full[[1]])
-
+  
   ##number of models to run = number of distinct S/V matrices
   f<-length(Output[[1]])
   
@@ -58,25 +59,31 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       
       return(varnames)
     }
-   
+    
     W_test <- solve(V_Full[[1]])
     
     S_Fulltest<-S_Full[[1]]
     
     ##run the model to determine number of latent variables
     suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE)) 
-  
+    
     ##pull the column names specified in the munge function
     traits<-colnames(S_Full[[1]])
     
     ##create the names
     S_names<-write.names(k=k)
     
+    ##add bracketing so gsub knows to replace exact cases
+    traits2<-traits
+    for(i in 1:length(traits)){
+      traits2[[i]]<-paste0("\\<", traits[[i]],"\\>",sep="")
+    }
+    
     ##replace trait names in user provided model with general form of V1-VX
     for(i in 1:length(traits)){
-      model<-gsub(traits[[i]], S_names[[i]], model)
+      model<-gsub(traits2[[i]], S_names[[i]], model)
     }
-   
+
     ##determine number of latent variables from writing extended model. 
     r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
     lat_labs<-colnames(lavInspect(ReorderModel1, "cor.lv"))
@@ -165,14 +172,14 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     } 
     
     Model1<-write.Model1(k)
-
+    
     while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
       u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
       t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
       Model1<-str_replace(Model1, fixed(t), "")
     }
     
- 
+    
     ##code to write fake model to make sure elements estimated in user model
     ##do not overlap with saturated model, in which case an alternative
     ##specification is used that uses, for example, covariances among residual factors
@@ -239,8 +246,8 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   
   #make empty list object for model results
   if(sub[[1]]==FALSE){
-  Results_List<-vector(mode="list",length=f)}
- 
+    Results_List<-vector(mode="list",length=f)}
+  
   ##estimation for WLS
   if(estimation=="DWLS"){
     
@@ -491,7 +498,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
             Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
             colnames(Results_List[[y]])<-colnames(final2)
             Results_List[[y]][1,]<-final2[y,]
-            }
+          }
         }else{
           for(y in 1:nrow(final2)){
             Results_List[[y]][i,]<-final2[y,]
@@ -499,14 +506,14 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         }
       }else{##pull results and put into list object
         Results_List[[i]]<-final2}
-       
+      
       if(i == 1){
         cat(paste0("Running Model: ", i, "\n"))
       }else{
-      if(i %% 1000==0) {
-        cat(paste0("Running Model: ", i, "\n"))
-      }}
-
+        if(i %% 1000==0) {
+          cat(paste0("Running Model: ", i, "\n"))
+        }}
+      
     }
   }
   
@@ -746,7 +753,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         }
       }else{##pull results and put into list object
         Results_List[[i]]<-final2}
- 
+      
       if(i == 1){
         cat(paste0("Running Model: ", i, "\n"))
       }else{
@@ -758,7 +765,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   
   time_all<-proc.time()-time
   print(time_all[3])
-
+  
   return(Results_List)
 }
 
