@@ -1,6 +1,7 @@
 
 
 
+
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){ 
   time<-proc.time()
   
@@ -629,13 +630,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       
       ##combine with delta method SE
       ghost2_stand<-cbind(ghost_stand,se.ghost_stand)
-      colnames(ghost2_stand)[7]<-"SE"
+      colnames(ghost2_stand)[7]<-"SE_stand"
     }else{
       if(":=" %in% Model_WLS_Stand$op & (NA %in% Model_WLS_Stand$se)){
         se.ghost_stand<-rep("SE could not be computed", count(":=" %in% Model_WLS_Stand$op)$freq)
         ghost_stand<-subset(Model_WLS_Stand, Model_WLS_Stand$op == ":=")[,c(2:4,8,11,14)]
         ghost2_stand<-cbind(ghost_stand,se.ghost_stand)
-        colnames(ghost2_stand)[7]<-"SE"}else{}} 
+        colnames(ghost2_stand)[7]<-"SE_stand"}else{}} 
     
     unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
     unstand<-subset(unstand, unstand$free != 0)                    
