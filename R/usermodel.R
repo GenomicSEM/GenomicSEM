@@ -1,5 +1,6 @@
 
 
+
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){ 
   time<-proc.time()
   
@@ -59,7 +60,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   for(i in 1:length(traits)){
     traits2[[i]]<-paste0("\\<", traits[[i]],"\\>",sep="")
   }
-
+  
   ##replace trait names in user provided model with general form of V1-VX
   for(i in 1:length(traits)){
     model<-gsub(traits2[[i]], S_names[[i]], model)
@@ -658,11 +659,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     }else{stand2<-cbind(stand,SE_stand)}
     
     ##df of user model
-    df <- (k * (k + 1)/2) - max(parTable(Model1_Results)$free)
+    df<-lavInspect(Model1_Results, "fit")["df"]
     
     if(!(is.character(Q_WLS))){
       chisq<-Q_WLS
-      AIC<-(Q_WLS + 2*max(parTable(Model1_Results)$free))}else{chisq<-Q_WLS
+      AIC<-(Q_WLS + 2*df)}else{chisq<-Q_WLS
       AIC<-NA}
     
     print("Calculating SRMR")
@@ -936,13 +937,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     stand$free<-NULL
     
     ##df of user model
-    df<-(k*(k+1)/2)-max(parTable(Model1_Results)$free)
+    df<-lavInspect(Model1_Results, "fit")["df"]
     
-    if(!(is.character(Q_ML))){
-      chisq<-Q_ML
-      AIC<-(Q_ML + 2*max(parTable(Model1_Results)$free))}else{chisq<-Q_ML
+    if(!(is.character(Q_WLS))){
+      chisq<-Q_WLS
+      AIC<-(Q_WLS + 2*df)}else{chisq<-Q_WLS
       AIC<-NA}
-    
     
     print("Calculating SRMR")
     
@@ -999,5 +999,3 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   return(list(modelfit=modelfit,results=results))
   
 }
-
-
