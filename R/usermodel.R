@@ -2,6 +2,7 @@
 
 
 
+
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){ 
   time<-proc.time()
   
@@ -55,7 +56,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   ##rename in general form in case using previous verison of Genomic SEM
   if(is.null(traits)){
     traits<-S_names}
-
+  
   ##add bracketing so gsub knows to replace exact cases
   traits2<-traits
   for(i in 1:length(traits)){
@@ -306,8 +307,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
   modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
   
-  ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
-  
+  ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE) 
+ 
   ##save the ordering
   order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
   
@@ -345,7 +346,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     SE <- as.matrix(sqrt(diag(Ohtt)))
     
     Model_WLS <- parTable(Model1_Results)
-    
+
+    constraints<-subset(Model_WLS$label, Model_WLS$label != "")
+    constraints2<-duplicated(constraints)
+
     #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
     if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
       #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
@@ -996,7 +1000,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
                 difference in a cell between the smoothed and non-smoothed matrix was", LD_sdiff2, sep = " "))
   }
   
+  if(any(constraints2 == TRUE)){
+    print("Please note that when equality constraints are used in the current version of Genomic SEM that
+          the standardized output will also impose the same constraint.")
+  }
   
   return(list(modelfit=modelfit,results=results))
+  
+
+  
   
 }
