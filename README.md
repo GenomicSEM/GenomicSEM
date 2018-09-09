@@ -1,7 +1,8 @@
 # GenomicSEM
 
 R-package which allows the user to fit structural equation models 
-based on the summary statistics obtained from genome wide association studies (GWAS). Until explicitly stated otherwise the code on this github in an alpha version (recently updated to version **0.0.2** but still very much in development) and under active development. The code may thus produce undesired results on certain operating systems or when run concurrently with specific packages or R versions. Feel free to raise issues if (or when...) the package produces undesired results, we will attempt to swiftly deal with known issues. Please  **[visit the wiki](https://github.com/MichelNivard/GenomicSEM/wiki)** to get started, or **[check out the preprint](https://www.biorxiv.org/content/early/2018/04/21/305029)**.
+based on the summary statistics obtained from genome wide association studies (GWAS). Until explicitly stated otherwise the code on this github in an alpha version (recently updated to version **0.0.2** but still very much in development) and under active development. The code may thus produce undesired results on certain operating systems or when run concurrently with specific packages or R versions. Feel free to raise issues if (or when...) the package produces undesired results, we will attempt to swiftly deal with known issues. Please  **[visit the wiki](https://github.com/MichelNivard/GenomicSEM/wiki)** to get started, or **[check out the preprint](https://www.biorxiv.org/content/early/2018/04/21/305029)**. If you are having issues and not finding the answers anywhere on the wiki or FAQs page, we encourage you to post your question on the **[google group](https://groups.google.com/forum/#!forum/genomic-sem-users)**.
+
 
 **PGC worldwide lab meeting on genomicSEM**
 
