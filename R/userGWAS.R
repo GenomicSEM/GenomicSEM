@@ -479,7 +479,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         ##add in model fit components to each row
         if(!(is.na(Q_WLS))){
           final$chisq<-rep(Q_WLS,nrow(final))
-          final$AIC<-rep(Q_WLS + 2*lavInspect(Model1_Results, "fit")["df"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+          final$AIC<-rep(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
           final$AIC<-rep(NA, nrow(final))}
       }
       
@@ -728,7 +728,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         ##add in model fit components to each row
         if(!(is.na(Q_ML))){
           final$chisq<-rep(Q_ML,nrow(final))
-          final$AIC<-rep(Q_ML + 2*lavInspect(Model1_Results, "fit")["df"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+          final$AIC<-rep(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
           final$AIC<-rep(NA, nrow(final))}
       }
       
