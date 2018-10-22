@@ -192,19 +192,11 @@ multiGene <-function(covstruc, Genes, LD, GeneSE = "F", Genelist = "F"){
   p<-1
   for(p in 1:f){
     for(u in 1:((k*(k+1))/2-k)){
-      #x<-coords2[r,1]
-      #y<-coords2[r,2]
-      #x2<-coords3[u,1]         #############  I THINK I FIXED THIS ANDREW< PLEASE CHECK IF YOU AGREE!
-      #y2<-coords3[u,2]
-      #V_Gene[y,x]<-(SE_Genes2[p,u]*SE_Genes2[p,u]*I_LD2[u])
-      #r<-r+1
-      
-      
        x<-coords2[r,1]
       y<-coords2[r,2]
       x2<-coords3[u,1]
       y2<-coords3[u,2]
-      V_SNP[y,x]<-(SE_Genes2[x2,y2]*SE_Genes2[x2,y2]*I_LD2[x2])
+      V_SNP[y,x]<-(SE_Genes2[p,x2]*SE_Genes2[p,y2]*I_LD2[u])
       r<-r+1
       
     }
