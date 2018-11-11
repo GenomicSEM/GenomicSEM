@@ -251,7 +251,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     modelCFI<-write.null(k)
     
     ##run CFI model so it knows the reordering for the independence model
-    fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2)
+    empty<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2))
+    
     orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
     
     ##reorder matrix for independence (i.e., null) model for CFI calculation
@@ -813,7 +814,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       
       #Combining all the pieces from above:
       Q_ML<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta}else{Q_ML<-"The follow-up chi-square model did not converge"}
-     
+    
     if(CFIcalc == TRUE){
       print("Calculating CFI")
       ##now CFI
@@ -871,7 +872,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
           
           #Ronald's magic combining all the pieces from above:
           Q_CFI_ML<-t(eta_CFI)%*%P1_CFI%*%solve(Eig_CFI)%*%t(P1_CFI)%*%eta_CFI}else{Q_CFI_ML<-"The null (i.e. independence) model did not converge"}}
-    
+      
       ##df of independence Model
       dfCFI <- (((k * (k + 1))/2) - k)
       
@@ -938,19 +939,19 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     
     #df of user model
     df<-lavInspect(Model1_Results, "fit")["df"]
-
+    
     if(!(is.character(Q_ML))){
       chisq<-as.numeric(Q_ML)
       AIC<-(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"])}else{chisq<-Q_ML
       AIC<-NA}
-  
+    
     print("Calculating SRMR")
     
     SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
     
     if(CFIcalc == TRUE){
       modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
-
+    
     results<-cbind(unstand,SE,stand,SE_stand)
   }
   
@@ -972,8 +973,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   modelfit<-data.frame(modelfit)
   
   if(!(is.character(modelfit$chisq))){
-  modelfit$chisq<-as.numeric(as.character(modelfit$chisq))
-  modelfit$df<-as.numeric(as.character(modelfit$df))
+    modelfit$chisq<-as.numeric(as.character(modelfit$chisq))
+    modelfit$df<-as.numeric(as.character(modelfit$df))
   }
   
   modelfit$p_chisq<-ifelse(!(is.character(modelfit$chisq)), modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
@@ -1010,4 +1011,4 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   
   
   
-  }
+}
