@@ -1,4 +1,4 @@
-usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){ 
+usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE){ 
   time<-proc.time()
   
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
@@ -86,9 +86,27 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
   
-  ##run the model
-  ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE) 
+  tryCatch.W.E <- function(expr)
+  {
+    W <- NULL
+    w.handler <- function(w){ # warning handler
+      W <<- w
+      invokeRestart("muffleWarning")
+    }
+    list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
+                                     warning = w.handler),
+         warning = W)
+  }
   
+  ##run the model
+  if(std.lv == FALSE){
+  empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE)) 
+  }
+  
+  if(std.lv == TRUE){
+    empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE)) 
+  }
+
   ##determine number of latent variables from writing extended model
   r<-nrow(lavInspect(ReorderModel, "cor.lv"))
   lat_labs<-colnames(lavInspect(ReorderModel, "cor.lv"))
@@ -179,25 +197,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   
   Model1<-write.Model1(k)
   
-  ##function to remove duplicated elements between user/automatically specified Model Input
-  tryCatch.W.E <- function(expr)
-  {
-    W <- NULL
-    w.handler <- function(w){ # warning handler
-      W <<- w
-      invokeRestart("muffleWarning")
-    }
-    list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
-                                     warning = w.handler),
-         warning = W)
-  }
-  
-  
+  ##code to remove duplicated elements between user/automatically specified Model Input
   while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
     t<-paste(strsplit(u, ": ")[[1]][3], " \n ", sep = "")
     Model1<-str_replace(Model1, fixed(t), "")
-    
   }
   
   if(CFIcalc==TRUE){
@@ -297,14 +301,19 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     return(modelCFI)
   }
   
-  
   modeltest<-data.frame(write.test(k))
   modeltest$write.test.k.<-as.character(modeltest$write.test.k.)
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
   modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
   
-  ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE) 
+  if(std.lv == FALSE){
+    empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE)) 
+  }
   
+  if(std.lv == TRUE){
+    empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE)) 
+  }
+
   ##save the ordering
   order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
   
@@ -319,8 +328,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     
     print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
+    if(std.lv == FALSE){
     Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
+    }
     
+    if(std.lv == TRUE){
+      Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE)
+    }
+
     #pull the delta matrix (this doesn't depend on N)
     ##note that while the delta matrix is reordered based on the ordering in the model specification
     ##that the lavaan output is also reordered so that this actually ensures that the results match up 
@@ -429,15 +444,26 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .05, ModelQ_WLS$ustart)
     
     print("Calculating model chi-square")
-    testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart)) 
+    
+    if(std.lv == FALSE){
+    testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart))
+    }
+    
+    if(std.lv == TRUE){
+      testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart,std.lv=TRUE))
+    }
+   
     testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
     testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
     
     if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
       
       ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .01, ModelQ_WLS$ustart)
-      
-      testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart)) 
+      if(std.lv == FALSE){
+      testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart))}
+      if(std.lv == TRUE){
+        testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart,std.lv=TRUE))
+      }
     }else{testQ2<-testQ}
     
     testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
@@ -446,8 +472,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     if(as.character(testQ2$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
       
       ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .1, ModelQ_WLS$ustart)
+      if(std.lv == FALSE){
+      testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart))}
       
-      testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart)) 
+      if(std.lv == TRUE){
+        testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart,std.lv=TRUE))  
+      }
     }else{testQ3<-testQ2}
     
     testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
@@ -589,8 +619,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     
     W_stand<-solve(V_stand2[order,order])
     
+    if(std.lv == FALSE){
     DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2) 
+    }
     
+    if(std.lv == TRUE){
+      DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2,std.lv=TRUE) 
+    }
+
     ##perform same procedures for sandwich correction as in the unstandardized case
     DWLS.delt_stand <- lavInspect(DWLS.fit_stand, "delta") 
     DWLS.W_stand <- lavInspect(DWLS.fit_stand, "WLS.V") 
@@ -683,7 +719,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     
     print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
+    if(std.lv == FALSE){
     Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200)
+    }
+    
+    if(std.lv == TRUE){
+      Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE)
+    }
     
     #pull the delta matrix (this doesn't depend on N)
     S2.delt <- lavInspect(Model1_Results, "delta")
@@ -756,7 +798,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .05, ModelQ_ML$ustart)
     
     print("Calculating model chi-square")
-    testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+    if(std.lv == FALSE){
+    testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart))}
+    if(std.lv == TRUE){
+      testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE))
+    }
+    
     testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
     
     testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
@@ -764,8 +811,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
       
       ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .01, ModelQ_ML$ustart)
-      
-      testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+      if(std.lv == FALSE){
+      testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart))}
+      if(std.lv == TRUE){
+      testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE)) 
+      }
     }else{testQ2<-testQ}
     
     testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
@@ -774,8 +824,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     if(as.character(testQ2$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
       
       ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .1, ModelQ_ML$ustart)
-      
-      testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+      if(std.lv == FALSE){
+      testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart))}
+      if(std.lv == TRUE){
+        testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE))}
     }else{testQ3<-testQ2}
     
     testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
@@ -918,7 +970,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
     W_stand<-solve(V_stand2[order,order])
     
     print("Calculating Standardized Results")
-    ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200) 
+    if(std.lv == FALSE){
+    ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200)} 
+    if(std.lv == TRUE){
+      ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200,std.lv=TRUE)} 
     
     ##perform same procedures for sandwich correction as in the unstandardized case
     ML.delt_stand <- lavInspect(ML.fit_stand, "delta") 
@@ -965,7 +1020,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
       results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
     }
   }
-  
+
   ##name model fit columns
   if(CFIcalc == TRUE){
     colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")}else{colnames(modelfit)=c("chisq","df","AIC","SRMR")}
@@ -1007,8 +1062,5 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE){
   }
   
   return(list(modelfit=modelfit,results=results))
-  
-  
-  
   
 }
