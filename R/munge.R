@@ -84,7 +84,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     }
     
     ##determine whether it is OR or logistic/continuous effect based on median effect size 
-    files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
+    files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect,na.rm=T)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
     
     # Flip effect to match ordering in ref file
     files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
