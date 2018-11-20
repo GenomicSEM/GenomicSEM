@@ -5,7 +5,7 @@
 Function to run a user specified model based on output from multivariable LDSC
 }
 \usage{
-usermodel(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE,std.lv=TRUE, \dots)
+usermodel(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE,std.lv=FALSE, \dots)
 
 }
 \arguments{
