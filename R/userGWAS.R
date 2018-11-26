@@ -1,7 +1,4 @@
 
-
-
-
 userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE){ 
   time<-proc.time()
   
@@ -14,6 +11,11 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   
   ##number of models to run = number of distinct S/V matrices
   f<-length(Output[[1]])
+  
+  ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
+  Output$RS$SNP<-as.character(Output$RS$SNP)
+  Output$RS$A1<-as.character(Output$RS$A1)
+  Output$RS$A2<-as.character(Output$RS$A2)
   
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
   #'k' is the number of variables in the model
