@@ -50,27 +50,20 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
     hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
 
-    # Print a message for misisng P value, rs, effect or allele columns
-    
-     
-    
+    # Print a message for misisng P value, rs, effect or allele column
     if(sum(hold_names %in% "P") == 0) print(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i]))
     if(sum(hold_names %in% "A1") == 0) print(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i]))
     if(sum(hold_names %in% "A2") == 0) print(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]))
     if(sum(hold_names %in% "effect") == 0) print(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]))
-    if(sum(hold_names %in% "SNP") == 0) print(paste0('Cannot rs-id column, try renaming it"SNP in the summary statistics file for:',trait.names[i]))
-                                                           
-                                               
-    
+    if(sum(hold_names %in% "SNP") == 0) print(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]))
+                                                         
     # Throw warnings for misisng P valuue, rs, effect or allele columns
-  
-    
     if(sum(hold_names %in% "P") == 0) warning(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i]))
     if(sum(hold_names %in% "A1") == 0) warning(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i]))
     if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]))
     if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]))
-    if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]))
-                                                          
+    if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]))
+                                                         
     ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
     hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF_Other"
    
@@ -86,10 +79,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     # Compute N is N cases and N control is reported:
     if("N_CAS" %in% colnames(files[[i]])) {
       files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
-      
     }
     
-
     ##make sure all alleles are upper case for matching
     files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
     files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
@@ -107,7 +98,6 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     ##determine whether it is OR or logistic/continuous effect based on median effect size 
     files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
     
-
 
       if(OLS[i] == T){
       
@@ -161,6 +151,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     if(linprob[i] == F){
     if(OLS[i] == F){                                     
       if(se.logit[i] == F){
+          if(sum(hold_names %in% "SE") == 0) print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
+      if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
+     
         output <- cbind.data.frame(files[[i]]$SNP,
                                    (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
                                    (files[[i]]$SE/exp(files[[i]]$effect))/(((files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5))
@@ -168,6 +161,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
         colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
       
     if(se.logit[i]== T){
+       if(sum(hold_names %in% "SE") == 0) print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
+      if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
+     
         output <- cbind.data.frame(files[[i]]$SNP,
                                    (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
                                    (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
