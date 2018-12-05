@@ -1,4 +1,4 @@
-multiSNP <-function(covstruc, SNPs, LD, SNPSE = "F", SNPlist = "F"){
+multiSNP <-function(covstruc, SNPs, LD, SNPSE = "F", SNPlist = NA){
   time<-proc.time()
   i = 1
   V_LD<-as.matrix(covstruc[[1]])
@@ -11,7 +11,7 @@ multiSNP <-function(covstruc, SNPs, LD, SNPSE = "F", SNPlist = "F"){
   
   ##take SNPs and go from long to wide? or just assume that the full dataset is all the SNPs wanted...
   ##option to only pull SNPs on a list, otherwise assume using full dataset
-  if(SNPlist != "F"){
+  if(!is.na(SNPlist)){
     SNPs<-subset(SNPs, SNPs$SNP %in% SNPlist)
   }
   
