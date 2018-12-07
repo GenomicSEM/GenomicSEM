@@ -1,4 +1,5 @@
-usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE){ 
+
+usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE){ 
   time<-proc.time()
   
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
@@ -100,13 +101,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   
   ##run the model
   if(std.lv == FALSE){
-  empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE)) 
+    empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE)) 
   }
   
   if(std.lv == TRUE){
     empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE)) 
   }
-
+  
   ##determine number of latent variables from writing extended model
   r<-nrow(lavInspect(ReorderModel, "cor.lv"))
   lat_labs<-colnames(lavInspect(ReorderModel, "cor.lv"))
@@ -313,7 +314,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   if(std.lv == TRUE){
     empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE)) 
   }
-
+  
   ##save the ordering
   order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
   
@@ -329,13 +330,22 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     if(std.lv == FALSE){
-    Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
-    }
+      Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
+      }
     
     if(std.lv == TRUE){
       Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE)
     }
-
+    
+    
+    ##save model implied matrix and difference between observed and model implied S_LD matrix
+    if(imp_cov == TRUE){
+    implied<-as.matrix(fitted(Model1_Results))[1]
+    f<-S_LD
+    f[upper.tri(f)] <- 0
+    implied2<-f-implied[[1]]
+    }
+    
     #pull the delta matrix (this doesn't depend on N)
     ##note that while the delta matrix is reordered based on the ordering in the model specification
     ##that the lavaan output is also reordered so that this actually ensures that the results match up 
@@ -446,13 +456,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     print("Calculating model chi-square")
     
     if(std.lv == FALSE){
-    testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart))
+      testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart))
     }
     
     if(std.lv == TRUE){
       testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart,std.lv=TRUE))
     }
-   
+    
     testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
     testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
     
@@ -460,7 +470,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       
       ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .01, ModelQ_WLS$ustart)
       if(std.lv == FALSE){
-      testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart))}
+        testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart))}
       if(std.lv == TRUE){
         testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart,std.lv=TRUE))
       }
@@ -473,7 +483,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       
       ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .1, ModelQ_WLS$ustart)
       if(std.lv == FALSE){
-      testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart))}
+        testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart))}
       
       if(std.lv == TRUE){
         testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart,std.lv=TRUE))  
@@ -620,13 +630,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     W_stand<-solve(V_stand2[order,order])
     
     if(std.lv == FALSE){
-    DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2) 
+      DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2) 
     }
     
     if(std.lv == TRUE){
       DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2,std.lv=TRUE) 
     }
-
+    
     ##perform same procedures for sandwich correction as in the unstandardized case
     DWLS.delt_stand <- lavInspect(DWLS.fit_stand, "delta") 
     DWLS.W_stand <- lavInspect(DWLS.fit_stand, "WLS.V") 
@@ -720,11 +730,18 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     if(std.lv == FALSE){
-    Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200)
+      Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200)
     }
     
     if(std.lv == TRUE){
       Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE)
+    }
+    
+    if(fit_cov == TRUE){
+      implied<-as.matrix(fitted(Model1_Results))[1]
+      f<-S_LD
+      f[upper.tri(f)] <- 0
+      implied2<-f-implied[[1]]
     }
     
     #pull the delta matrix (this doesn't depend on N)
@@ -799,7 +816,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     print("Calculating model chi-square")
     if(std.lv == FALSE){
-    testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart))}
+      testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart))}
     if(std.lv == TRUE){
       testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE))
     }
@@ -812,9 +829,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       
       ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .01, ModelQ_ML$ustart)
       if(std.lv == FALSE){
-      testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart))}
+        testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart))}
       if(std.lv == TRUE){
-      testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE)) 
+        testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE)) 
       }
     }else{testQ2<-testQ}
     
@@ -825,7 +842,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       
       ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .1, ModelQ_ML$ustart)
       if(std.lv == FALSE){
-      testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart))}
+        testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart))}
       if(std.lv == TRUE){
         testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE))}
     }else{testQ3<-testQ2}
@@ -971,7 +988,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     print("Calculating Standardized Results")
     if(std.lv == FALSE){
-    ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200)} 
+      ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200)} 
     if(std.lv == TRUE){
       ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200,std.lv=TRUE)} 
     
@@ -1020,7 +1037,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
     }
   }
-
+  
   ##name model fit columns
   if(CFIcalc == TRUE){
     colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")}else{colnames(modelfit)=c("chisq","df","AIC","SRMR")}
@@ -1061,6 +1078,22 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           the standardized output will also impose the same constraint.")
   }
   
+  if(imp_cov == FALSE){
   return(list(modelfit=modelfit,results=results))
+  }
+  
+  if(imp_cov == TRUE){
+    ##replace general form of V1-VX with trait names in model implied and residual covariance matrix
+    colnames(implied[[1]])<-traits
+    rownames(implied[[1]])<-traits
+    colnames(implied2)<-traits
+    rownames(implied2)<-traits
+    resid_cov<-list()
+    resid_cov[[1]]<-implied[[1]]  
+    resid_cov[[2]]<-implied2
+    names(resid_cov) <- c("Model Implied Covariance Matrix", "Residual Covariance Matrix: Calculated as Observed Cov - Model Implied Cov")
+    return(list(modelfit=modelfit,results=results,resid_cov=resid_cov))
+    }
   
 }
+
