@@ -111,7 +111,13 @@ addSNPs <-function(covstruc, SNPs, SNPSE = "F"){
     ##store the full V to a list of V_full matrices
     V_Full_List[[i]]<-V_Full
     
-    print(i)
+    if(i == 1){
+     print(i)
+      }else{
+        if(i %% 10000==0) {
+     print(i)
+        }}
+
   }
   
   ##save the rsnumbers, MAF, A1/A2, and BP
