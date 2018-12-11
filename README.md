@@ -47,7 +47,7 @@ That's it! You  are ready to start using `GenomicSEM`
 
 **License**
 
- Copyright (C) 2018 Andrew Grotzinger, Mijke Rhemtulla, Michel Nivard, & Elliot Tucker-Drob
+ Copyright (C) 2018 Andrew Grotzinger, Mijke Rhemtulla, Hill F. Ip, Michel Nivard, & Elliot Tucker-Drob
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
