@@ -1,6 +1,3 @@
-
-
-
 addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,cores=NULL){
   time<-proc.time()
   
