@@ -1,7 +1,13 @@
 
 
-addSNPs <-function(covstruc, SNPs, SNPSE = "F"){
+
+addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,cores=NULL){
   time<-proc.time()
+  
+  if(is.null(cores)){
+    ##if no default provided use 1 less than the total number of cores available so your computer will still function
+    int <- detectCores() - 1
+  }else{int<-cores}
   
   V_LD<-as.matrix(covstruc[[1]])
   S_LD<-as.matrix(covstruc[[2]])
@@ -20,60 +26,22 @@ addSNPs <-function(covstruc, SNPs, SNPSE = "F"){
   #f = number of SNPs in dataset
   f=nrow(beta_SNP) 
   
-  #make empty matrices for S_full
-  S_Full_List<-vector(mode="list",length=f)
-  V_Full_List<-vector(mode="list",length=f)
-  
   #SNP variance (updated with 1KG phase 3 MAFs)
   varSNP=2*SNPs$MAF*(1-SNPs$MAF)  
   
   #small number because treating MAF as fixed
-  if(SNPSE == "F"){
-  varSNPSE2=(.00000001)^2
+  if(SNPSE == FALSE){
+    varSNPSE2=(.00000001)^2
   }
   
-  if(SNPSE != "F"){
-   varSNPSE2 = SNPSE^2
-    }
-
+  if(SNPSE != FALSE){
+    varSNPSE2 = SNPSE^2
+  }
   
-
-  
-  for (i in 1:f) {
+  print("Creating Sampling Covariance [V] matrices")
+  V_Full_List<-mclapply(X=1:f,FUN=function(X){
     
-    #create empty vector for S_SNP
-    S_SNP<-vector(mode="numeric",length=k+1)
-    
-    #enter SNP variance from reference panel as first observation
-    S_SNP[1]<-varSNP[i]
-    
-    #enter SNP covariances (standardized beta * SNP variance from refference panel)
-    for (p in 1:k) {
-      S_SNP[p+1]<-varSNP[i]*beta_SNP[i,p]
-    }
-    
-    #create shell of the full S (observed covariance) matrix
-    S_Full<-diag(k+1)
-    
-    ##add the LD portion of the S matrix
-    S_Full[(2:(k+1)),(2:(k+1))]<-S_LD
-    
-    ##add in observed SNP variances as first row/column
-    S_Full[1:(k+1),1]<-S_SNP
-    S_Full[1,1:(k+1)]<-t(S_SNP)
-    
-    ##pull in variables names specified in LDSC function and name first column as SNP
-    colnames(S_Full)<-c("SNP", colnames(S_LD))
-    
-    ##name rows like columns
-    rownames(S_Full)<-colnames(S_Full)
-    
-    ##smooth to near positive definite if either V or S are non-positive definite
-    ks<-nrow(S_Full)
-    smooth1<-ifelse(eigen(S_Full)$values[ks] <= 0, S_Full<-as.matrix((nearPD(S_Full, corr = FALSE))$mat), S_Full<-S_Full)
-    
-    ##store the full S to a list of S_full matrices
-    S_Full_List[[i]]<-S_Full
+    i<-X
     
     #create empty shell of V_SNP matrix
     V_SNP<-diag(k)
@@ -107,23 +75,57 @@ addSNPs <-function(covstruc, SNPs, SNPSE = "F"){
     k2<-nrow(V_Full)
     smooth2<-ifelse(eigen(V_Full)$values[k2] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
     
-    
     ##store the full V to a list of V_full matrices
-    V_Full_List[[i]]<-V_Full
+    V_Full
     
-    if(i == 1){
-     print(i)
-      }else{
-        if(i %% 10000==0) {
-     print(i)
-        }}
-
-  }
+  },mc.cores=int)
+  
+  print("Creating Genetic Covariance [S] matrices")
+  S_Full_List<-mclapply(X=1:f,FUN=function(X){
+    
+    i<-X
+    
+    #create empty vector for S_SNP
+    S_SNP<-vector(mode="numeric",length=k+1)
+    
+    #enter SNP variance from reference panel as first observation
+    S_SNP[1]<-varSNP[i]
+    
+    #enter SNP covariances (standardized beta * SNP variance from refference panel)
+    for (p in 1:k) {
+      S_SNP[p+1]<-varSNP[i]*beta_SNP[i,p]
+    }
+    
+    #create shell of the full S (observed covariance) matrix
+    S_Full<-diag(k+1)
+    
+    ##add the LD portion of the S matrix
+    S_Full[(2:(k+1)),(2:(k+1))]<-S_LD
+    
+    ##add in observed SNP variances as first row/column
+    S_Full[1:(k+1),1]<-S_SNP
+    S_Full[1,1:(k+1)]<-t(S_SNP)
+    
+    ##pull in variables names specified in LDSC function and name first column as SNP
+    colnames(S_Full)<-c("SNP", colnames(S_LD))
+    
+    ##name rows like columns
+    rownames(S_Full)<-colnames(S_Full)
+    
+    ##smooth to near positive definite if either V or S are non-positive definite
+    ks<-nrow(S_Full)
+    smooth1<-ifelse(eigen(S_Full)$values[ks] <= 0, S_Full<-as.matrix((nearPD(S_Full, corr = FALSE))$mat), S_Full<-S_Full)
+    
+    ##store the full S to a list of S_full matrices
+    S_Full
+  },mc.cores=int)
   
   ##save the rsnumbers, MAF, A1/A2, and BP
   SNPs2<-SNPs[,1:6]
   
+  time_all<-proc.time()-time
+  print(time_all[3])
+  
   return(Output <- list(V_Full=V_Full_List,S_Full=S_Full_List,RS=SNPs2))
   
 }
-
