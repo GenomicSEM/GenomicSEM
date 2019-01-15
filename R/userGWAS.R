@@ -86,7 +86,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     for(i in 1:length(traits)){
       model<-gsub(traits2[[i]], S_names[[i]], model)
     }
-
+    
     ##determine number of latent variables from writing extended model. 
     r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
     lat_labs<-colnames(lavInspect(ReorderModel1, "cor.lv"))
@@ -276,7 +276,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
-     
+      
       Model_WLS <- parTable(Model1_Results)
       
       if(NA %in% Model_WLS$se){
@@ -455,11 +455,15 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       if(nrow(other) > 0){
         final<-rbind(unstand2,other)
       }else{final<-unstand2}
-   
+      
       #reorder based on row numbers so it is in order the user provided
       final$index <- as.numeric(row.names(final))
       final<-final[order(final$index), ]
       final$index<-NULL
+      
+      ##add in p-values
+      final$Z_Estimate<-final$est/final$SE
+      final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
       
       if(modelchi == TRUE){
         ##replace V1-VX general form in output with user provided trait names
@@ -481,6 +485,8 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         ##add in model fit components to each row
         if(!(is.na(Q_WLS))){
           final$chisq<-rep(Q_WLS,nrow(final))
+          final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+          final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
           final$AIC<-rep(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
           final$AIC<-rep(NA, nrow(final))}
       }
@@ -511,7 +517,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       }else{##pull results and put into list object
         final2$est<-ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
         Results_List[[i]]<-final2}
-   
+      
       if(i == 1){
         cat(paste0("Running Model: ", i, "\n"))
       }else{
@@ -710,6 +716,10 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       final<-final[order(final$index), ]
       final$index<-NULL
       
+      ##add in p-values
+      final$Z_Estimate<-final$est/final$SE
+      final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+      
       if(modelchi == TRUE){
         ##replace V1-VX general form in output with user provided trait names
         for(g in 1:nrow(final)){
@@ -730,6 +740,8 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         ##add in model fit components to each row
         if(!(is.na(Q_ML))){
           final$chisq<-rep(Q_ML,nrow(final))
+          final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+          final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
           final$AIC<-rep(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
           final$AIC<-rep(NA, nrow(final))}
       }
@@ -741,7 +753,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       
       ##combine results with SNP, CHR, BP, A1, A2 for particular model
       final2<-cbind(Output[[3]][i,],final,row.names=NULL)
-
+      
       if(!(sub[[1]]==FALSE)){
         final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
         if(i == 1){
