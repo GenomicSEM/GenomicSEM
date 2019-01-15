@@ -6,7 +6,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
   ##pull the S and V matrices from Output list
   V_Full<-(Output[[1]])
   S_Full<-(Output[[2]])
- 
+  
   #enter in k for number of phenotypes 
   k<-ncol(S_Full[[1]])-1
   
@@ -34,7 +34,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
   
   ##pull the column names specified in the munge function
   traits<-colnames(S_Full[[1]])[2:(k+1)]
-
+  
   #function to create lavaan syntax for a 1 factor model given k phenotypes
   write.Model1 <- function(k, label = "V") {  
     Model1 <- ""
@@ -86,8 +86,8 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
     W <- solve(V_Full[[i]])
     
     S_Fullrun<-S_Full[[i]]
-  
-    ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
+    
+    suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2)) 
     
     order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]]))
   }
@@ -96,7 +96,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
   results=as.data.frame(matrix(NA,ncol=10,nrow=f))
   colnames(results)=c("i","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning")
   
-  ##estimation for 2S-DWLS-R
+  ##estimation for DWLS
   if(estimation=="DWLS"){
     
     for (i in 1:f) { 
@@ -112,7 +112,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       
       #import the S_Full matrix for appropriate run
       S_Fullrun<-S_Full[[i]]
-
+      
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
       
@@ -208,12 +208,12 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta} else{Q<-"Not Computed"}
       
       ##pull all the results into a single row
-      results[i,]<-cbind(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
-      
+      results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
+    
     }
   }
   
-  ##2S-ML-R estimation
+  ##ML estimation
   if(estimation=="ML"){
     
     for (i in 1:f) { 
@@ -229,7 +229,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       
       #import the S_Full matrix for appropriate run
       S_Fullrun<-S_Full[[i]]
-
+      
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200))
       
@@ -329,11 +329,10 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         
         #Ronald's magic combining all the pieces from above:
         Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta} else{Q<-"Not Computed"}
-      
+        
       
       ##put the corrected standard error and Q in same dataset
-      results[i,]<-cbind(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
-      
+      results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
       
     }
   }
@@ -342,7 +341,11 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
   print(time_all[3])
   results$se <- NULL
   results2<-cbind(Output[[3]],results)
-  
-  return(list(results2))
+  results2$Z_Estimate<-results2$est/results2$se_c
+  results2$Pval_Estimate<-2*pnorm(abs(results2$Z_Estimate),lower.tail=FALSE)
+  results2$Q_df<-ncol(S_Full[[1]])-2
+  results2$Q_pval<-pchisq(results2$Q,results2$Q_df,lower.tail=FALSE)
+  results2<-results2[,c(1:12,16,17,13,18,19,14,15)]
+  return(results2)
   
 }
