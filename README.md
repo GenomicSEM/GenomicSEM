@@ -20,7 +20,7 @@ Fit SEM models to GWAS summary data [without a SNP](https://github.com/MichelNiv
 
 Run a GWAS where the [SNP is included](https://github.com/MichelNivard/GenomicSEM/wiki/4.-Common-Factor-GWAS) in the structural equation model.
 
-Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/5.-GenomicSEM-and-OpenMx)
+Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/6.-GenomicSEM-and-OpenMx)
 
 **Instalation:**
 
