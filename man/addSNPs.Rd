@@ -1,6 +1,6 @@
 \name{addSNPs}
 \alias{addSNPs}
-\title{Combined LDSC and summary statistic output for multivariate GWAS using GenomicSEM}
+\title{Combine LDSC and summary statistic output for multivariate GWAS using GenomicSEM}
 \description{
 Function to expand the S and V matrices to include SNP effects for multivariate GWAS in GenomicSEM
 }
