@@ -488,6 +488,8 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
           final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
           final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
           final$AIC<-rep(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+          final$chisq_df<-rep(NA,nrow(final))
+          final$chisq_pval<-rep(NA,nrow(final))
           final$AIC<-rep(NA, nrow(final))}
       }
       
@@ -743,6 +745,8 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
           final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
           final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
           final$AIC<-rep(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+          final$chisq_df<-rep(NA,nrow(final))
+          final$chisq_pval<-rep(NA,nrow(final))
           final$AIC<-rep(NA, nrow(final))}
       }
       
