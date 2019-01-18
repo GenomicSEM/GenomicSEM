@@ -16,9 +16,10 @@ commonfactor(covstruc,estimation="DWLS", \dots)
 
 \value{
   The function estimates a common factor model, along with model fit indices, using output from GenomicSEM LDSC. 
-
+  The function returns a list with 2 named entries
+   \item{modelfit}{The model fit results (e.g., model chi-square, AIC, CFI) from the specified model.}
+   \item{results}{Parameter estimates and sandwich corrected standard errors from the specified model.}
 }
-
 
 
 \examples{
