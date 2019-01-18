@@ -293,7 +293,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
   time_all<-proc.time()-time
   print(time_all[3])
   
-  return(list(results2))
+  return(results2)
   
 }
 
