@@ -20,8 +20,8 @@ userGWASpar(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=
 }
 
 \value{
-  The function outputs a list of model outputs from multivariate GWAS using parallel processing. 
-
+  The function outputs a list of model outputs from multivariate GWAS using parallel processing. If the sub argument is used, it will output as many list objects as there are sub objects requested. 
+  If the sub argument is FALSE (as is the package default), the function will ouptut as many list objects as there are SNPs.
 }
 
 
