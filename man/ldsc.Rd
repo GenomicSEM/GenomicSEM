@@ -21,7 +21,7 @@ ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = F
 \value{
    The function returns a list with 5 named entries
    \item{S}{estimated genetic covariance matrix}
-   \item{V}{varianve covariance matrix of the parameter estimates in S}
+   \item{V}{variance covariance matrix of the parameter estimates in S}
    \item{I}{matrix containing the "cross trait intercepts", or the error covariance between traits induced by overlap, in terms of subjects, between the GWASes on which the analyses are based}
    \item{N}{a vector contsaining the sample size (for the genetic variances) and the geometric mean of sample sizes (i.e. sqrt(N1,N2)) between two samples for the covariances }
    \item{m}{number of SNPs used to compute the LD scores with. }
