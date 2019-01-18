@@ -1,4 +1,4 @@
-multiSNP <-function(covstruc, SNPs, LD, SNPSE = "F", SNPlist = NA){
+multiSNP <-function(covstruc, SNPs, LD, SNPSE = FALSE, SNPlist = NA){
   time<-proc.time()
   i = 1
   V_LD<-as.matrix(covstruc[[1]])
@@ -36,12 +36,12 @@ multiSNP <-function(covstruc, SNPs, LD, SNPSE = "F", SNPlist = NA){
   varSNP=2*SNPs$MAF*(1-SNPs$MAF)  
 
   #small number because treating MAF as fixed
-  if(SNPSE == "F"){
+  if(SNPSE == FALSE){
     varSNPSE2=(.00000001)^2
   }
   
   ##if user provides own SNPSE use that instead 
-  if(SNPSE != "F"){
+  if(SNPSE != FALSE){
     varSNPSE2 = SNPSE^2
   }
 
@@ -192,8 +192,6 @@ p<-1
       r<-r+1
     }
   }  
-
-
 
 if(sum(abs(LD[lower.tri(LD)])) > 0){
 ##get coordinates for cross-SNP within-trait sampling covariances
