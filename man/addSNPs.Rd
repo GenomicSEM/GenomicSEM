@@ -19,6 +19,10 @@ addSNPs(covstruc, SNPs,SNPSE=FALSE,parallel=TRUE,cores=NULL, \dots)
 
 \value{
    The function expands the S and V matrices to include SNP effects. As many S and V matrices will be created as there are rows in the summary statistics file (i.e., one S and V matrix per SNP).
+   The function returns a list with 3 named entries:
+   \item{V_Full}{variance covariance matrix of the parameter estimates in S that includes an individual SNP effect}
+   \item{S_Full}{genetic covaraiance matrix including individual SNP effect}
+   \item{RS}{A list containing relevant genetic information (e.g., rsID, basepair, A1/A2) to be appended to the output from other functions (e.g., userGWAS)}
 }
 
 
