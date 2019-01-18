@@ -17,7 +17,7 @@ commonfactorGWASpar(Output,estimation="DWLS",cores=NULL, \dots)
 }
 
 \value{
-      The function outputs a series of SNP effects with their SEs and estimate of QSNP (the heterogeneity index) using parallel processing. 
+      The function outputs a series of SNP effects with their SEs and estimate of QSNP (the heterogeneity index) using parallel processing. The output is a single object.
 }
 
 
