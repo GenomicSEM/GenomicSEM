@@ -5,7 +5,7 @@
 Function to obtain model estimates for a user-specified model across SNPs. 
 }
 \usage{
-userGWAS(Output,estimation="DWLS",model="",modelchi=FALSE, \dots)
+userGWAS(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE, \dots)
 
 }
 \arguments{
@@ -18,8 +18,8 @@ userGWAS(Output,estimation="DWLS",model="",modelchi=FALSE, \dots)
 }
 
 \value{
-  The function outputs a list of model outputs from multivariate GWAS. 
-
+  The function outputs results from the multivariate GWAS. If the sub argument is used, it will output as many list objects as there are sub objects requested. 
+  If the sub argument is FALSE (as is the package default), the function will ouptut as many list objects as there are SNPs.
 }
 
 
