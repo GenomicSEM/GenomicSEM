@@ -3,19 +3,19 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
   time<-proc.time()
   
   if(is.null(cores)){
-  ##if no default provided use 1 less than the total number of cores available so your computer will still function
-  int <- detectCores() - 1
+    ##if no default provided use 1 less than the total number of cores available so your computer will still function
+    int <- detectCores() - 1
   }else{int<-cores}
   
-   registerDoParallel(int)
+  registerDoParallel(int)
   
   ##specify the cores should have access the local environment
   makeCluster(int, type="FORK")
   
   ##split the V and S matrices into as many (cores - 1) as are aviailable on the local computer
-  V_Full<-split(Output[[1]],1:int)
-  S_Full<-split(Output[[2]],1:int)
-
+  V_Full<-suppressWarnings(split(Output[[1]],1:int))
+  S_Full<-suppressWarnings(split(Output[[2]],1:int))
+  
   #enter in k for number of phenotypes 
   k<-ncol(S_Full[[1]][[1]])-1
   
@@ -39,7 +39,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
   }
   ##pull the column names specified in the munge function
   traits<-colnames(S_Full[[1]][[1]])[2:(k+1)]
- 
+
   #function to create lavaan syntax for a 1 factor model given k phenotypes
   write.Model1 <- function(k, label = "V") {  
     Model1 <- ""
@@ -83,7 +83,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
          warning = W)
   }
   
- 
+  
   
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
@@ -92,26 +92,26 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
     W <- solve(V_Full[[1]][[i]])
     
     S_Fullrun<-S_Full[[1]][[i]]
-
-    ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
+    
+    test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2)) 
     
     order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
   }
-
+  
   ##estimation for 2S-DWLS-R
   if(estimation=="DWLS"){
     
     ##foreach parallel processing that rbinds results across cores
     results<-foreach(n = icount(int), .combine = 'rbind') %:% 
-    
+      
       foreach (i=1:length(V_Full[[n]]), .combine='rbind', .packages = "lavaan") %dopar% { 
-   
+        
         #reorder sampling covariance matrix based on what lavaan expects given the specified model
         V_Full_Reorder <- V_Full[[n]][[i]][order,order]
         u<-nrow(V_Full_Reorder)
         V_Full_Reorderb<-diag(u)
         diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
-       
+        
         ##invert the reordered sampling covariance matrix to create a weight matrix 
         W <- solve(V_Full_Reorderb) 
         
@@ -120,7 +120,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
         test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
-      
+        
         #pull the delta matrix (this doesn't depend on N)
         S2.delt <- lavInspect(Model1_Results, "delta")
         
@@ -183,8 +183,8 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
         Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta
         
         ##pull all the results into a single row
-       cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
-    
+        cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+        
         
       }
   }
@@ -197,7 +197,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
     results<-foreach(n = icount(int), .combine = 'rbind') %:% 
       
       foreach (i=1:length(V_Full[[n]]), .combine='rbind', .packages = "lavaan") %dopar% { 
-       
+        
         #reorder sampling covariance matrix based on what lavaan expects given the specified model
         V_Full_Reorder <- V_Full[[n]][[i]][order,order]
         u<-nrow(V_Full_Reorder)
@@ -209,7 +209,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
         
         #import the S_Full matrix for appropriate run
         S_Fullrun<-S_Full[[n]][[i]]
-
+        
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
         test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200))
         
@@ -275,24 +275,29 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
         Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta
         
         ##put the corrected standard error and Q in same dataset
-       cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
-    
+        cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+        
         
       }
   }
-
+  
   ##name the columns of the results file
   colnames(results)=c("i","n","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning")
   
   ##sort results so it is in order of the output lists provided for the function
   results<- results[order(results$i, results$n),] 
+
   results$se <- NULL
-  
   results2<-cbind(Output[[3]],results)
-  
+  results2$Z_Estimate<-results2$est/results2$se_c
+  results2$Pval_Estimate<-2*pnorm(abs(results2$Z_Estimate),lower.tail=FALSE)
+  results2$Q_df<-ncol(S_Full[[1]][[1]])-2
+  results2$Q_pval<-pchisq(results2$Q,results2$Q_df,lower.tail=FALSE)
+  results2$i<-1:nrow(results2)
+  results2$n<-NULL
+  results2<-results2[,c(1:12,16,17,13,18,19,14,15)]
   time_all<-proc.time()-time
   print(time_all[3])
-  
   return(results2)
   
 }
