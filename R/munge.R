@@ -14,7 +14,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
   cat(print(paste("Reading summary statistics for", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.")),file=log.file,sep="\n",append=TRUE)
   
   ##note that fread is not used here due to formatting differences across summary statistic files
-  files = lapply(files, read.table,header=T, quote="\"",fill=T,na.string=c(".","NA",""))
+  files = lapply(files, read.table,header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
   cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
   ref <- fread(hm3,header=T,data.table=F)
   cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
