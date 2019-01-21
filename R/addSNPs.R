@@ -34,7 +34,7 @@ addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=TRUE,cores=NULL){
   if(parallel == TRUE){
     if(is.null(cores)){
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
-      int <- detectCores() - 1
+      int <- parallel::detectCores() - 1
     }else{int<-cores}
     
   print("Creating Sampling Covariance [V] matrices")
