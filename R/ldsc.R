@@ -12,6 +12,9 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   N.vec <- matrix(NA,nrow=1,ncol=n.V)
   Liab.S <- matrix(1,nrow=1,ncol=n.traits)
   I <- matrix(NA,nrow=n.traits,ncol=n.traits)
+
+  # Current working directory
+  curwd = getwd()
   
   
   
@@ -27,7 +30,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   x$CM <- NULL
   x$MAF <- NULL
   
-  setwd("..")
+  setwd(curwd)
   
   ######### READ weights:
   
@@ -45,7 +48,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   w$CM <- NULL
   w$MAF <- NULL
   
-  setwd("..")
+  setwd(curwd)
   
   colnames(w)[ncol(w)] <- "wLD"
   
@@ -55,7 +58,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   for(i in 2:22){
     m <- rbind(m,suppressMessages(read_csv(paste0(i,".l2.M_5_50"),  col_names = FALSE)))
   }
-  setwd("..")
+  setwd(curwd)
   M.tot <- sum(m)
   m <- M.tot
   
