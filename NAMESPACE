@@ -13,3 +13,5 @@ import(splitstackshape)
 import(Matrix)
 import(R.utils)
 import(dplyr)
+import(iterators)
+
