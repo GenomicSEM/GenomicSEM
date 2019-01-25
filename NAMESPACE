@@ -14,4 +14,6 @@ import(Matrix)
 import(R.utils)
 import(dplyr)
 import(iterators)
+import(Rcpp)
+import(utils)
 
