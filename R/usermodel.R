@@ -102,8 +102,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   ##run the model
   if(std.lv == FALSE){
     empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE)) 
-  }
-  
+    }
+   
   if(std.lv == TRUE){
     empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE)) 
   }
@@ -331,19 +331,18 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     if(std.lv == FALSE){
       Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
-      }
+    }
     
     if(std.lv == TRUE){
       Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE)
     }
     
-    
     ##save model implied matrix and difference between observed and model implied S_LD matrix
     if(imp_cov == TRUE){
-    implied<-as.matrix(fitted(Model1_Results))[1]
-    f<-S_LD
-    f[upper.tri(f)] <- 0
-    implied2<-f-implied[[1]]
+      implied<-as.matrix(fitted(Model1_Results))[1]
+      f<-S_LD
+      f[upper.tri(f)] <- 0
+      implied2<-f-implied[[1]]
     }
     
     #pull the delta matrix (this doesn't depend on N)
@@ -355,8 +354,31 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     S2.W <- lavInspect(Model1_Results, "WLS.V") 
     
     #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-    bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt) 
+    bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt)) 
     
+    if(class(bread2$value) != "matrix"){
+      print("Error: The primary model did not converge! Additional warnings or errors are likely being printed by lavaan. 
+            The model output is also printed below (without standard errors) in case this is helpful for troubleshooting. Please note
+            that these results should not be interpreted.")
+      
+      unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
+      unstand<-subset(unstand, unstand$free != 0)                    
+      unstand$free<-NULL
+      results<-unstand
+      colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate")
+      
+      ##replace V1-VX general form in output with user provided trait names
+      for(i in 1:nrow(results)){
+        for(p in 1:length(traits)){
+          results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
+          results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+        }
+      }
+      
+      print(results)  
+    }
+    
+    if(class(bread2$value) == "matrix"){
     #create the "lettuce" part of the sandwich
     lettuce <- S2.W%*%S2.delt
     
@@ -723,6 +745,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     results<-cbind(unstand2,stand2)
     
   }
+  }
   
   ##ML estimation
   if(estimation=="ML"){
@@ -730,9 +753,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     if(std.lv == FALSE){
-      Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200)
+     Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200)
     }
-    
+  
     if(std.lv == TRUE){
       Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE)
     }
@@ -749,10 +772,33 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     ##weight matrix from stage 2. S2.W is not reordered by including something like model constraints
     S2.W <- lavInspect(Model1_Results, "WLS.V") 
-    
+   
     #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-    bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt) 
+    bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt)) 
+  
+    if(class(bread2$value) != "matrix"){
+      print("Error: The primary model did not converge! Additional warnings or errors are likely being printed by lavaan. 
+            The model output is also printed below (without standard errors) in case this is helpful for troubleshooting. Please note
+            that these results should not be interpreted.")
+      
+      unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
+      unstand<-subset(unstand, unstand$free != 0)                    
+      unstand$free<-NULL
+      results<-unstand
+      colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate")
+      
+      ##replace V1-VX general form in output with user provided trait names
+      for(i in 1:nrow(results)){
+        for(p in 1:length(traits)){
+          results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
+          results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+        }
+      }
+      
+    print(results)  
+    }
     
+    if(class(bread2$value) == "matrix"){
     #create the "lettuce" part of the sandwich
     lettuce <- S2.W%*%S2.delt
     
@@ -764,13 +810,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     Model_ML <- parTable(Model1_Results)
     
+    constraints<-subset(Model_ML$label, Model_ML$label != "")
+    constraints2<-duplicated(constraints)
+    
     #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
     if(":=" %in% Model_ML$op){print("SEs of ghost parameters are not available for ML estimation")}
     
     ModelQ_ML <- parTable(Model1_Results)
-    
-    constraints<-subset(Model_ML$label, Model_ML$label != "")
-    constraints2<-duplicated(constraints)
     
     ##remove any parameter constraint labels
     ModelQ_ML<-subset(ModelQ_ML, ModelQ_ML$plabel != "")
@@ -1028,8 +1074,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
     
     results<-cbind(unstand,SE,stand,SE_stand)
+    }
   }
   
+if(class(bread2$value) == "matrix"){  
   ##name the columns of the results file
   colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate","Unstandardized_SE","Standardized_Est","Standardized_SE")
   
@@ -1082,7 +1130,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   }
   
   if(imp_cov == FALSE){
-  return(list(modelfit=modelfit,results=results))
+    return(list(modelfit=modelfit,results=results))
   }
   
   if(imp_cov == TRUE){
@@ -1096,7 +1144,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     resid_cov[[2]]<-implied2
     names(resid_cov) <- c("Model Implied Covariance Matrix", "Residual Covariance Matrix: Calculated as Observed Cov - Model Implied Cov")
     return(list(modelfit=modelfit,results=results,resid_cov=resid_cov))
-    }
+  }
+}
   
 }
-
