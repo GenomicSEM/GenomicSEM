@@ -769,6 +769,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     ModelQ_ML <- parTable(Model1_Results)
     
+    constraints<-subset(Model_ML$label, Model_ML$label != "")
+    constraints2<-duplicated(constraints)
+    
     ##remove any parameter constraint labels
     ModelQ_ML<-subset(ModelQ_ML, ModelQ_ML$plabel != "")
     
