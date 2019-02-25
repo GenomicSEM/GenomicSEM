@@ -737,7 +737,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE)
     }
     
-    if(fit_cov == TRUE){
+    if(imp_cov == TRUE){
       implied<-as.matrix(fitted(Model1_Results))[1]
       f<-S_LD
       f[upper.tri(f)] <- 0
