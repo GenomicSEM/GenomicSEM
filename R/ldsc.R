@@ -278,8 +278,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         n.snps <- nrow(merged)
         removed.snps <- remaining.snps-n.snps
         
-        cat("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max,paste0("(",n.snps," SNPs remain)"),"\n")
-        
+        cat("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max1, "for", chi1, "or SNPs with Chi^2 >",chisq.max2, "for", chi2, paste0("(",n.snps," SNPs remain)"),"\n")
+       
         ## ADD INTERCEPT:
         merged$intercept <- 1
         merged$x.tot <- merged$L2
@@ -311,7 +311,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged$initial.w2 <- sqrt(merged$w2)
         
         
-        merged$weights_cov <- merged$initial.w + merged$initial.w2  /sum(merged$initial.w + merged$initial.w2 )
+        merged$weights_cov <- (merged$initial.w + merged$initial.w2)/sum(merged$initial.w + merged$initial.w2 )
         
         N.bar <- sqrt(mean(merged$N.x)*mean(merged$N.y))
          
