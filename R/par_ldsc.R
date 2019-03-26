@@ -1,10 +1,12 @@
 par_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample.prev=NULL,out,trait.names=NULL){
+ 
   
-  require(plyr)
-  require(e1071)
-  require(data.table)
-  require(readr)
-  require(gdata)
+ # Functions doesnt need these includes right?
+ # require(plyr)
+ # require(e1071)
+ # require(data.table)
+ # require(readr)
+ # require(gdata)
   
   ##create log file
   log2<-paste(trait.names,collapse="_")
