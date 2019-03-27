@@ -1,5 +1,5 @@
 
-addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=TRUE,cores=NULL){
+addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=FALSE,cores=NULL){
   time<-proc.time()
   
   V_LD<-as.matrix(covstruc[[1]])
