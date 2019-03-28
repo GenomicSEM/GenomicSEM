@@ -1,4 +1,4 @@
-par_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample.prev=NULL,out,trait.names=NULL){
+part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample.prev=NULL,out,trait.names=NULL){
  
   
  # Functions doesnt need these includes right?
@@ -786,8 +786,10 @@ par_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample.
   }
   rownames(Tau_Flag)<-names(S_Tau)
 
-  Results<-(list(V=V,S=S,S_Tau=S_Tau,V_Tau=V_Tau,Tau_Flag=Tau_Flag,I=I,N=N.vec,m=m))
-  save(Results, file = paste0(log2,".RData",sep=""))
+  #Results<-(list(V=V,S=S,S_Tau=S_Tau,V_Tau=V_Tau,Tau_Flag=Tau_Flag,I=I,N=N.vec,m=m))
+  #save(Results, file = paste0(log2,".RData",sep=""))
+  
+  return(list(V=V,S=S,S_Tau=S_Tau,V_Tau=V_Tau,Tau_Flag=Tau_Flag,I=I,N=N.vec,m=m))
   
   end.time <- Sys.time()
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
