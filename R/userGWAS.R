@@ -2,6 +2,12 @@
 userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE){ 
   time<-proc.time()
   
+   ##determine if the model is likely being listed in quotes and print warning if so
+  test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
+  if(all(test) == FALSE){
+    warning("Your model name may be listed in quotes; please remove the quotes and try re-running if the function has returned stopped running after returning an error.")
+  }
+  
   ##pull V and S matrices
   V_Full<-(Output[[1]])
   S_Full<-(Output[[2]])
