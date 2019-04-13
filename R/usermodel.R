@@ -2,6 +2,12 @@
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE){ 
   time<-proc.time()
   
+  ##determine if the model is likely being listed in quotes and print warning if so
+  test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
+  if(all(test) == FALSE){
+    warning("Your model name may be listed in quotes; please remove the quotes and try re-running if the function has returned an error about not locating the ReorderModel.")
+  }
+ 
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
   #'k' is the number of variables in the model
   #'fit' is the fit function of the regression model
