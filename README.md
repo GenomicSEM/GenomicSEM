@@ -23,7 +23,7 @@ Run a GWAS where the [SNP is included](https://github.com/MichelNivard/GenomicSE
 
 Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/6.-GenomicSEM-and-OpenMx)
 
-**Instalation:**
+**Installation:**
 
 We assume you are running R 3.4.1 or newer. We guarantee no backward or forward comparability. If something breaks please raise the issue on GitHub and we will try and fix it ASAP. 
 
