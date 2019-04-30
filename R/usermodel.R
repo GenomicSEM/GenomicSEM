@@ -83,16 +83,24 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   colnames(V_LD)<-V_Names
   rownames(V_LD)<-V_Names
   
+
   ##determine whether all variables in S are in the model
   ##if not, remove them from S_LD and V_LD for this particular run
+  remove2<-c()
+  w<-1
   for(i in 1:length(S_names)){
     b<-grepl(S_names[i], model)
     if(b == FALSE){
       remove<-colnames(S_LD)[i]
-      S_LD<-S_LD[-i,-i]
-      traits<-traits[-i]
+      remove2[w]<-i
       V_LD <- V_LD[-grep(pattern=remove,row.names(V_LD)),-grep(pattern=remove,colnames(V_LD))]
+      w<-w+1
     }else{}
+  }
+  
+  if(is.null(remove2) == FALSE){
+  S_LD<-S_LD[-remove2,-remove2]
+  traits<-traits[-remove2]
   }
   
   ##redefine k and z and model names after removing non-used variables
