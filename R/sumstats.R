@@ -506,7 +506,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       if(linprob[i] == F){
         if(OLS[i] == F){                                     
           if(se.logit[i] == F){
-            cat(print(paste("Performing transformation under the assumption that the effect column is an odds ratio and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
+            cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
             
             if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
             if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
@@ -518,7 +518,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
             colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
       
       if(se.logit[i]== T){
-        cat(print(paste("Performing transformation under the assumption that the effect column is an odds ratio and the SE column is a logistic SE (i.e., NOT the SE of the odds ratio) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta and the SE column is a logistic SE (i.e., NOT the SE of the odds ratio) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
         
         if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
         if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
