@@ -475,6 +475,44 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           ghost2<-cbind(ghost,se.ghost)
           colnames(ghost2)[7]<-"SE"}else{}} 
       
+      
+      ##check whether correlations among latent variables are positive definite
+      if(r > 1){
+      empty<-tryCatch.W.E(check<-lowerTriangle(lavInspect(Model1_Results,"cor.lv")[1:r,1:r]))
+      t<-max(check)
+      t2<-min(check)
+      
+      if(t > 1 | t2 < -1){
+        print("Error: The primary model produced correlations among your latent variables that are either greater than 1 or less than -1. 
+              Consquently, model fit estimates could not be computed and results should likely not be interpreted. Results are provided below 
+              to enable troubleshooting. A model constraint that constrains the latent correlations to be above -1 or less than 1 is suggested.")
+        
+        unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
+        unstand<-subset(unstand, unstand$free != 0)                    
+        unstand$free<-NULL
+        results<-unstand
+        colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate")
+        
+        ##replace V1-VX general form in output with user provided trait names
+        for(i in 1:nrow(results)){
+          for(p in 1:length(traits)){
+            results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
+            results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+          }
+        }
+        if(exists("ghost2") == "TRUE"){
+          ghost2$free<-NULL
+          ghost2$label<-NULL
+          unstand2<-rbind(cbind(results,SE),ghost2)
+        }else{unstand2<-cbind(results,SE)}
+        
+        print(unstand2)
+        check<-1
+      }}else{
+      check<-2
+      
+      
+      
       ModelQ_WLS <- parTable(Model1_Results)
       
       ##remove any parameter constraint labels
@@ -1123,7 +1161,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     }
   }
   
-  if(class(bread2$value) == "matrix"){  
+  if(class(bread2$value) == "matrix" & check == 2){  
     ##name the columns of the results file
     colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate","Unstandardized_SE","Standardized_Est","Standardized_SE")
     
