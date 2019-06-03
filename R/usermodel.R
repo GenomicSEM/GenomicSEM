@@ -83,7 +83,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   colnames(V_LD)<-V_Names
   rownames(V_LD)<-V_Names
   
-
   ##determine whether all variables in S are in the model
   ##if not, remove them from S_LD and V_LD for this particular run
   remove2<-c()
@@ -99,8 +98,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   }
   
   if(is.null(remove2) == FALSE){
-  S_LD<-S_LD[-remove2,-remove2]
-  traits<-traits[-remove2]
+    S_LD<-S_LD[-remove2,-remove2]
+    traits<-traits[-remove2]
   }
   
   ##redefine k and z and model names after removing non-used variables
@@ -144,7 +143,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
                                      warning = w.handler),
          warning = W)
   }
-  
+
   ##run the model
   if(std.lv == FALSE){
     empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE)) 
@@ -153,7 +152,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   if(std.lv == TRUE){
     empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE)) 
   }
-  
+
   ##determine number of latent variables from writing extended model
   r<-nrow(lavInspect(ReorderModel, "cor.lv"))
   lat_labs<-colnames(lavInspect(ReorderModel, "cor.lv"))
@@ -252,7 +251,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   }
   
   if(CFIcalc==TRUE){
-
+    
     ##code to write null model for calculation of CFI
     write.null<-function(k, label = "V", label2 = "VF") {
       Model3<-""
@@ -475,12 +474,15 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           ghost2<-cbind(ghost,se.ghost)
           colnames(ghost2)[7]<-"SE"}else{}} 
       
-      
-      ##check whether correlations among latent variables are positive definite
+  
+      ##check whether correlations among latent variables is positive definite
       if(r > 1){
       empty<-tryCatch.W.E(check<-lowerTriangle(lavInspect(Model1_Results,"cor.lv")[1:r,1:r]))
       t<-max(check)
-      t2<-min(check)
+      t2<-min(check)}else{
+        t<-1
+        t2<--1
+      }
       
       if(t > 1 | t2 < -1){
         print("Error: The primary model produced correlations among your latent variables that are either greater than 1 or less than -1. 
@@ -508,11 +510,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         print(unstand2)
         check<-1
-      }}else{
+      }else{
       check<-2
-      
-      
-      
       ModelQ_WLS <- parTable(Model1_Results)
       
       ##remove any parameter constraint labels
@@ -565,12 +564,16 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart))
       }
       
+      
+      
       if(std.lv == TRUE){
         testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart,std.lv=TRUE))
       }
       
       testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
       testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
+      
+      
       
       if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
         
@@ -829,7 +832,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       results<-cbind(unstand2,stand2)
       
     }
-  }}
+    }
+  }
   
   ##ML estimation
   if(estimation=="ML"){
@@ -1231,4 +1235,4 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     }
     }
   
-  }
+    }
