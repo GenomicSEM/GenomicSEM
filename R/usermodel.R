@@ -829,7 +829,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       results<-cbind(unstand2,stand2)
       
     }
-  }
+  }}
   
   ##ML estimation
   if(estimation=="ML"){
