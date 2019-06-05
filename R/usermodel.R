@@ -405,7 +405,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       print("Error: The primary model did not converge! Additional warnings or errors are likely being printed by lavaan. 
             The model output is also printed below (without standard errors) in case this is helpful for troubleshooting. Please note
             that these results should not be interpreted.")
-      
+      check<-1
       unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
       unstand<-subset(unstand, unstand$free != 0)                    
       unstand$free<-NULL
