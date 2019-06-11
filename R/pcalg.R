@@ -32,7 +32,7 @@ for(i in 1:250){
 
 sig[lower.tri(sig,diag = T)] <- suffStat$baz[i,]
 sig<- makeSymm(sig)
-pcor[i,] <- -cor2pcor(nearPD(sig[c(x,y,S),c(x,y,S)])$mat)[1,2]
+pcor[i,] <- -cor2pcor(sig[c(x,y,S),c(x,y,S)]))[1,2]
 
 }
 
