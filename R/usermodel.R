@@ -385,8 +385,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     ##save model implied matrix and difference between observed and model implied S_LD matrix
     if(imp_cov == TRUE){
       implied<-as.matrix(fitted(Model1_Results))[1]
+      implied_order<-colnames(S_LD)
+      implied[[1]]<-implied[[1]][implied_order,implied_order]
       f<-S_LD
-      f[upper.tri(f)] <- 0
       implied2<-f-implied[[1]]
     }
     
@@ -848,10 +849,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE)
     }
     check<-2
+    
     if(imp_cov == TRUE){
       implied<-as.matrix(fitted(Model1_Results))[1]
+      implied_order<-colnames(S_LD)
+      implied[[1]]<-implied[[1]][implied_order,implied_order]
       f<-S_LD
-      f[upper.tri(f)] <- 0
       implied2<-f-implied[[1]]
     }
     
