@@ -1,7 +1,6 @@
 
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE){ 
   time<-proc.time()
-  tst <- 1
   ##determine if the model is likely being listed in quotes and print warning if so
   test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
   if(any(test) != TRUE){
