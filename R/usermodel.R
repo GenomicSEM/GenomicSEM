@@ -86,6 +86,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   ##if not, remove them from S_LD and V_LD for this particular run
   remove2<-c()
   w<-1
+   
+  ##also for exact cases
+  for(i in 1:length(S_names)){
+    S_names[[i]]<-paste0("\\b", S_names[[i]],"\\b",sep="")
+  }
+
   for(i in 1:length(S_names)){
     b<-grepl(S_names[i], model)
     if(b == FALSE){
@@ -100,7 +106,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     S_LD<-S_LD[-remove2,-remove2]
     traits<-traits[-remove2]
   }
-  
+
   ##redefine k and z and model names after removing non-used variables
   k<-ncol(S_LD)
   z<-(k*(k+1))/2
@@ -108,6 +114,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   S_names<-write.names(k=k)
   colnames(S_LD)<-S_names
   rownames(S_LD)<-S_names
+   
+  for(i in 1:length(before)){
+    before[[i]]<-paste0("\\<", before[[i]],"\\>",sep="")
+  }
   
   for(i in 1:length(traits)){
     model<-gsub(before[[i]], S_names[[i]], model)
@@ -142,7 +152,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
                                      warning = w.handler),
          warning = W)
   }
-
+  
   ##run the model
   if(std.lv == FALSE){
     empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE)) 
@@ -151,6 +161,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   if(std.lv == TRUE){
     empty2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE)) 
   }
+  
+  if(class(empty2$value) != "lavaan"){
+  latentcorr<-grepl("not defined:", empty2$value$message[1][1])
+  if(latentcorr == TRUE){
+    warning(paste("The function has likely either stopped because a variable has been misnamed in the model or because you have tried to estimate a correlation between an observed and latent variable. In the latter case, one workaround
+                  is to define a latent variable solely by the observed variable."))
+  }}
 
   ##determine number of latent variables from writing extended model
   r<-nrow(lavInspect(ReorderModel, "cor.lv"))
