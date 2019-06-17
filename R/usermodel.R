@@ -78,7 +78,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   ##name columns of V to remove any variables not used in the current analysis
   y<-expand.grid(S_names,S_names)
   y<-y[!duplicated(apply(y,1,function(x) paste(sort(x),collapse=''))),]
-  V_Names<-paste0(y$Var1,y$Var2)
+ V_Names<-paste(y$Var1,y$Var2,sep=" ")
   colnames(V_LD)<-V_Names
   rownames(V_LD)<-V_Names
   
@@ -86,18 +86,18 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   ##if not, remove them from S_LD and V_LD for this particular run
   remove2<-c()
   w<-1
-   
+  
   ##also for exact cases
   for(i in 1:length(S_names)){
     S_names[[i]]<-paste0("\\b", S_names[[i]],"\\b",sep="")
   }
-
+  i<-1
   for(i in 1:length(S_names)){
     b<-grepl(S_names[i], model)
     if(b == FALSE){
-      remove<-colnames(S_LD)[i]
+      remove<-paste0("\\b", colnames(S_LD)[i],"\\b",sep="")
       remove2[w]<-i
-      V_LD <- V_LD[-grep(pattern=remove,row.names(V_LD)),-grep(pattern=remove,colnames(V_LD))]
+      V_LD <- V_LD[-grep(pattern=remove[1],row.names(V_LD)),-grep(pattern=remove[1],colnames(V_LD))]
       w<-w+1
     }else{}
   }
