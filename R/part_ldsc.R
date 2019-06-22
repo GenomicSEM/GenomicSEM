@@ -1,24 +1,27 @@
+
 part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample.prev=NULL,out,trait.names=NULL){
- 
   
- # Functions doesnt need these includes right?
- # require(plyr)
- # require(e1071)
- # require(data.table)
- # require(readr)
- # require(gdata)
+  
+  #require(plyr)
+  #require(e1071)
+  #require(data.table)
+  #require(readr)
+  #require(gdata)
+  #require(dplyr)
   
   ##create log file
   log2<-paste(trait.names,collapse="_")
   log.file <- file(paste0(log2, "_Partitioned.log"),open="wt")
-  sink(log.file,split=T,type="output")
-  error.file <- file(paste0(out,".error"),open="wt")
-  sink(error.file,type="message")
+  #sink(log.file,split=T,type="output")
+  #error.file <- file(paste0(out,".error"),open="wt")
+  #sink(error.file,type="message")
   begin.time <- Sys.time()
+
+  Operating<-Sys.info()[['sysname']]
   
   ##print start time
   cat(paste("Analysis started at",begin.time),"\n")
-
+  
   if(!is.null(traits)){
     cat("The following traits were analyzed:",trait.names,"\n")
   }
@@ -45,14 +48,23 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   x.files <- sort(Sys.glob(paste0(ld1,"*l2.ldscore*")))
   
   ##function to read in the files. used with ldply below
+  if(Operating != "Linux"){
   readLdFunc <- function(LD.in){
     if(substr(x=LD.in,start=nchar(LD.in)-1,stop=nchar(LD.in))=="gz"){
       dum=fread(input=paste("gzcat",LD.in),header=T,showProgress=F,data.table=F)
     }else{
       dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
     }
-  }
-  ##^changed this to gzcat for non-Linux users [AG]
+  }}
+  
+  if(Operating == "Linux"){
+    readLdFunc <- function(LD.in){
+      if(substr(x=LD.in,start=nchar(LD.in)-1,stop=nchar(LD.in))=="gz"){
+        dum=fread(input=paste("zcat",LD.in),header=T,showProgress=F,data.table=F)
+      }else{
+        dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
+      } 
+  }}
   
   x <- ldply(.data=x.files,.fun=readLdFunc)
   x$CM <- NULL
@@ -62,7 +74,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   m.files <- sort(Sys.glob(paste0(ld1,"*M_5_50")))
   readMFunc <- function(x){dum=read.table(file=x,header=F)}
   m <- ldply(.data=m.files,.fun=readMFunc)
-  
+ 
   ##read in additional annotations on top of baseline if relevant
   if(!is.null(ld2)){
     for(i in 1:length(ld2)){
@@ -74,10 +86,6 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
       if(ncol(extra.ldscore)==2){colnames(extra.ldscore)[2] <- c(ld2[i])}
       extra.m.files <- sort(Sys.glob(paste0(ld2[i],"*M_5_50")))
       extra.m <- ldply(.data=extra.m.files,.fun=readMFunc)
-      if((("primary" %in% ld2 && "bloodInBrain" %in% ld2)||("brain_all" %in% ld2 && "brainInBlood" %in% ld2))&&(ld2[i]=="brainInBlood" || ld2[i]=="bloodInBrain")){
-        extra.ldscore <- extra.ldscore[,1:2]
-        extra.m <- extra.m[,1]
-      }
       if(identical(as.character(x$SNP),as.character(extra.ldscore$SNP))==T){
         colnames.x <- colnames(x)
         colnames.extra.ldscore <- colnames(extra.ldscore)[2:ncol(extra.ldscore)]
@@ -138,7 +146,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     S_List[[i]] = matrix(NA,nrow=n.traits,ncol=n.traits)
     Tau_List[[i]] = matrix(NA,nrow=n.traits,ncol=n.traits)
   } 
-
+  
   total_pseudo<-matrix(NA,nrow=200,ncol=n.V*n.annot)
   total_pseudo_tau<-matrix(NA,nrow=200,ncol=n.V*n.annot)
   
@@ -161,33 +169,40 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   
   for(i in 1:length(annot.files)){
     header <- read.table(annot.files[i], header = TRUE, nrow = 1)
-    annot <- fread(input=paste("gzcat",annot.files[i]),skip=1,header=FALSE,showProgress=F,data.table=F)
+    if(Operating != "Linux"){
+    annot <- fread(input=paste("gzcat",annot.files[i]),skip=1,header=FALSE,showProgress=F,data.table=F)}
+    if(Operating == "Linux"){
+      annot <- fread(input=paste("zcat",annot.files[i]),skip=1,header=FALSE,showProgress=F,data.table=F)
+    }
     setnames(annot, colnames(header))
     annot$CM <- NULL
     if(is.null(ld2)==F){
       for(j in 1:length(ld2)){
         extra.annot.files <- sort(Sys.glob(paste0(ld2[j],"*annot.gz")))
-        extra.annot <- fread(input=paste("gzcat",extra.annot.files[i]),header=T,showProgress=F,data.table=F)
+        if(Operating != "Linux"){
+        extra.annot <- fread(input=paste("gzcat",extra.annot.files[i]),header=T,showProgress=F,data.table=F)}
+        if(Operating == "Linux"){
+          extra.annot <- fread(input=paste("zcat",extra.annot.files[i]),header=T,showProgress=F,data.table=F) 
+        }
         extra.annot$CHR <- NULL
         extra.annot$BP <- NULL
         extra.annot$CM <- NULL
         if(ncol(extra.annot)==2){colnames(extra.annot)[2] <- ld2[j]}
-        if((("primary" %in% ld && "bloodInBrain" %in% ld)||("brain_all" %in% ld && "brainInBlood" %in% ld))&&(ld2[j]=="brainInBlood" || ld2[j]=="bloodInBrain")){
-          extra.annot <- extra.annot[,1:2]
-        }
         if(identical(as.character(annot$SNP),as.character(extra.annot$SNP))==T){
           colnames.annot <- colnames(annot)
           colnames.extra.annot <- colnames(extra.annot)[2:ncol(extra.annot)]
           annot <- cbind(annot,extra.annot[,2:ncol(extra.annot)])
           colnames(annot) <- c(colnames.annot,colnames.extra.annot)
         }else{
-          annot <- merge(x=annot,y=extra.annot,by="SNP")
+          if(nrow(annot) == nrow(extra.annot)){
+          annot<-cbind(annot, extra.annot)}
+          else{annot <- merge(x=annot,y=extra.annot,by="SNP")}
         }
         rm(extra.annot)
         gc()
       }
     }
-    
+ 
     frq <- fread(input=frq.files[i],header=T,showProgress=F,data.table=F)
     
     frq <- frq[frq$MAF > 0.05 & frq$MAF < 0.95,]
@@ -207,12 +222,11 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   overlap.matrix <- matrix(data=NA,nrow=n.annot,ncol=n.annot)
   colnames(overlap.matrix) <- rownames(overlap.matrix) <- rownames(m)
   for(i in 1:n.annot){overlap.matrix[i,] <- annot.matrix[i,]/m}
-  #########
   
   ##added##
   j<-1
   k<-1
-  # count the total nummer of runs, both loops
+  # count the total number of runs, both loops
   s <- 1
   
   for(j in 1:n.traits){
@@ -220,7 +234,11 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     chi1 <- traits[j]
     
     if(substr(x=chi1,start=nchar(chi1)-1,stop=nchar(chi1))=="gz"){
-      y1 <- fread(paste("gzcat",chi1),header=T,showProgress=F,data.table=F)
+      if(Operating != "Linux"){
+      y1 <- fread(paste("gzcat",chi1),header=T,showProgress=F,data.table=F)}
+      if(Operating == "Linux"){
+        y1 <- fread(paste("zcat",chi1),header=T,showProgress=F,data.table=F)
+      }
     }else{
       y1 <- fread(chi1,header=T,showProgress=F,data.table=F)
     }
@@ -299,7 +317,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         cats <- coefs*m
         reg.tot <- sum(cats)
         est <- as.matrix(cats/reg.tot)
-
+        
         delete.from <- seq(from=1,to=nrow(xtx.block.values),by=ncol(xtx.block.values))
         delete.to <- seq(from=ncol(xtx.block.values),to=nrow(xtx.block.values),by=ncol(xtx.block.values))
         delete.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
@@ -315,7 +333,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         pseudo.values_tau <- matrix(data=NA,nrow=n.blocks,ncol=length(reg))
         colnames(pseudo.values_tau) <- colnames(weighted.LD)
         for(i in 1:n.blocks){pseudo.values_tau[i,] <- (n.blocks*reg)-((n.blocks-1)* delete.values[i,])} 
-       
+        
         jackknife.cov <- cov(pseudo.values_tau)/n.blocks
         jackknife.se <- sqrt(diag(jackknife.cov))
         intercept.se <- jackknife.se[length(jackknife.se)]
@@ -323,14 +341,12 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         
         Coefficient.std.error=data.frame(sqrt(diag(coef.cov)))
         Coefficient.Z<-data.frame(coefs/sqrt(diag(coef.cov)))
-  
-        cat.cov <- coef.cov*(m %*% t(m))
-        #Tau.std.error=data.frame(sqrt(diag(cat.cov)))
-        ##^^Added 3.24.19; think this is Tau SE, but wouldn't provide off-diagonal elements in current form
         
+        cat.cov <- coef.cov*(m %*% t(m))
+  
         tot.cov <- sum(cat.cov)
         tot.se <- sqrt(tot.cov)
-       
+        
         ##for overall heritability
         if(is.null(c(pop.prev,samp.prev))){
           cat("h2:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
@@ -355,52 +371,12 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         cat("Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n",sep="")
         cat("Ratio: ",round(ratio,4),"(",round(ratio.se,4),")","\n",sep="")
         
-        ####NEW HILL CODE######
-        ########## begin part with 2 surroundings blocks removed ##########
-        #delete.values.K3 <- matrix(data=NA,nrow=n.blocks,ncol=ncol(weighted.LD))
-        #colnames(delete.values.K3)<- colnames(weighted.LD)
-        #first block
-        #xty.delete.K3 <- xty-xty.block.values[1,]-xty.block.values[2,]
-        #xtx.delete.K3 <- xtx-xtx.block.values[delete.from[1]:delete.to[1],]-xtx.block.values[delete.from[2]:delete.to[2],]
-        #delete.values.K3[1,] <- solve(xtx.delete.K3)%*% xty.delete.K3
-        #last block
-        #xty.delete.K3 <- xty-xty.block.values[(n.blocks-1),]-xty.block.values[n.blocks,]
-        #xtx.delete.K3 <- xtx-xtx.block.values[delete.from[(n.blocks-1)]:delete.to[(n.blocks-1)],]-xtx.block.values[delete.from[n.blocks]:delete.to[n.blocks],]
-        #delete.values.K3[n.blocks,] <- solve(xtx.delete.K3)%*% xty.delete.K3
-        #remaining blocks
-        #for(i in 2:(n.blocks-1)){
-        #  xty.delete.K3 <- xty-xty.block.values[(i-1),]-xty.block.values[i,]-xty.block.values[(i+1),]
-        #  xtx.delete.K3 <- xtx-xtx.block.values[delete.from[(i-1)]:delete.to[(i-1)],]-xtx.block.values[delete.from[i]:delete.to[i],]-xtx.block.values[delete.from[(i+1)]:delete.to[(i+1)],]
-        #  delete.values.K3[i,] <- solve(xtx.delete.K3)%*% xty.delete.K3
-        #}
-        ########## end part with 2 surrounding blocks removed ##########
-        
-        ########## begin part about cross-validation ##########
-        #fitted.values <- merged[,c("CHR","BP","SNP")]
-        #fitted.values$Z <- y[y$SNP %in% fitted.values$SNP,]$Z
-        #fitted.values$observed.chi <- merged$chi
-        #fitted.values$weighted.chi <- weighted.chi
-        #fitted.values$predicted.weighted.chi <- NA
-        #fitted.values$predicted.weighted.chi.K <- NA
-        #fitted.values$predicted.weighted.chi.K3 <- NA
-        #fitted.values$predicted.unweighted.chi <- NA
-    
-        ##using unweighted LD scores excluding the intercept
-        #for(i in 1:n.blocks){
-        #  fitted.values[select.from[i]:select.to[i],]$predicted.weighted.chi <- LD.scores[select.from[i]:select.to[i],-length(reg)] %*% reg[-length(reg)]
-        #  fitted.values[select.from[i]:select.to[i],]$predicted.weighted.chi.K <-  LD.scores[select.from[i]:select.to[i],-length(reg)] %*% delete.values[i,-length(reg)]
-        #  fitted.values[select.from[i]:select.to[i],]$predicted.weighted.chi.K3 <- LD.scores[select.from[i]:select.to[i],-length(reg)] %*% delete.values.K3[i,-length(reg)]
-       # }
-
-        #fitted.values$predicted.weighted.chi.K_tau<-(fitted.values$predicted.weighted.chi)*merged$weights
-        
         cat("Partitioning the heritability over the annotations","\n")
         
         ##Michels added code for standard heritability
         HSQ.MICHEL <- overlap.matrix %*% cats
         
         ###new delete values with N.bar added to denominator for standard heritability [AG]
-
         delete.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
         colnames(delete.values) <- colnames(weighted.LD)
         for(i in 1:n.blocks){
@@ -436,7 +412,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         d<-(s*n.annot)}
         
         total_pseudo[,t:d]<-pseudo.values
-      
+        
         ### Total count
         s <- s+1
       }
@@ -447,7 +423,10 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         chi2 <- traits[k]
         
         if(substr(x=chi2,start=nchar(chi2)-1,stop=nchar(chi2))=="gz"){
-          y2 <- fread(paste("gzcat",chi2),header=T,showProgress=F,data.table=F)
+          if(Operating != "Linux"){
+          y2 <- fread(paste("gzcat",chi2),header=T,showProgress=F,data.table=F)}
+          if(Operating == "Linux"){
+            y2 <- fread(paste("zcat",chi2),header=T,showProgress=F,data.table=F)}
         }else{
           y2 <- fread(chi2,header=T,showProgress=F,data.table=F)
         }
@@ -554,9 +533,9 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         
         est <- as.matrix(cats/reg.tot)
         
-       delete.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
-       delete.from <- seq(from=1,to=nrow(xtx.block.values),by=ncol(xtx.block.values))
-       delete.to <- seq(from=ncol(xtx.block.values),to=nrow(xtx.block.values),by=ncol(xtx.block.values))
+        delete.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
+        delete.from <- seq(from=1,to=nrow(xtx.block.values),by=ncol(xtx.block.values))
+        delete.to <- seq(from=ncol(xtx.block.values),to=nrow(xtx.block.values),by=ncol(xtx.block.values))
         colnames(delete.values)<- colnames(weighted.LD)
         for(i in 1:n.blocks){
           xty.delete <- xty-xty.block.values[i,]
@@ -582,7 +561,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         ##Added
         Coefficient.std.error=data.frame(sqrt(diag(coef.cov)))
         Coefficient.Z<-data.frame(coefs/sqrt(diag(coef.cov)))
-
+        
         
         mean.ZZ <- mean(merged$ZZ)
         cat("Results for covariance between:",chi1,"and",chi2,"\n")
@@ -607,7 +586,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         pseudo.values <- matrix(data=NA,nrow=n.blocks,ncol=length(cats))
         colnames(pseudo.values) <- colnames(weighted.LD)[1:(ncol(weighted.LD)-1)]
         for(i in 1:n.blocks){pseudo.values[i,] <- (n.blocks*cats)-((n.blocks-1)* delete.values[i,1:(ncol(delete.values)-1)]*m)}
-
+        
         N.vec[1,s] <- N.bar 
         
         ##add in bivariate intercept to both sides of the intercept [I] matrix
@@ -637,7 +616,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
       }
     }
   }
-  
+ 
   S<-vector(mode="list",length=n.annot)
   S_Tau<-vector(mode="list",length=n.annot)
   V<-vector(mode="list",length=n.annot)
@@ -669,7 +648,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     for(p in 1:n.V){
       if(u + p == 2){
         Small_V[[r]]<-total_pseudo2[1:n.annot,1:n.annot]
-        }
+      }
       if(u == 1 & p != 1){
         n<-n.annot*(p-1)+1  
         v<-n+n.annot-1
@@ -725,8 +704,12 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   
   f<-1
   length<-ncol(S[[1]])
+  
+
+  Liab.S<-ifelse(is.na(Liab.S), 1, Liab.S)
+  
   for(f in 1:n.annot){
- 
+    
     ### Scale S and V to liability (Liab.S = matrix of 1s when no pop or samp prev provided)
     ##cov is what changes across partitions
     S[[f]] <- diag(as.vector(sqrt(Liab.S))) %*% S_List[[f]] %*% diag(as.vector(sqrt(Liab.S)))
@@ -749,7 +732,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     
     #rescale the SEs by the same multiples that the S_Tau matrix was rescaled by
     Dvcovl_Tau<-as.vector(Dvcov_Tau*t(scaleO_Tau))
-  
+    
     #obtain the sampling correlation matrix by standardizing the original V matrix
     vcor<-cov2cor(v.out[[f]])
     
@@ -758,18 +741,18 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     
     #rescale the sampling correlation matrix by the appropriate diagonals
     V[[f]]<-diag(Dvcovl)%*%vcor%*%diag(Dvcovl)
-   
+    
     #rescale the sampling correlation matrix by the appropriate diagonals
     V_Tau[[f]]<-diag(Dvcovl_Tau)%*%vcor_Tau%*%diag(Dvcovl_Tau)
-
+    
     ##name columns of S based on trait names. Provide general form V1:VX if none provided
     if(is.null(trait.names)){
       traits <- paste0("V",1:length)
       colnames(S[[f]])<-(traits)
       colnames(S_Tau[[f]])<-(traits)
-      }else{colnames(S[[f]])<-(trait.names)
-      colnames(S_Tau[[f]])<-(trait.names)
-      }
+    }else{colnames(S[[f]])<-(trait.names)
+    colnames(S_Tau[[f]])<-(trait.names)
+    }
     
     ##name list object by partition
     names(V)[[f]]<-names(SampleVar[[1]][f])
@@ -777,7 +760,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     names(S_Tau)[[f]]<-names(SampleVar[[1]][f])
     names(V_Tau)[[f]]<-names(SampleVar[[1]][f])
   }
-   
+  
   Tau_Flag = matrix(NA,nrow=length(S_Tau),ncol=1)
   for(i in 1:length(S_Tau)){
     if(any(diag(S_Tau[[i]]) < 0)==TRUE){
@@ -785,9 +768,6 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     }else{Tau_Flag[[i,1]]<-0}
   }
   rownames(Tau_Flag)<-names(S_Tau)
-
-  #Results<-(list(V=V,S=S,S_Tau=S_Tau,V_Tau=V_Tau,Tau_Flag=Tau_Flag,I=I,N=N.vec,m=m))
-  #save(Results, file = paste0(log2,".RData",sep=""))
   
   return(list(V=V,S=S,S_Tau=S_Tau,V_Tau=V_Tau,Tau_Flag=Tau_Flag,I=I,N=N.vec,m=m))
   
@@ -801,3 +781,4 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   gc()
   sink()
 }
+
