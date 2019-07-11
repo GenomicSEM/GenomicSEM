@@ -1,5 +1,4 @@
 
-
 commonfactor <-function(covstruc,estimation="DWLS"){ 
   time<-proc.time()
   
@@ -93,7 +92,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     
     return(Model5)
   } 
-  
+
   ##code to write null model for calculation of CFI
   write.null<-function(k, label = "V", label2 = "VF") {
     Model3<-""
@@ -182,10 +181,10 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   
   ##create the names
   S_names<-write.names(k=k)
-       
- if(is.null(traits)){
-  traits<-S_names} 
-         
+  
+  if(is.null(traits)){
+    traits<-S_names} 
+  
   ##name the columns and rows of the S matrix
   rownames(S_LD) <- S_names
   colnames(S_LD) <- S_names
@@ -206,18 +205,12 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a diagonal weight matrix: 
   z<-(k*(k+1))/2
-  V_LD2<-diag(z)
-  diag(V_LD2)<-diag(V_LD)
-  W <- solve(V_LD2)
-  
-  ##run the model
-  ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2) 
-  
+ 
   ##save the ordering
-  order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
-  
-  ##run CFI model so itk know the reordering
-  fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2)
+  order <-(1:nrow(V_LD))
+
+  ##run CFI model so it knows the reordering
+  empty2<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2, optim.dx.tol = +Inf))
   orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
   
   ##reorder the weight (inverted V_LD) matrix
@@ -236,8 +229,95 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   if(estimation=="DWLS"){
     
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-    Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2)
+    empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
     
+    if(class(empty$value)[1] == "simpleError"){
+      print("The common factor initially failed to converge. A lower bound of 0 on residual variances has been added to try and troubleshoot this.")
+      
+      write.Model1 <- function(k, label = "V", label2 = "VF") {  
+        Model1 <- ""
+        for (i in 1) {
+          linestart <- paste("F1"," =~ NA*",label, i, sep = "")  
+          if (k-i > 0) {
+            linemid <- ""
+            for (j in (i+1):k) {
+              linemid <- paste(linemid, " + ", label, j, sep = "")
+            }
+          } else {linemid <- ""}
+          
+        }
+        Model1 <- paste(Model1, linestart, linemid, " \n ", "F1 ~~ 1*F1", " \n ", sep = "")
+        
+        ModelsatF<-""
+        for (i in 1:(k-1)) {
+          linestartc <- paste(label2, i, "~~ 0*", label2, i+1,  sep = "")
+          if (k-i >= 2) {
+            linemidc <- ""
+            for (j in (i+2):k) {
+              linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+            }
+          } else {linemidc <- ""}
+          ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+        } 
+        
+        Model1b <- ""
+        for (i in 1) {
+          linestartb <- paste("F1"," =~ 0*",label2, i, sep = "")  
+          if ((k-1)-i > 0) {
+            linemidb <- ""
+            for (j in (i+1):k) {
+              linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+            }
+          } else {linemidb <- ""}
+          
+        }
+        Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
+        
+        Model2<-""
+        for (p in 1:k) {
+          linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
+          Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+        
+        Model3<-""
+        for (p in 1:k) {
+          linestart3a <- paste(label, p, " ~~ ", letters[p], "*", label, p, sep = "")
+          linestart3b <- paste(letters[p], " > .001", sep = "")
+          Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
+        
+        Model4<-""
+        for (p in 1:k) {
+          linestart4 <- paste(label2, p, " ~~ 0*", label2, p, sep = "")
+          Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+        
+        Modelsat<-""
+        for (i in 1:(k-1)) {
+          linestartc <- paste(label, i, "~~ 0*", label, i+1,  sep = "")
+          if (k-i >= 2) {
+            linemidc <- ""
+            for (j in (i+2):k) {
+              linemidc <- paste(linemidc, " + 0*", label, j, sep = "")
+            }
+          } else {linemidc <- ""}
+          Modelsat <- paste(Modelsat, linestartc, linemidc, " \n ", sep = "")
+        } 
+        
+        Model5<-paste(Model1, ModelsatF, Model1b, Model2, Model3, Model4, Modelsat, sep = "")
+        
+        return(Model5)
+      }
+      Model1 <- write.Model1(k)
+      empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
+    }else{}
+    
+    if(class(empty$value)[1] == "simpleError"){
+      print("The common factor model failed to converge on a solution. Please try specifying an alternative model using the usermodel function.")
+    }
+    
+    if(!(is.null(empty$warning))){
+    if(grepl("solution has NOT",  as.character(empty$warning)) == TRUE){
+      print("The common factor model failed to converge on a solution. Please try specifying an alternative model using the usermodel function.")
+    }}
+
     #pull the delta matrix (this doesn't depend on N)
     S2.delt <- lavInspect(Model1_Results, "delta")
     
@@ -258,6 +338,8 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     
     ModelQ_WLS <- parTable(Model1_Results)
     
+    ModelQ_WLS<-subset(ModelQ_WLS, ModelQ_WLS$plabel != "")
+    
     ##fix indicator loadings, residual factor loadings, and residual factor variances from stage 2 estimation
     z<-((k*(k+1))/2)
     f<-length(ModelQ_WLS$free)-z
@@ -267,14 +349,14 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     ModelQ_WLS$ustart <- ModelQ_WLS$est
     ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .05, ModelQ_WLS$ustart)
     
-    testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart)) 
+    testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart, optim.dx.tol = +Inf)) 
     testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
     
     if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
       
       ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .01, ModelQ_WLS$ustart)
       
-      testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart)) 
+      testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf)) 
     }else{testQ2<-testQ}
     
     testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
@@ -283,7 +365,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
       
       ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .1, ModelQ_WLS$ustart)
       
-      testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart)) 
+      testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf)) 
     }else{testQ3<-testQ2}
     
     testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
@@ -295,7 +377,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
       
       ##weight matrix from stage 2
       S2.W_Q <- lavInspect(ModelQ_Results_WLS, "WLS.V") 
-      
+   
       #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
       bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q) 
       
@@ -324,7 +406,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     
     ##now CFI
     ##run independence model
-    testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2))
+    testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
     testCFI$warning$message[1]<-ifelse(is.null(testCFI$warning$message), testCFI$warning$message[1]<-"Safe", testCFI$warning$message[1])
     
     if(as.character(testCFI$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
@@ -338,7 +420,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
       ModelQ_WLS_CFI$free <- c(rep(0, p2), 1:z)
       ModelQ_WLS_CFI$ustart <- ModelQ_WLS_CFI$est
       
-      testCFI2<-tryCatch.W.E(ModelQ_Results_WLS_CFI <- sem(model = ModelQ_WLS_CFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2))
+      testCFI2<-tryCatch.W.E(ModelQ_Results_WLS_CFI <- sem(model = ModelQ_WLS_CFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
       testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
       
       if(as.character(testCFI2$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
@@ -399,7 +481,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     diag(V_stand2)<-diag(V_stand)
     W_stand<-solve(V_stand2[order,order])
     
-    DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2) 
+    DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2, optim.dx.tol = +Inf) 
     
     ##perform same procedures for sandwich correction as in the unstandardized case
     DWLS.delt_stand <- lavInspect(DWLS.fit_stand, "delta") 
@@ -436,8 +518,97 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   if(estimation=="ML"){
     
     ##run the model using ML estimation
-    Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200)
+    empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
     
+    if(class(empty$value)[1] == "simpleError"){
+      print("The common factor initially failed to converge. A lower bound of 0 on residual variances has been added to try and troubleshoot this.")
+      
+      write.Model1 <- function(k, label = "V", label2 = "VF") {  
+        Model1 <- ""
+        for (i in 1) {
+          linestart <- paste("F1"," =~ NA*",label, i, sep = "")  
+          if (k-i > 0) {
+            linemid <- ""
+            for (j in (i+1):k) {
+              linemid <- paste(linemid, " + ", label, j, sep = "")
+            }
+          } else {linemid <- ""}
+          
+        }
+        Model1 <- paste(Model1, linestart, linemid, " \n ", "F1 ~~ 1*F1", " \n ", sep = "")
+        
+        ModelsatF<-""
+        for (i in 1:(k-1)) {
+          linestartc <- paste(label2, i, "~~ 0*", label2, i+1,  sep = "")
+          if (k-i >= 2) {
+            linemidc <- ""
+            for (j in (i+2):k) {
+              linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+            }
+          } else {linemidc <- ""}
+          ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+        } 
+        
+        Model1b <- ""
+        for (i in 1) {
+          linestartb <- paste("F1"," =~ 0*",label2, i, sep = "")  
+          if ((k-1)-i > 0) {
+            linemidb <- ""
+            for (j in (i+1):k) {
+              linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+            }
+          } else {linemidb <- ""}
+          
+        }
+        Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
+        
+        Model2<-""
+        for (p in 1:k) {
+          linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
+          Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+        
+        Model3<-""
+        for (p in 1:k) {
+          linestart3a <- paste(label, p, " ~~ ", letters[p], "*", label, p, sep = "")
+          linestart3b <- paste(letters[p], " > .001", sep = "")
+          Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
+        
+        Model4<-""
+        for (p in 1:k) {
+          linestart4 <- paste(label2, p, " ~~ 0*", label2, p, sep = "")
+          Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+        
+        Modelsat<-""
+        for (i in 1:(k-1)) {
+          linestartc <- paste(label, i, "~~ 0*", label, i+1,  sep = "")
+          if (k-i >= 2) {
+            linemidc <- ""
+            for (j in (i+2):k) {
+              linemidc <- paste(linemidc, " + 0*", label, j, sep = "")
+            }
+          } else {linemidc <- ""}
+          Modelsat <- paste(Modelsat, linestartc, linemidc, " \n ", sep = "")
+        } 
+        
+        Model5<-paste(Model1, ModelsatF, Model1b, Model2, Model3, Model4, Modelsat, sep = "")
+        
+        return(Model5)
+      }
+      Model1 <- write.Model1(k)
+      empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
+    }else{}
+     ifelse("solution has NOT" %in% as.character(empty$warning),1, 0)
+     
+   
+    if(class(empty$value)[1] == "simpleError"){
+      print("The common factor model failed to converge on a solution. Please try specifying an alternative model using the usermodel function.")
+    }
+    
+     if(!(is.null(empty$warning))){
+       if(grepl("solution has NOT",  as.character(empty$warning)) == TRUE){
+         print("The common factor model failed to converge on a solution. Please try specifying an alternative model using the usermodel function.")
+       }}
+     
     #pull the delta matrix (this doesn't depend on N)
     S2.delt <- lavInspect(Model1_Results, "delta")
     
@@ -458,6 +629,8 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     
     ModelQ_ML <- parTable(Model1_Results)
     
+    ModelQ_ML<-subset(ModelQ_ML, ModelQ_ML$plabel != "")
+    
     ##fix indicator loadings, residual factor loadings, and residual factor variances from stage 2 estimation
     z<-((k*(k+1))/2)
     f<-length(ModelQ_ML$free)-z
@@ -467,16 +640,16 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     ModelQ_ML$ustart <- ModelQ_ML$est
     ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .05, ModelQ_ML$ustart)
     
-    chitest<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+    chitest<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf)) 
     
-    testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+    testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf)) 
     testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
     
     if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
       
       ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .01, ModelQ_ML$ustart)
       
-      testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+      testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf)) 
     }else{testQ2<-testQ}
     
     
@@ -486,7 +659,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
       
       ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .1, ModelQ_ML$ustart)
       
-      testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+      testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf)) 
     }else{testQ3<-testQ2}
     
     testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
@@ -527,7 +700,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     
     ##now CFI
     ##run independence model
-    testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML", sample.nobs=200))
+    testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf))
     testCFI$warning$message[1]<-ifelse(is.null(testCFI$warning$message), testCFI$warning$message[1]<-"Safe", testCFI$warning$message[1])
     
     if(as.character(testCFI$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
@@ -541,7 +714,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
       ModelQ_ML_CFI$free <- c(rep(0, p2), 1:z)
       ModelQ_ML_CFI$ustart <- ModelQ_ML_CFI$est
       
-      testCFI2<-tryCatch.W.E(ModelQ_Results_ML_CFI <- sem(model = ModelQ_ML_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200))
+      testCFI2<-tryCatch.W.E(ModelQ_Results_ML_CFI <- sem(model = ModelQ_ML_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf))
       testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
       
       if(as.character(testCFI2$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
@@ -603,7 +776,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     diag(V_stand2)<-diag(V_stand)
     W_stand<-solve(V_stand2[order,order])
     
-    ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200) 
+    ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf) 
     
     ##perform same procedures for sandwich correction as in the unstandardized case
     ML.delt_stand <- lavInspect(ML.fit_stand, "delta") 
@@ -638,7 +811,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   
   ##name the columns of the results file
   colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate","Unstandardized_SE","Standardized_Est","Standardized_SE")
- 
+  
   ##replace V1-VX general form in output with user provided trait names
   for(i in 1:nrow(results)){
     for(p in 1:length(traits)){
@@ -646,7 +819,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
       results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
     }
   }
-
+  
   ##name model fit columns
   colnames(modelfit)=c("chisq","df","AIC","CFI","SRMR")
   modelfit<-data.frame(modelfit)
@@ -671,7 +844,10 @@ commonfactor <-function(covstruc,estimation="DWLS"){
                 difference in a cell between the smoothed and non-smoothed matrix was", LD_sdiff2, sep = " "))
   }
   
-  return(list(modelfit=modelfit,results=results))
-  
+  if(modelfit$CFI < 0){
+    warning(paste("CFI estimates below 0 should not be trusted, and indicate that the other model fit estimates should be interpreted with caution. A negative CFI estimates typically appears due to negative residual variances."))
   }
   
+  return(list(modelfit=modelfit,results=results))
+  
+}
