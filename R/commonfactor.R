@@ -210,8 +210,10 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   order <-(1:nrow(V_LD))
 
   ##run CFI model so it knows the reordering
-  empty2<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2, optim.dx.tol = +Inf))
-  orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
+  #empty2<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = solve(V_LD),sample.nobs=2, optim.dx.tol = +Inf))
+  #orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
+  
+  orderCFI<-(1:nrow(V_LD))
   
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
