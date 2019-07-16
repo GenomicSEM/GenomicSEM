@@ -29,17 +29,17 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
 
     names1<-hold_names
     if("SNP" %in% hold_names) cat(print(paste("Interpreting the SNP column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in% c("snp","SNP","snpid","rsID","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
+    hold_names[hold_names %in% c("snp","SNP","snpid","rsID","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME", "ID")] <- "SNP"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
    
     names1<-hold_names
     if("A1" %in% hold_names) cat(print(paste("Interpreting the A1 column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","alt","INC_ALLELE","REFERENCE_ALLELE","EA","Effect_allele", "Effect_Allele")] <- "A1"
+    hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","alt","INC_ALLELE","REFERENCE_ALLELE","EA","Effect_allele", "Effect_Allele", "REF")] <- "A1"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
     
     names1<-hold_names
     if("A2" %in% hold_names) cat(print(paste("Interpreting the A2 column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","ALLELE0","OTHER_ALLELE","ref","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA","Other_allele", "Other_Allele", "Non_Effect_allele", "Non_Effect_Allele")]  <- "A2"
+    hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","ALLELE0","OTHER_ALLELE","ref","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA","Other_allele", "Other_Allele", "Non_Effect_allele", "Non_Effect_Allele", "ALT")]  <- "A2"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
     
     names1<-hold_names
