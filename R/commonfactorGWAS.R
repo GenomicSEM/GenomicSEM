@@ -87,7 +87,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
     
     S_Fullrun<-S_Full[[i]]
     
-    suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2)) 
+    suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf)) 
     
     order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]]))
   }
@@ -114,7 +114,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       S_Fullrun<-S_Full[[i]]
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-      test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
+      test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
       
       #pull the delta matrix (this doesn't depend on N)
       S2.delt <- lavInspect(Model1_Results, "delta")
@@ -153,7 +153,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
           ModelQ$ustart[t]<-SNPresid[ModelQ$free[t]]} else{}}
       
       #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
-      testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, start=ModelQ$ustart)) 
+      testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf)) 
       testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
       
       if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
@@ -162,7 +162,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
           if(ModelQ$free[n] > k & ModelQ$free[n] <= k*2){
             ModelQ$ustart[n]<-ModelQ$ustart[n]-.01} else{}}
         
-        testQ2<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, start=ModelQ$ustart)) 
+        testQ2<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf)) 
       }else{testQ2<-testQ}
       
       testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
@@ -171,7 +171,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         
         ModelQ$ustart<-ifelse(ModelQ$free > k, .05, ModelQ$ustart)
         
-        testQ3<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, start=ModelQ$ustart)) 
+        testQ3<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf)) 
       }else{testQ3<-testQ2}
       
       testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
@@ -209,7 +209,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       
       ##pull all the results into a single row
       results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
-    
+      
     }
   }
   
@@ -231,7 +231,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       S_Fullrun<-S_Full[[i]]
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-      test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200))
+      test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
       
       #pull the delta matrix (this doesn't depend on N)
       S2.delt <- lavInspect(Model1_Results, "delta")
@@ -269,14 +269,8 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         if(ModelQ$free[t] > 0 & ModelQ$free[t] <= k){
           ModelQ$ustart[t]<-SNPresid[ModelQ$free[t]]} else{}}
       
-      #  for(n in 1:nrow(ModelQ)) {
-      #   if(ModelQ$free[n] > k & ModelQ$free[n] <= k*2){
-      #      for(y in 1:k){
-      #      ModelQ$ustart[n]<-VARresid[y]}} else{}}
-      
-      
       #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
-      testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200,start=ModelQ$ustart)) 
+      testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200,start=ModelQ$ustart, optim.dx.tol = +Inf)) 
       testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
       
       if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
@@ -285,7 +279,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
           if(ModelQ$free[n] > k & ModelQ$free[n] <= k*2){
             ModelQ$ustart[n]<-ModelQ$ustart[n]-.01} else{}}
         
-        testQ2<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200,start=ModelQ$ustart)) 
+        testQ2<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200,start=ModelQ$ustart, optim.dx.tol = +Inf)) 
       }else{testQ2<-testQ}
       
       testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
@@ -294,7 +288,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         
         ModelQ$ustart<-ifelse(ModelQ$free > k, .05, ModelQ$ustart)
         
-        testQ3<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200,start=ModelQ$ustart)) 
+        testQ3<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200,start=ModelQ$ustart, optim.dx.tol = +Inf)) 
       }else{testQ3<-testQ2}
       
       testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
@@ -329,7 +323,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         
         #Ronald's magic combining all the pieces from above:
         Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta} else{Q<-"Not Computed"}
-        
+      
       
       ##put the corrected standard error and Q in same dataset
       results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
