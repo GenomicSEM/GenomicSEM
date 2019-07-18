@@ -39,7 +39,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
   }
   ##pull the column names specified in the munge function
   traits<-colnames(S_Full[[1]][[1]])[2:(k+1)]
-
+  
   #function to create lavaan syntax for a 1 factor model given k phenotypes
   write.Model1 <- function(k, label = "V") {  
     Model1 <- ""
@@ -93,7 +93,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
     
     S_Fullrun<-S_Full[[1]][[i]]
     
-    test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2)) 
+    test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf)) 
     
     order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
   }
@@ -119,7 +119,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
         S_Fullrun<-S_Full[[n]][[i]]
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
+        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
         
         #pull the delta matrix (this doesn't depend on N)
         S2.delt <- lavInspect(Model1_Results, "delta")
@@ -150,7 +150,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
         ModelQ$free <- c(rep(0, k+1), 1:(k*2), 0, 0) 
         
         #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
-        ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2) 
+        ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, optim.dx.tol = +Inf) 
         
         #pull the delta matrix for Q (this doesn't depend on N)
         S2.delt_Q <- lavInspect(ModelQ_Results, "delta")
@@ -211,7 +211,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
         S_Fullrun<-S_Full[[n]][[i]]
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200))
+        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
         
         #pull the delta matrix (this doesn't depend on N)
         S2.delt <- lavInspect(Model1_Results, "delta")
@@ -242,7 +242,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
         ModelQ$free <- c(rep(0, k+1), 1:(k*2), 0, 0) 
         
         #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
-        ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200) 
+        ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf) 
         
         #pull the delta matrix for Q (this doesn't depend on N)
         S2.delt_Q <- lavInspect(ModelQ_Results, "delta")
@@ -286,7 +286,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL){
   
   ##sort results so it is in order of the output lists provided for the function
   results<- results[order(results$i, results$n),] 
-
+  
   results$se <- NULL
   results2<-cbind(Output[[3]],results)
   results2$Z_Estimate<-results2$est/results2$se_c
