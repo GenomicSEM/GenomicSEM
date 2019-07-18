@@ -85,7 +85,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
     S_Fulltest<-S_Full[[1]][[1]]
     
     ##run the model to determine number of latent variables
-    suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE)) 
+    suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf)) 
     
     ##pull the column names specified in the munge function
     traits<-colnames(S_Full[[1]][[1]])
@@ -258,7 +258,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
     
     S_Fullrun<-S_Full[[1]][[i]]
     
-    test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
+    test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
     
     order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
   }
@@ -290,7 +290,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
         }
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2))
+        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
         
         Model_WLS <- parTable(Model1_Results)
         
@@ -395,7 +395,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
           ModelQ_WLS$ustart <- ModelQ_WLS$est
           ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .05, ModelQ_WLS$ustart)
           
-          testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, start = ModelQ_WLS$ustart)) 
+          testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, start = ModelQ_WLS$ustart, optim.dx.tol = +Inf)) 
           testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
           testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
           
@@ -403,7 +403,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
             
             ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .01, ModelQ_WLS$ustart)
             
-            testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart)) 
+            testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf)) 
           }else{testQ2<-testQ}
           
           testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
@@ -413,7 +413,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
             
             ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .1, ModelQ_WLS$ustart)
             
-            testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart)) 
+            testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf)) 
           }else{testQ3<-testQ2}
           
           testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
@@ -544,7 +544,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
         }
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200))
+        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
         
         Model_ML <- parTable(Model1_Results)
         
@@ -631,7 +631,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
           
           ModelQ_ML$ustart <- ModelQ_ML$est
           ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .05, ModelQ_ML$ustart)
-          testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+          testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf)) 
           testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
           
           testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
@@ -640,7 +640,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
             
             ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .01, ModelQ_ML$ustart)
             
-            testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+            testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf)) 
           }else{testQ2<-testQ}
           
           
@@ -651,7 +651,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
             
             ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .1, ModelQ_ML$ustart)
             
-            testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart)) 
+            testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf)) 
           }else{testQ3<-testQ2}
           
           testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
