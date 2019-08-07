@@ -74,7 +74,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     }
     
     if(toler==TRUE){
-      W_test <- solve(V_Full[[1]],tol=1e-20)
+      W_test <- solve(V_Full[[1]],tol=toler)
     }
     
     S_Fulltest<-S_Full[[1]]
@@ -249,7 +249,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     }
     
     if(toler==TRUE){
-      W <- solve(V_Full[[i]],tol=1e-20)
+      W <- solve(V_Full[[i]],tol=toler)
     }
 
     if(modelchi == TRUE){
@@ -286,7 +286,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       }
       
       if(toler==TRUE){
-        W <- solve(V_Full_Reorderb,tol=1e-20)
+        W <- solve(V_Full_Reorderb,tol=toler)
       }
       
       #import the S_Full matrix for appropriate run
