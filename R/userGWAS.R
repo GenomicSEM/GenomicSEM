@@ -1,4 +1,5 @@
-userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE){ 
+
+userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,toler=FALSE){ 
   time<-proc.time()
   
   ##determine if the model is likely being listed in quotes and print warning if so
@@ -68,7 +69,13 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       return(varnames)
     }
     
+    if(toler==FALSE){
     W_test <- solve(V_Full[[1]])
+    }
+    
+    if(toler==TRUE){
+      W_test <- solve(V_Full[[1]],tol=1e-20)
+    }
     
     S_Fulltest<-S_Full[[1]]
     
@@ -237,8 +244,14 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   for (i in 1) {
     
     #transform sampling covariance matrix into a weight matrix: 
-    W <- solve(V_Full[[i]])
+    if(toler==FALSE){
+      W<- solve(V_Full[[i]])
+    }
     
+    if(toler==TRUE){
+      W <- solve(V_Full[[i]],tol=1e-20)
+    }
+
     if(modelchi == TRUE){
       ##name the columns and rows of the S matrix in general format V1-VX
       rownames(S_Full[[i]]) <- S_names
@@ -268,7 +281,13 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
       
       ##invert the reordered sampling covariance matrix to create a weight matrix 
-      W <- solve(V_Full_Reorderb) 
+      if(toler==FALSE){
+        W<- solve(V_Full_Reorderb)
+      }
+      
+      if(toler==TRUE){
+        W <- solve(V_Full_Reorderb,tol=1e-20)
+      }
       
       #import the S_Full matrix for appropriate run
       S_Fullrun<-S_Full[[i]]
@@ -418,7 +437,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
           S2.W_Q <- lavInspect(ModelQ_Results_WLS, "WLS.V") 
           
           #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-          bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q) 
+          bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=1e-20) 
           
           #create the "lettuce" part of the sandwich
           lettuce_Q <- S2.W_Q%*%S2.delt_Q
@@ -675,7 +694,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
           S2.W_Q <- lavInspect(ModelQ_Results_ML, "WLS.V") 
           
           #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-          bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q) 
+          bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=1e-20) 
           
           #create the "lettuce" part of the sandwich
           lettuce_Q <- S2.W_Q%*%S2.delt_Q
