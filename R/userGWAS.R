@@ -1,4 +1,3 @@
-
 userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,toler=FALSE){ 
   time<-proc.time()
   
@@ -70,10 +69,10 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     }
     
     if(toler==FALSE){
-    W_test <- solve(V_Full[[1]])
+      W_test <- solve(V_Full[[1]])
     }
     
-    if(toler==TRUE){
+    if(toler!=FALSE){
       W_test <- solve(V_Full[[1]],tol=toler)
     }
     
@@ -248,10 +247,10 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       W<- solve(V_Full[[i]])
     }
     
-    if(toler==TRUE){
+    if(toler!=FALSE){
       W <- solve(V_Full[[i]],tol=toler)
     }
-
+    
     if(modelchi == TRUE){
       ##name the columns and rows of the S matrix in general format V1-VX
       rownames(S_Full[[i]]) <- S_names
@@ -285,7 +284,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         W<- solve(V_Full_Reorderb)
       }
       
-      if(toler==TRUE){
+      if(toler!=FALSE){
         W <- solve(V_Full_Reorderb,tol=toler)
       }
       
