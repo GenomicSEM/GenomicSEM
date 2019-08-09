@@ -39,7 +39,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   
   if(sep_weights==T){
     w <- suppressMessages(read_delim("1.l2.ldscore.gz", "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
-    for(i in 2:22){
+    for(i in 2:chr){
       w <- rbind(w,suppressMessages(read_delim(paste0(i,".l2.ldscore.gz"), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F)))
     }   }
   
@@ -55,7 +55,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   ### READ M
   setwd(ld)
   m  <- suppressMessages(read_csv("1.l2.M_5_50",  col_names = FALSE))
-  for(i in 2:22){
+  for(i in 2:chr){
     m <- rbind(m,suppressMessages(read_csv(paste0(i,".l2.M_5_50"),  col_names = FALSE)))
   }
   setwd(curwd)
