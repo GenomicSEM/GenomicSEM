@@ -1,5 +1,5 @@
 
-ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22){
+ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22,n.blocks=200){
   time <- proc.time()
   
   # Dimensions
@@ -140,12 +140,11 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         ## Perfrom analysis:
         
-        n.blocks <- 200
         n.annot <- 1
         
         
         select.from <- floor(seq(from=1,to=n.snps,length.out =(n.blocks+1)))
-        select.to <- c(select.from[2:200]-1,n.snps)
+        select.to <- c(select.from[2:n.blocks]-1,n.snps)
         
         xty.block.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
         xtx.block.values <- matrix(data=NA,nrow =((n.annot+1)* n.blocks),ncol =(n.annot+1))
@@ -322,12 +321,12 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         ## Perfrom analysis:
         
-        n.blocks <- 200
+
         n.annot <- 1
         
         
         select.from <- floor(seq(from=1,to=n.snps,length.out =(n.blocks+1)))
-        select.to <- c(select.from[2:200]-1,n.snps)
+        select.to <- c(select.from[2:n.blocks]-1,n.snps)
         
         xty.block.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
         xtx.block.values <- matrix(data=NA,nrow =((n.annot+1)* n.blocks),ncol =(n.annot+1))
@@ -400,7 +399,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   print(time_all[3])
   
   ## Scale V to N per study (assume m constant)
-  v.out <- ((cov(V.hold)/200) /t(N.vec) %*% N.vec) * m^2
+  v.out <- ((cov(V.hold)/n.blocks) /t(N.vec) %*% N.vec) * m^2
   
   ### Scale S and V to liability:
   S <- diag(as.vector(sqrt(Liab.S))) %*% cov %*% diag(as.vector(sqrt(Liab.S)))
