@@ -8,7 +8,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   
   # Storage:
   cov <- matrix(NA,nrow=n.traits,ncol=n.traits)
-  V.hold <- matrix(NA,nrow=200,ncol=n.V)
+  V.hold <- matrix(NA,nrow=n.blocks,ncol=n.V)
   N.vec <- matrix(NA,nrow=1,ncol=n.V)
   Liab.S <- matrix(1,nrow=1,ncol=n.traits)
   I <- matrix(NA,nrow=n.traits,ncol=n.traits)
