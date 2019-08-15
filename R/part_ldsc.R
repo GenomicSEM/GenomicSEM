@@ -1,7 +1,6 @@
 
 part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample.prev=NULL,out,trait.names=NULL){
-  
-  
+
   #require(plyr)
   #require(e1071)
   #require(data.table)
@@ -12,11 +11,11 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   ##create log file
   log2<-paste(trait.names,collapse="_")
   log.file <- file(paste0(log2, "_Partitioned.log"),open="wt")
-  #sink(log.file,split=T,type="output")
-  #error.file <- file(paste0(out,".error"),open="wt")
-  #sink(error.file,type="message")
+  sink(log.file,split=T,type="output")
+  error.file <- file(paste0(out,".error"),open="wt")
+  sink(error.file,type="message")
   begin.time <- Sys.time()
-
+  
   Operating<-Sys.info()[['sysname']]
   
   ##print start time
@@ -49,13 +48,13 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   
   ##function to read in the files. used with ldply below
   if(Operating != "Linux"){
-  readLdFunc <- function(LD.in){
-    if(substr(x=LD.in,start=nchar(LD.in)-1,stop=nchar(LD.in))=="gz"){
-      dum=fread(input=paste("gzcat",LD.in),header=T,showProgress=F,data.table=F)
-    }else{
-      dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
-    }
-  }}
+    readLdFunc <- function(LD.in){
+      if(substr(x=LD.in,start=nchar(LD.in)-1,stop=nchar(LD.in))=="gz"){
+        dum=fread(input=paste("gzcat",LD.in),header=T,showProgress=F,data.table=F)
+      }else{
+        dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
+      }
+    }}
   
   if(Operating == "Linux"){
     readLdFunc <- function(LD.in){
@@ -64,7 +63,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
       }else{
         dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
       } 
-  }}
+    }}
   
   x <- ldply(.data=x.files,.fun=readLdFunc)
   x$CM <- NULL
@@ -74,7 +73,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   m.files <- sort(Sys.glob(paste0(ld1,"*M_5_50")))
   readMFunc <- function(x){dum=read.table(file=x,header=F)}
   m <- ldply(.data=m.files,.fun=readMFunc)
- 
+  
   ##read in additional annotations on top of baseline if relevant
   if(!is.null(ld2)){
     for(i in 1:length(ld2)){
@@ -170,7 +169,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   for(i in 1:length(annot.files)){
     header <- read.table(annot.files[i], header = TRUE, nrow = 1)
     if(Operating != "Linux"){
-    annot <- fread(input=paste("gzcat",annot.files[i]),skip=1,header=FALSE,showProgress=F,data.table=F)}
+      annot <- fread(input=paste("gzcat",annot.files[i]),skip=1,header=FALSE,showProgress=F,data.table=F)}
     if(Operating == "Linux"){
       annot <- fread(input=paste("zcat",annot.files[i]),skip=1,header=FALSE,showProgress=F,data.table=F)
     }
@@ -180,7 +179,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
       for(j in 1:length(ld2)){
         extra.annot.files <- sort(Sys.glob(paste0(ld2[j],"*annot.gz")))
         if(Operating != "Linux"){
-        extra.annot <- fread(input=paste("gzcat",extra.annot.files[i]),header=T,showProgress=F,data.table=F)}
+          extra.annot <- fread(input=paste("gzcat",extra.annot.files[i]),header=T,showProgress=F,data.table=F)}
         if(Operating == "Linux"){
           extra.annot <- fread(input=paste("zcat",extra.annot.files[i]),header=T,showProgress=F,data.table=F) 
         }
@@ -195,14 +194,14 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
           colnames(annot) <- c(colnames.annot,colnames.extra.annot)
         }else{
           if(nrow(annot) == nrow(extra.annot)){
-          annot<-cbind(annot, extra.annot)}
+            annot<-cbind(annot, extra.annot)}
           else{annot <- merge(x=annot,y=extra.annot,by="SNP")}
         }
         rm(extra.annot)
         gc()
       }
     }
- 
+    
     frq <- fread(input=frq.files[i],header=T,showProgress=F,data.table=F)
     
     frq <- frq[frq$MAF > 0.05 & frq$MAF < 0.95,]
@@ -235,7 +234,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     
     if(substr(x=chi1,start=nchar(chi1)-1,stop=nchar(chi1))=="gz"){
       if(Operating != "Linux"){
-      y1 <- fread(paste("gzcat",chi1),header=T,showProgress=F,data.table=F)}
+        y1 <- fread(paste("gzcat",chi1),header=T,showProgress=F,data.table=F)}
       if(Operating == "Linux"){
         y1 <- fread(paste("zcat",chi1),header=T,showProgress=F,data.table=F)
       }
@@ -343,7 +342,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         Coefficient.Z<-data.frame(coefs/sqrt(diag(coef.cov)))
         
         cat.cov <- coef.cov*(m %*% t(m))
-  
+        
         tot.cov <- sum(cat.cov)
         tot.se <- sqrt(tot.cov)
         
@@ -424,7 +423,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         
         if(substr(x=chi2,start=nchar(chi2)-1,stop=nchar(chi2))=="gz"){
           if(Operating != "Linux"){
-          y2 <- fread(paste("gzcat",chi2),header=T,showProgress=F,data.table=F)}
+            y2 <- fread(paste("gzcat",chi2),header=T,showProgress=F,data.table=F)}
           if(Operating == "Linux"){
             y2 <- fread(paste("zcat",chi2),header=T,showProgress=F,data.table=F)}
         }else{
@@ -616,7 +615,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
       }
     }
   }
- 
+  
   S<-vector(mode="list",length=n.annot)
   S_Tau<-vector(mode="list",length=n.annot)
   V<-vector(mode="list",length=n.annot)
@@ -704,10 +703,6 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   
   f<-1
   length<-ncol(S[[1]])
-  
-
-  Liab.S<-ifelse(is.na(Liab.S), 1, Liab.S)
-  
   for(f in 1:n.annot){
     
     ### Scale S and V to liability (Liab.S = matrix of 1s when no pop or samp prev provided)
@@ -768,8 +763,33 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     }else{Tau_Flag[[i,1]]<-0}
   }
   rownames(Tau_Flag)<-names(S_Tau)
+
+  ##NEW MICHEL SUGGESTION FOR PER SNP COV [4.3.19]
+  ##Step 1: create proportion LD scores per annotation (columns = SNPs, rows = annotations)
+  LD.scores2<-apply(LD.scores[,1:(ncol(LD.scores)-1)], 1, function(i) i/sum(i))
   
-  return(list(V=V,S=S,S_Tau=S_Tau,V_Tau=V_Tau,Tau_Flag=Tau_Flag,I=I,N=N.vec,m=m))
+  ##Step 2: Create weighted Per_SNP matrices by multiplying Tau_List by proportional LDscores
+  ##note to look into parallelizing this step
+  S_perSNP<-vector(mode="list",length=ncol(LD.scores2))
+  V_perSNP<-vector(mode="list",length=ncol(LD.scores2))
+
+  for(g in 1:100){
+    Tau_List2<-vector(mode="list",length=n.annot)
+    V_Tau2<-vector(mode="list",length=n.annot)
+    for(i in 1:length(Tau_List)){
+      Tau_List2[[i]]<-Tau_List[[i]]*LD.scores2[i,g]
+      V_Tau2[[i]]<-V_Tau[[i]]*(LD.scores2[i,g]^2)
+    }
+    S_perSNP[[g]]<-Reduce("+",Tau_List2)
+    V_perSNP[[g]]<-Reduce("+",V_Tau2)
+  }
+
+  ##name per_SNP matrices by rsID
+  names(S_perSNP)<-merged$SNP
+  names(V_perSNP)<-merged$SNP
+  
+  
+  return(list(V=V,S=S,S_Tau=S_Tau,V_Tau=V_Tau,Tau_Flag=Tau_Flag,S_perSNP=S_perSNP,V_perSNP=V_perSNP,I=I,N=N.vec,m=m))
   
   end.time <- Sys.time()
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
@@ -781,4 +801,3 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   gc()
   sink()
 }
-
