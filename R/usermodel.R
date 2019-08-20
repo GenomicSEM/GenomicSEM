@@ -1,5 +1,6 @@
 
 
+
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
@@ -157,8 +158,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   ##run the model
   if(std.lv == FALSE){
     empty2<-tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
-    }
-
+  }
+  
   if(std.lv == TRUE){
     empty2<-tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
   }
@@ -370,21 +371,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
   modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
   
-  if(std.lv == FALSE){
-    empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
-  }
-  
-  if(std.lv == TRUE){
-    empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
-  }
-  
-  if(class(empty3$value) != "lavaan"){
-    warning(paste("The function has stopped due to convergence issues for your primary model. Please contact us with your specific model and variables used or try specifying an alternative model"))
-  }
-  
   ##save the ordering
-  order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
-  
+  order <- rearrange(k = k, fit = ReorderModel1, names = rownames(S_LD))
+
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
   V_Reorderb<-diag(z)
@@ -397,7 +386,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     print("Running primary model")
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     if(std.lv == FALSE){
-      empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
+      empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = +Inf))
     }
     
     if(std.lv == TRUE){
@@ -465,8 +454,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         Model3<-""
         for (p in 1:k) {
-          linestart3a <- paste(label, p, " ~~ ", letters[p], "*", label, p, sep = "")
-          linestart3b <- paste(letters[p], " > .001", sep = "")
+          linestart3a <- paste(label, p, " ~~ ", letters[p], letters[p],letters[p+2], "*", label, p, sep = "")
+          linestart3b <- paste(letters[p], letters[p],letters[p+2], " > .001", sep = "")
           Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
         
         Model4<-""
@@ -561,7 +550,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       
       #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
       SE <- as.matrix(sqrt(diag(Ohtt)))
-
+      
       Model_WLS <- parTable(Model1_Results)
       
       constraints<-subset(Model_WLS$label, Model_WLS$label != "")
@@ -589,7 +578,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         #square root of parameter variance = parameter SE.
         se.ghost <- sqrt(diag(var.ind))
-  
+        
         #pull the ghost parameter point estiamte
         ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
         
@@ -598,13 +587,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         colnames(ghost2)[7]<-"SE"
         
       }else{se.ghost<-NA
-        if(":=" %in% Model_WLS$op & is.na(se.ghost[1])){
-          se.ghost<-rep("SE could not be computed", count(":=" %in% Model_WLS$op)$freq)
-          ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
-          ghost2<-cbind(ghost,se.ghost)
-          colnames(ghost2)[7]<-"SE"}else{}} 
+      if(":=" %in% Model_WLS$op & is.na(se.ghost[1])){
+        se.ghost<-rep("SE could not be computed", count(":=" %in% Model_WLS$op)$freq)
+        ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
+        ghost2<-cbind(ghost,se.ghost)
+        colnames(ghost2)[7]<-"SE"}else{}} 
       
-
+      
       ##check whether correlations among latent variables is positive definite
       if(r > 1){
         empty<-tryCatch.W.E(check<-lowerTriangle(lavInspect(Model1_Results,"cor.lv")[1:r,1:r]))
@@ -966,15 +955,15 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
         base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
         if(nrow(base_model) > 0){
-        base_model$free<-NULL
-        base_model$SE<-""
-        base_model[6]<-base_model$est
-        base_model$SE_stand<-""
-        base_model[8]<-base_model$est
-        colnames(base_model)<-colnames(results)
-        results<-rbind(results,base_model)
+          base_model$free<-NULL
+          base_model$SE<-""
+          base_model[6]<-base_model$est
+          base_model$SE_stand<-""
+          base_model[8]<-base_model$est
+          colnames(base_model)<-colnames(results)
+          results<-rbind(results,base_model)
         }
-    }
+      }
     }
   }
   
@@ -1053,8 +1042,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         Model3<-""
         for (p in 1:k) {
-          linestart3a <- paste(label, p, " ~~ ", letters[p], "*", label, p, sep = "")
-          linestart3b <- paste(letters[p], " > .001", sep = "")
+          linestart3a <- paste(label, p, " ~~ ", letters[p],leters[p],leters[p+1], "*", label, p, sep = "")
+          linestart3b <- paste(letters[p],leters[p],leters[p+1], " > .001", sep = "")
           Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
         
         Model4<-""
@@ -1437,7 +1426,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   if(class(bread2$value) == "matrix" & check == 2){  
     ##name the columns of the results file
     colnames(results)=c("lhs","op","rhs","Unstand_Est","Unstand_SE","STD_Genotype","STD_Genotype_SE", "STD_All")
-  
+    
     ##replace V1-VX general form in output with user provided trait names
     for(i in 1:nrow(results)){
       for(p in 1:length(traits)){
@@ -1487,11 +1476,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       print("Please note that when equality constraints are used in the current version of Genomic SEM that
             the standardized output will also impose the same constraint.")
     }
-   
+    
     if(imp_cov == FALSE){
       return(list(modelfit=modelfit,results=results))
     }
-   
+    
     if(imp_cov == TRUE){
       ##replace general form of V1-VX with trait names in model implied and residual covariance matrix
       colnames(implied[[1]])<-traits
@@ -1506,5 +1495,4 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     }
     }
   
-  }
-  
+    }
