@@ -773,12 +773,12 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   S_perSNP<-vector(mode="list",length=ncol(LD.scores2))
   V_perSNP<-vector(mode="list",length=ncol(LD.scores2))
 
-  for(g in 1:length(S_perSNP)){
-    Tau_List2<-vector(mode="list",length=n.annot)
-    V_Tau2<-vector(mode="list",length=n.annot)
-    for(i in 1:length(Tau_List)){
-      Tau_List2[[i]]<-Tau_List[[i]]*LD.scores2[i,g]
-      V_Tau2[[i]]<-V_Tau[[i]]*(LD.scores2[i,g]^2)
+ for(g in 1:length(S_perSNP)){
+    Tau_List2<-vector(mode="list",length=(n.annot-1))
+    V_Tau2<-vector(mode="list",length=(n.annot-1))
+    for(i in 2:length(Tau_List)){
+      Tau_List2[[i-1]]<-Tau_List[[i]]*LD.scores2[(i-1),g]
+      V_Tau2[[i-1]]<-V_Tau[[i]]*(LD.scores2[(i-1),g]^2)
     }
     S_perSNP[[g]]<-Reduce("+",Tau_List2)
     V_perSNP[[g]]<-Reduce("+",V_Tau2)
