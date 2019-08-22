@@ -82,7 +82,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     y1$chi1 <- y1$Z^2
     
     
-    list.append(check.vals,mean.chi2=mean(y$chi1,na.rm=T))
+    list.append(check.vals,mean.chi2=mean(y1$chi1,na.rm=T))
     
     cat("Read in summary statistics from",chi1,"\n")
     cat("Read in summary statistics for",nrow(y1),"SNPs","\n")
