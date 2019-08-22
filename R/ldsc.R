@@ -266,7 +266,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         cat("Read in summary statistics for",nrow(y2),"SNPs","\n")
         
         
-        list.append(check.vals,chi2=y2&chi2)
+        list.append(check.vals,chi2=y2$chi2)
         
         y <- merge(y1,y2,by="SNP")
         
