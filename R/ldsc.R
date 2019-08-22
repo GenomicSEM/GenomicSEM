@@ -2,6 +2,10 @@
 ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22,n.blocks=200){
   time <- proc.time()
   
+  ## make a list to add elements to check to:
+  check.vals <- list()
+  
+  
   # Dimensions
   n.traits <- length(traits)
   n.V <- (n.traits^2 / 2) + .5*n.traits
@@ -62,6 +66,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   M.tot <- sum(m)
   m <- M.tot
   
+  list.append(check.vals,m=m)
+  
   # count the total nummer of runs, both loops
   s <- 1
   
@@ -74,6 +80,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     
     y1 <- na.omit(y1)
     y1$chi1 <- y1$Z^2
+    
+    
+    list.append(check.vals,mean.chi2=mean(y$chi1,na.rm=T))
+    
     cat("Read in summary statistics from",chi1,"\n")
     cat("Read in summary statistics for",nrow(y1),"SNPs","\n")
     
@@ -106,6 +116,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged <- merged[merged$chi1 < chisq.max,]
         n.snps <- nrow(merged)
         removed.snps <- remaining.snps-n.snps
+        list.append(check.vals,m.keep.m.remove=c(remaining.snps,removed.snps))
         
         cat("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max,paste0("(",n.snps," SNPs remain)"),"\n")
         
@@ -130,7 +141,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged$weights <- merged$initial.w/sum(merged$initial.w)
         
         N.bar <- mean(merged$N)
-        
+        list.append(check.vals,N.bar=N.bar)
         
         ## preweight LD and chi:
         
@@ -145,6 +156,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         select.from <- floor(seq(from=1,to=n.snps,length.out =(n.blocks+1)))
         select.to <- c(select.from[2:n.blocks]-1,n.snps)
+        list.append(check.vals,select.from=select.from)
+        list.append(check.vals,select.to=select.to)
+        
+        
         
         xty.block.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
         xtx.block.values <- matrix(data=NA,nrow =((n.annot+1)* n.blocks),ncol =(n.annot+1))
@@ -161,6 +176,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         for(i in 1:nrow(xtx)){xtx[i,] <- t(colSums(xtx.block.values[seq(from=i,to=nrow(xtx.block.values),by=ncol(weighted.LD)),]))}
         
         reg <- solve(xtx)%*% xty
+        
+        
+        list.append(check.vals,reg=reg)
+        
         intercept <- reg[2]
         coefs <- reg[1]/N.bar
         reg.tot <- coefs*m
@@ -174,13 +193,15 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
           xtx.delete <- xtx-xtx.block.values[delete.from[i]:delete.to[i],]
           delete.values[i,] <- solve(xtx.delete)%*% xty.delete
         }
-        
+        list.append(check.vals,delete.values=delete.values)
         tot.delete.values <- delete.values[,1:n.annot]
         #end.delete.values <- (tot.delete.values %*% m)/N.bar
         #write.table(x=end.delete.values,file=paste0(out,".end.del.val.txt"),quote=F,sep="\t",row.names=F)
         pseudo.values <- matrix(data=NA,nrow=n.blocks,ncol=length(reg))
         colnames(pseudo.values)<- colnames(weighted.LD)
         for(i in 1:n.blocks){pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1)* delete.values[i,])}
+        
+        list.append(check.vals,pseudo.values=pseudo.values)
         
         jackknife.cov <- cov(pseudo.values)/n.blocks
         jackknife.se <- sqrt(diag(jackknife.cov))
@@ -245,7 +266,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         cat("Read in summary statistics for",nrow(y2),"SNPs","\n")
         
         
-        
+        list.append(check.vals,chi2=y2&chi2)
         
         y <- merge(y1,y2,by="SNP")
         
@@ -255,7 +276,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         y$ZZ <- y$Z.y * y$Z.x
         y <- na.omit(y)
-        
+        list.append(check.vals,ZZ=y2$ZZ)
         cat("After merging",chi1,"and",chi2,"summary statistics for",nrow(y),"SNPs","\n")
         
         
@@ -375,7 +396,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         V.hold[,s] <- (pseudo.values[,1])
         N.vec[1,s] <- N.bar
-        
+        list.append(check.vals,cross.N=N.bar)
         cov[k,j] <- reg.tot
         cov[j,k] <- reg.tot
         I[k,j] <- intercept
@@ -430,7 +451,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   }else{
     colnames(S)<-(trait.names)
   }
-   
+   save(check.vals,file="checks")
   return(list(V=V,S=S,I=I,N=N.vec,m=m))
   
   
