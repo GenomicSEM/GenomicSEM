@@ -66,7 +66,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   M.tot <- sum(m)
   m <- M.tot
   
-  list.append(check.vals,m=m)
+  check.vals <- list.append(check.vals,m=m)
   
   # count the total nummer of runs, both loops
   s <- 1
@@ -82,7 +82,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     y1$chi1 <- y1$Z^2
     
     
-    list.append(check.vals,mean.chi2=mean(y1$chi1,na.rm=T))
+   check.vals <-  list.append(check.vals,mean.chi2=mean(y1$chi1,na.rm=T))
     
     cat("Read in summary statistics from",chi1,"\n")
     cat("Read in summary statistics for",nrow(y1),"SNPs","\n")
@@ -141,7 +141,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged$weights <- merged$initial.w/sum(merged$initial.w)
         
         N.bar <- mean(merged$N)
-        list.append(check.vals,N.bar=N.bar)
+        check.vals <- list.append(check.vals,N.bar=N.bar)
         
         ## preweight LD and chi:
         
@@ -156,8 +156,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         select.from <- floor(seq(from=1,to=n.snps,length.out =(n.blocks+1)))
         select.to <- c(select.from[2:n.blocks]-1,n.snps)
-        list.append(check.vals,select.from=select.from)
-        list.append(check.vals,select.to=select.to)
+        check.vals <- list.append(check.vals,select.from=select.from)
+        check.vals <- list.append(check.vals,select.to=select.to)
         
         
         
@@ -178,7 +178,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         reg <- solve(xtx)%*% xty
         
         
-        list.append(check.vals,reg=reg)
+        check.vals <- list.append(check.vals,reg=reg)
         
         intercept <- reg[2]
         coefs <- reg[1]/N.bar
@@ -193,7 +193,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
           xtx.delete <- xtx-xtx.block.values[delete.from[i]:delete.to[i],]
           delete.values[i,] <- solve(xtx.delete)%*% xty.delete
         }
-        list.append(check.vals,delete.values=delete.values)
+        check.vals <- list.append(check.vals,delete.values=delete.values)
         tot.delete.values <- delete.values[,1:n.annot]
         #end.delete.values <- (tot.delete.values %*% m)/N.bar
         #write.table(x=end.delete.values,file=paste0(out,".end.del.val.txt"),quote=F,sep="\t",row.names=F)
@@ -201,7 +201,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         colnames(pseudo.values)<- colnames(weighted.LD)
         for(i in 1:n.blocks){pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1)* delete.values[i,])}
         
-        list.append(check.vals,pseudo.values=pseudo.values)
+        check.vals <- list.append(check.vals,pseudo.values=pseudo.values)
         
         jackknife.cov <- cov(pseudo.values)/n.blocks
         jackknife.se <- sqrt(diag(jackknife.cov))
@@ -266,7 +266,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         cat("Read in summary statistics for",nrow(y2),"SNPs","\n")
         
         
-        list.append(check.vals,chi2=y2$chi2)
+       check.vals <-  list.append(check.vals,chi2=y2$chi2)
         
         y <- merge(y1,y2,by="SNP")
         
@@ -276,7 +276,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         y$ZZ <- y$Z.y * y$Z.x
         y <- na.omit(y)
-        list.append(check.vals,ZZ=y2$ZZ)
+        check.vals <- list.append(check.vals,ZZ=mean(y2$ZZ,na.rm=T))
         cat("After merging",chi1,"and",chi2,"summary statistics for",nrow(y),"SNPs","\n")
         
         
@@ -396,7 +396,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         V.hold[,s] <- (pseudo.values[,1])
         N.vec[1,s] <- N.bar
-        list.append(check.vals,cross.N=N.bar)
+        check.vals <- list.append(check.vals,cross.N=N.bar)
         cov[k,j] <- reg.tot
         cov[j,k] <- reg.tot
         I[k,j] <- intercept
