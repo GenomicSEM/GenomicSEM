@@ -21,7 +21,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   Output$RS$SNP<-as.character(Output$RS$SNP)
   Output$RS$A1<-as.character(Output$RS$A1)
   Output$RS$A2<-as.character(Output$RS$A2)
-  
+
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
   #'k' is the number of variables in the model
   #'fit' is the fit function of the regression model
@@ -267,12 +267,12 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   #make empty list object for model results
   if(sub[[1]]==FALSE){
     Results_List<-vector(mode="list",length=f)}
-  
+ 
   ##estimation for WLS
   if(estimation=="DWLS"){
     
     for (i in 1:f) { 
-      
+
       #reorder sampling covariance matrix based on what lavaan expects given the specified model
       V_Full_Reorder <- V_Full[[i]][order,order]
       u<-nrow(V_Full_Reorder)
@@ -299,7 +299,8 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
-      
+
+      if(class(test$value)[1] == "lavaan"){
       Model_WLS <- parTable(Model1_Results)
       
       if(NA %in% Model_WLS$se){
@@ -523,7 +524,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       
       ##combine results with SNP, CHR, BP, A1, A2 for particular model
       final2<-cbind(Output[[3]][i,],final,row.names=NULL)
-      
+  
       
       if(!(sub[[1]]==FALSE)){
         final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
@@ -542,7 +543,38 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       }else{##pull results and put into list object
         final2$est<-ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
         Results_List[[i]]<-final2}
+      }else{
+        
+        final<-data.frame(t(rep(NA, 13)))
+        if(printwarn == TRUE){
+          final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+          final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+  
+        ##combine results with SNP, CHR, BP, A1, A2 for particular model
+        final2<-cbind(Output[[3]][i,],final,row.names=NULL)
+       
+        if(!(sub[[1]]==FALSE)){
+          final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
+          final3[1:length(sub),]<-final2[1,]
+          colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+     
+          if(i == 1){
+            Results_List<-vector(mode="list",length=nrow(final2))
+            for(y in 1:nrow(final2)){
+              Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
+              colnames(Results_List[[y]])<-colnames(final3)
+              Results_List[[y]][1,]<-final2[y,]
+            }
+          }else{
+            for(y in 1:nrow(final3)){
+              Results_List[[y]][i,]<-final3[y,]
+            }
+          }
+        }
+        
+      }
       
+  
       if(i == 1){
         cat(paste0("Running Model: ", i, "\n"))
       }else{
@@ -573,6 +605,8 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
       
+      
+      if(class(test$value)[1] == "lavaan"){
       Model_ML <- parTable(Model1_Results)
       
       if(NA %in% Model_ML$se){
@@ -798,6 +832,38 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       }else{##pull results and put into list object
         final2$est<-ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
         Results_List[[i]]<-final2}
+      }
+      else{
+          
+          final<-data.frame(t(rep(NA, 13)))
+          if(printwarn == TRUE){
+            final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+            final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+          
+          ##combine results with SNP, CHR, BP, A1, A2 for particular model
+          final2<-cbind(Output[[3]][i,],final,row.names=NULL)
+          
+          if(!(sub[[1]]==FALSE)){
+            final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
+            final3[1:length(sub),]<-final2[1,]
+            colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+            
+            if(i == 1){
+              Results_List<-vector(mode="list",length=nrow(final2))
+              for(y in 1:nrow(final2)){
+                Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
+                colnames(Results_List[[y]])<-colnames(final3)
+                Results_List[[y]][1,]<-final2[y,]
+              }
+            }else{
+              for(y in 1:nrow(final3)){
+                Results_List[[y]][i,]<-final3[y,]
+              }
+            }
+          }
+          
+        }
+      
       
       if(i == 1){
         cat(paste0("Running Model: ", i, "\n"))
@@ -812,4 +878,5 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   print(time_all[3])
   
   return(Results_List)
-}
+  }
+  
