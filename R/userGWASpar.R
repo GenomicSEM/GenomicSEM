@@ -1,5 +1,5 @@
 
-userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL){ 
+userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE){ 
   time<-proc.time()
   
   ##determine if the model is likely being listed in quotes and print warning if so
@@ -18,6 +18,11 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
   ##specify the cores should have access to the local environment
   makeCluster(int, type="FORK")
   
+  ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
+  Output$RS$SNP<-as.character(Output$RS$SNP)
+  Output$RS$A1<-as.character(Output$RS$A1)
+  Output$RS$A2<-as.character(Output$RS$A2)
+  
   ##split the V and S matrices into as many (cores - 1) as are aviailable on the local computer
   V_Full<-suppressWarnings(split(Output[[1]],1:int))
   S_Full<-suppressWarnings(split(Output[[2]],1:int))
@@ -29,10 +34,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
   ##number of models to run = number of distinct S/V matrices
   f<-length(Output[[1]])
   
-  ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
-  Output$RS$SNP<-as.character(Output$RS$SNP)
-  Output$RS$A1<-as.character(Output$RS$A1)
-  Output$RS$A2<-as.character(Output$RS$A2)
+  rm(Output)
   
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
   #'k' is the number of variables in the model
@@ -80,8 +82,15 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
       return(varnames)
     }
     
-    W_test <- solve(V_Full[[1]][[1]])
+    if(toler==FALSE){
+      W_test <- solve(V_Full[[1]][[1]])
+    }
     
+    if(toler!=FALSE){
+      W_test <- solve(V_Full[[1]][[1]],tol=toler)
+    }
+    
+
     S_Fulltest<-S_Full[[1]][[1]]
     
     ##run the model to determine number of latent variables
@@ -247,8 +256,13 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
     
-    #transform sampling covariance matrix into a weight matrix: 
-    W <- solve(V_Full[[1]][[i]])
+    if(toler==FALSE){
+      W<- solve(V_Full[[1]][[i]])
+    }
+    
+    if(toler!=FALSE){
+      W <- solve(V_Full[[1]][[i]],tol=toler)
+    }
     
     if(modelchi == TRUE){
       ##name the columns and rows of the S matrix in general format V1-VX
@@ -259,8 +273,32 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
     S_Fullrun<-S_Full[[1]][[i]]
     
     test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+    if(class(test2$value)[1]=="lavaan"){
+      order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
+    }else{
+      i<-10
+      
+      if(toler==FALSE){
+        W<- solve(V_Full[[1]][[i]])
+      }
+      
+      if(toler!=FALSE){
+        W <- solve(V_Full[[1]][[i]],tol=toler)
+      }
+      
+      if(modelchi == TRUE){
+        ##name the columns and rows of the S matrix in general format V1-VX
+        rownames(S_Full[[1]][[i]]) <- S_names
+        colnames(S_Full[[1]][[i]]) <- S_names
+      }
+      
+      S_Fullrun<-S_Full[[1]][[i]]
+      
+      test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+      
+      order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
+    }
     
-    order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
   }
   
   
@@ -278,7 +316,13 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
         diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
         
         ##invert the reordered sampling covariance matrix to create a weight matrix 
-        W <- solve(V_Full_Reorderb) 
+        if(toler==FALSE){
+          W<- solve(V_Full_Reorderb)
+        }
+        
+        if(toler!=FALSE){
+          W <- solve(V_Full_Reorderb,tol=toler)
+        }
         
         #import the S_Full matrix for appropriate run
         S_Fullrun<-S_Full[[n]][[i]]
@@ -292,6 +336,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
         test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
         
+        if(class(test$value)[1] == "lavaan"){
         Model_WLS <- parTable(Model1_Results)
         
         if(NA %in% Model_WLS$se){
@@ -522,6 +567,19 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
         ##results to be put into the output
         final2
         
+        }
+      else{
+        final<-data.frame(t(rep(NA, 13)))
+        if(printwarn == TRUE){
+          final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+          final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+        
+        ##combine results with SNP, CHR, BP, A1, A2 for particular model
+        final2<-cbind(i,n,SNPs[[n]][i,],final,row.names=NULL)
+        colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+        final2 
+      }
+    
       }
   }
   
@@ -775,22 +833,21 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
     for(y in 1:length(sub)){
       Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(results),nrow=nrow(results)/length(sub)))
       colnames(Results_List[[y]])<-colnames(results)
-      Results_List[[y]]<-subset(results, paste0(results$lhs, results$op, results$rhs, sep = "") %in% sub[[y]])
+      Results_List[[y]]<-subset(results, paste0(results$lhs, results$op, results$rhs, sep = "") %in% sub[[y]] | is.na(results$lhs))
     }
     rm(results)
   }
   
   
   if(sub[[1]]==FALSE){
-    x<-count(results$chisq == results$chisq[[1]])[2,2]
-    results$i<-rep(1:(nrow(results)/x),each=x)
-    colnames(results)[1]<-"Model_Number"
-    Results_List<-vector(mode="list",length=length(Output[[1]]))
-    for(y in 1:max(factorPa$Model_Number)){
-      Results_List[[y]]<-subset(results, results$Model_Number == y)
+    names<-unique(results$SNP)
+    Results_List<-vector(mode="list",length=length(names))
+    for(y in 1:length(names)){
+      Results_List[[y]]<-subset(results, results$SNP == names[[y]])
       Results_List[[y]]$Model_Number<-NULL
     }
     rm(results)
+    rm(names)
   }
   
   time_all<-proc.time()-time
