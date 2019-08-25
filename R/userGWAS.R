@@ -1,3 +1,4 @@
+
 userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,toler=FALSE){ 
   time<-proc.time()
   
@@ -238,7 +239,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     
     z<-(k*(k+1))/2
   }
-  
+
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
     
@@ -260,14 +261,36 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
     S_Fullrun<-S_Full[[i]]
     
     test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
-    
+    if(class(test2$value)[1]=="lavaan"){
     order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[i]]))
+    }else{
+      i<-10
+      #transform sampling covariance matrix into a weight matrix: 
+      if(toler==FALSE){
+        W<- solve(V_Full[[i]])
+      }
+      
+      if(toler!=FALSE){
+        W <- solve(V_Full[[i]],tol=toler)
+      }
+      
+      if(modelchi == TRUE){
+        ##name the columns and rows of the S matrix in general format V1-VX
+        rownames(S_Full[[i]]) <- S_names
+        colnames(S_Full[[i]]) <- S_names
+      }
+      
+      S_Fullrun<-S_Full[[i]]
+      
+      test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+      order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[i]]))
+    }
   }
   
   #make empty list object for model results
   if(sub[[1]]==FALSE){
     Results_List<-vector(mode="list",length=f)}
- 
+ i<-1
   ##estimation for WLS
   if(estimation=="DWLS"){
     
@@ -559,17 +582,19 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
           colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
      
           if(i == 1){
-            Results_List<-vector(mode="list",length=nrow(final2))
-            for(y in 1:nrow(final2)){
-              Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
+            Results_List<-vector(mode="list",length=length(sub))
+            for(y in 1:length(sub)){
+              Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(final3),nrow=f))
               colnames(Results_List[[y]])<-colnames(final3)
-              Results_List[[y]][1,]<-final2[y,]
+              Results_List[[y]][1,]<-final3[y,]
             }
           }else{
             for(y in 1:nrow(final3)){
               Results_List[[y]][i,]<-final3[y,]
             }
           }
+        }else{
+          Results_List[[i]]<-final2
         }
         
       }
@@ -834,35 +859,38 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
         Results_List[[i]]<-final2}
       }
       else{
+        
+        final<-data.frame(t(rep(NA, 13)))
+        if(printwarn == TRUE){
+          final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+          final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+        
+        ##combine results with SNP, CHR, BP, A1, A2 for particular model
+        final2<-cbind(Output[[3]][i,],final,row.names=NULL)
+        
+        if(!(sub[[1]]==FALSE)){
+          final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
+          final3[1:length(sub),]<-final2[1,]
+          colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
           
-          final<-data.frame(t(rep(NA, 13)))
-          if(printwarn == TRUE){
-            final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
-            final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
-          
-          ##combine results with SNP, CHR, BP, A1, A2 for particular model
-          final2<-cbind(Output[[3]][i,],final,row.names=NULL)
-          
-          if(!(sub[[1]]==FALSE)){
-            final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
-            final3[1:length(sub),]<-final2[1,]
-            colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-            
-            if(i == 1){
-              Results_List<-vector(mode="list",length=nrow(final2))
-              for(y in 1:nrow(final2)){
-                Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=f))
-                colnames(Results_List[[y]])<-colnames(final3)
-                Results_List[[y]][1,]<-final2[y,]
-              }
-            }else{
-              for(y in 1:nrow(final3)){
-                Results_List[[y]][i,]<-final3[y,]
-              }
+          if(i == 1){
+            Results_List<-vector(mode="list",length=length(sub))
+            for(y in 1:length(sub)){
+              Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(final3),nrow=f))
+              colnames(Results_List[[y]])<-colnames(final3)
+              Results_List[[y]][1,]<-final3[y,]
+            }
+          }else{
+            for(y in 1:nrow(final3)){
+              Results_List[[y]][i,]<-final3[y,]
             }
           }
-          
+        }else{
+          Results_List[[i]]<-final2
         }
+        
+      }
+      
       
       
       if(i == 1){
@@ -879,4 +907,3 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
   
   return(Results_List)
   }
-  
