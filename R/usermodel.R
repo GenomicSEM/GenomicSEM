@@ -1,6 +1,7 @@
 
 
 
+
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
@@ -373,7 +374,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   
   ##save the ordering
   order <- rearrange(k = k, fit = ReorderModel1, names = rownames(S_LD))
-
+  
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
   V_Reorderb<-diag(z)
@@ -947,8 +948,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
         
         std_all<-standardizedSolution(DWLS.fit_stand)
-        std_all<-subset(std_all,  paste0(std_all$lhs, std_all$op, std_all$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs))
-        results<-cbind(unstand2,stand2,std_all$est.std)
+        std_all<-subset(std_all, std_all$est.std != "NaN" & std_all$est.std != 0)
+        
+        results<-cbind(unstand2, stand2)
         
         ##add in fixed effects
         base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
@@ -959,11 +961,19 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           base_model$SE<-""
           base_model[6]<-base_model$est
           base_model$SE_stand<-""
-          base_model[8]<-base_model$est
+          #base_model[8]<-base_model$est
           colnames(base_model)<-colnames(results)
           results<-rbind(results,base_model)
         }
-      }
+        std_all<-subset(std_all,  paste0(std_all$lhs, std_all$op, std_all$rhs) %in% paste0(results$lhs, results$op, results$rhs))
+        std_all$order<-paste0(std_all$lhs, std_all$op, std_all$rhs)
+        std_all<-data.frame(std_all$est.std,std_all$order)
+        colnames(std_all)<-c("est.std","order")
+        results$order<-paste0(results$lhs,results$op,results$rhs)
+        results<-merge(results,std_all,by="order")
+        results$order<-NULL
+       
+        }
     }
   }
   
@@ -1404,9 +1414,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       if(CFIcalc == TRUE){
         modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
       
+      
       std_all<-standardizedSolution(ML.fit_stand)
-      std_all<-subset(std_all,  paste0(std_all$lhs, std_all$op, std_all$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs))
-      results<-cbind(unstand,SE,stand,SE_stand,std_all$est.td)
+      std_all<-subset(std_all, std_all$est.std != "NaN" & std_all$est.std != 0)
+      
+      results<-cbind(unstand2, stand2)
+      
       ##add in fixed effects
       base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
       base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
@@ -1416,10 +1429,18 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         base_model$SE<-""
         base_model[6]<-base_model$est
         base_model$SE_stand<-""
-        base_model[8]<-base_model$est
+        #base_model[8]<-base_model$est
         colnames(base_model)<-colnames(results)
         results<-rbind(results,base_model)
       }
+      std_all<-subset(std_all,  paste0(std_all$lhs, std_all$op, std_all$rhs) %in% paste0(results$lhs, results$op, results$rhs))
+      std_all$order<-paste0(std_all$lhs, std_all$op, std_all$rhs)
+      std_all<-data.frame(std_all$est.std,std_all$order)
+      colnames(std_all)<-c("est.std","order")
+      results$order<-paste0(results$lhs,results$op,results$rhs)
+      results<-merge(results,std_all,by="order")
+      results$order<-NULL
+      
     }
   }
   
@@ -1494,5 +1515,5 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       return(list(modelfit=modelfit,results=results,resid_cov=resid_cov))
     }
     }
-  
-    }
+
+}
