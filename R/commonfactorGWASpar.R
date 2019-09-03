@@ -149,7 +149,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL,toler=FALSE){
           ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
           test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
           
-          if(class(test$value)[1] == "lavaan"){
+          if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
           #pull the delta matrix (this doesn't depend on N)
           S2.delt <- lavInspect(Model1_Results, "delta")
           
@@ -249,7 +249,7 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL,toler=FALSE){
           ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
           test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
           
-          if(class(test$value)[1] == "lavaan"){
+          if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
           #pull the delta matrix (this doesn't depend on N)
           S2.delt <- lavInspect(Model1_Results, "delta")
           
