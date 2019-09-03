@@ -1,7 +1,3 @@
-
-
-
-
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
@@ -380,7 +376,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   V_Reorderb<-diag(z)
   diag(V_Reorderb)<-diag(V_Reorder)
   W_Reorder<-solve(V_Reorderb)
-  
+
   ##estimation for DWLS
   if(estimation=="DWLS"){
     
@@ -393,8 +389,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     if(std.lv == TRUE){
       empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
     }
-    
-    if(class(empty4$value)[1] == "simpleError"){
+ 
+    if(class(empty4$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
       print("The model as initially specified failed to converge. A lower bound of 0 on residual variances has been automatically added to try and troubleshoot this.")
       
       write.Model1 <- function(k, label = "V", label2 = "VF") {  
@@ -951,7 +947,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         std_all<-subset(std_all, std_all$est.std != "NaN" & std_all$est.std != 0)
         
         results<-cbind(unstand2, stand2)
-        
+       
         ##add in fixed effects
         base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
         base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
@@ -961,7 +957,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           base_model$SE<-""
           base_model[6]<-base_model$est
           base_model$SE_stand<-""
-          #base_model[8]<-base_model$est
           colnames(base_model)<-colnames(results)
           results<-rbind(results,base_model)
         }
@@ -970,10 +965,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         std_all<-data.frame(std_all$est.std,std_all$order)
         colnames(std_all)<-c("est.std","order")
         results$order<-paste0(results$lhs,results$op,results$rhs)
-        results<-merge(results,std_all,by="order")
+        results<-suppressWarnings(merge(results,std_all,by="order"))
         results$order<-NULL
-       
-        }
+        
+      }
     }
   }
   
@@ -991,7 +986,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     }
     
     
-    if(class(empty4$value)[1] == "simpleError"){
+    if(class(empty4$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
       print("The model as initially specified failed to converge. A lower bound of 0 on residual variances has been automatically added to try and troubleshoot this.")
       
       write.Model1 <- function(k, label = "V", label2 = "VF") {  
@@ -1438,7 +1433,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       std_all<-data.frame(std_all$est.std,std_all$order)
       colnames(std_all)<-c("est.std","order")
       results$order<-paste0(results$lhs,results$op,results$rhs)
-      results<-merge(results,std_all,by="order")
+      results<-suppressWarnings(merge(results,std_all,by="order"))
       results$order<-NULL
       
     }
@@ -1515,5 +1510,5 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       return(list(modelfit=modelfit,results=results,resid_cov=resid_cov))
     }
     }
-
+  
 }
