@@ -233,7 +233,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
     
-    if(class(empty$value)[1] == "simpleError"){
+    if(class(empty$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty$warning)) == TRUE){
       print("The common factor initially failed to converge. A lower bound of 0 on residual variances has been added to try and troubleshoot this.")
       
       write.Model1 <- function(k, label = "V", label2 = "VF") {  
@@ -522,7 +522,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     ##run the model using ML estimation
     empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
     
-    if(class(empty$value)[1] == "simpleError"){
+     if(class(empty$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty$warning)) == TRUE){
       print("The common factor initially failed to converge. A lower bound of 0 on residual variances has been added to try and troubleshoot this.")
       
       write.Model1 <- function(k, label = "V", label2 = "VF") {  
