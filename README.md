@@ -38,7 +38,7 @@ Load the `devtools` package.
 library(devtools)
 ```
 
-Now your ready to install the latest version of `GenomicSEM`
+Now you are ready to install the latest version of `GenomicSEM`
 
 ```[r]
 install_github("MichelNivard/GenomicSEM")
