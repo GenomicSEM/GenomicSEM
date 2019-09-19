@@ -350,7 +350,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
             S2.W <- lavInspect(Model1_Results, "WLS.V") 
             
             #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt) 
+            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt, tol=toler) 
             
             #create the "lettuce" part of the sandwich
             lettuce <- S2.W%*%S2.delt
@@ -475,7 +475,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
             S2.W_Q <- lavInspect(ModelQ_Results_WLS, "WLS.V") 
             
             #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-            bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q) 
+            bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler) 
             
             #create the "lettuce" part of the sandwich
             lettuce_Q <- S2.W_Q%*%S2.delt_Q
@@ -617,7 +617,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
             S2.W <- lavInspect(Model1_Results, "WLS.V") 
             
             #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt) 
+            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
             
             #create the "lettuce" part of the sandwich
             lettuce <- S2.W%*%S2.delt
@@ -726,7 +726,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
             S2.W_Q <- lavInspect(ModelQ_Results_ML, "WLS.V") 
             
             #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-            bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q) 
+            bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler) 
             
             #create the "lettuce" part of the sandwich
             lettuce_Q <- S2.W_Q%*%S2.delt_Q
