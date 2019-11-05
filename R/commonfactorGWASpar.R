@@ -251,6 +251,8 @@ commonfactorGWASpar <-function(Output,estimation="DWLS",cores=NULL,toler=FALSE){
           ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
           test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
           
+          test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
+            
           if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
           #pull the delta matrix (this doesn't depend on N)
           S2.delt <- lavInspect(Model1_Results, "delta")
