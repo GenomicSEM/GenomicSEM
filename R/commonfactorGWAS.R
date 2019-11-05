@@ -1,6 +1,6 @@
 
 
-commonfactorGWAS <-function(Output,estimation="DWLS"){ 
+commonfactorGWAS <-function(Output,estimation="DWLS",toler=FALSE){ 
   time<-proc.time()
   
   ##pull the S and V matrices from Output list
@@ -83,7 +83,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
   for (i in 1) {
     
     #transform sampling covariance matrix into a weight matrix: 
-    W <- solve(V_Full[[i]])
+    W <- solve(V_Full[[i]],tol=toler)
     
     S_Fullrun<-S_Full[[i]]
     
@@ -108,14 +108,17 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
       
       ##invert the reordered sampling covariance matrix to create a weight matrix 
-      W <- solve(V_Full_Reorderb) 
+      W <- solve(V_Full_Reorderb,tol=toler) 
       
       #import the S_Full matrix for appropriate run
       S_Fullrun<-S_Full[[i]]
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
+     
+      test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
       
+      if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
       #pull the delta matrix (this doesn't depend on N)
       S2.delt <- lavInspect(Model1_Results, "delta")
       
@@ -123,7 +126,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       S2.W <- lavInspect(Model1_Results, "WLS.V") 
       
       #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-      bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt) 
+      bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
       
       #create the "lettuce" part of the sandwich
       lettuce <- S2.W%*%S2.delt
@@ -184,7 +187,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         S2.W_Q <- lavInspect(ModelQ_Results, "WLS.V") 
         
         #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-        bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q) 
+        bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler) 
         
         #create the "lettuce" part of the sandwich
         lettuce_Q <- S2.W_Q%*%S2.delt_Q
@@ -205,11 +208,14 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         eta<-cbind(inspect(ModelQ_Results,"list")[(k+2):(2*k+1),14])
         
         #Ronald's magic combining all the pieces from above:
-        Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta} else{Q<-"Not Computed"}
+        Q<-t(eta)%*%P1%*%solve(Eig,tol=toler)%*%t(P1)%*%eta} else{Q<-"Not Computed"}
       
       ##pull all the results into a single row
       results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
       
+      }else{
+        results[i,]<-data.frame(i,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+      } 
     }
   }
   
@@ -225,7 +231,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
       
       ##invert the reordered sampling covariance matrix to create a weight matrix 
-      W <- solve(V_Full_Reorderb) 
+      W <- solve(V_Full_Reorderb,tol=toler) 
       
       #import the S_Full matrix for appropriate run
       S_Fullrun<-S_Full[[i]]
@@ -233,6 +239,8 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
       
+      test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
+      if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
       #pull the delta matrix (this doesn't depend on N)
       S2.delt <- lavInspect(Model1_Results, "delta")
       
@@ -240,7 +248,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
       S2.W <- lavInspect(Model1_Results, "WLS.V") 
       
       #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-      bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt) 
+      bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
       
       #create the "lettuce" part of the sandwich
       lettuce <- S2.W%*%S2.delt
@@ -301,7 +309,7 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         S2.W_Q <- lavInspect(ModelQ_Results, "WLS.V") 
         
         #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-        bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q) 
+        bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler) 
         
         #create the "lettuce" part of the sandwich
         lettuce_Q <- S2.W_Q%*%S2.delt_Q
@@ -322,12 +330,15 @@ commonfactorGWAS <-function(Output,estimation="DWLS"){
         eta<-cbind(inspect(ModelQ_Results,"list")[(k+2):(2*k+1),14])
         
         #Ronald's magic combining all the pieces from above:
-        Q<-t(eta)%*%P1%*%solve(Eig)%*%t(P1)%*%eta} else{Q<-"Not Computed"}
+        Q<-t(eta)%*%P1%*%solve(Eig,tol=toler)%*%t(P1)%*%eta} else{Q<-"Not Computed"}
       
       
       ##put the corrected standard error and Q in same dataset
       results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
       
+      }else{
+        results[i,]<-data.frame(i,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+      }
     }
   }
   
