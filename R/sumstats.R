@@ -47,7 +47,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     
     ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
     files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
-  
+    
     cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
     
     for(i in 1:length){
@@ -56,7 +56,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       
       cat(print(paste("Preparing summary statistics for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-   
+      
       hold_names <- names(files[[i]])
       names1<-hold_names
       
@@ -129,12 +129,12 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]))
       if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]))
       if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]))
-    
+      
       ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
       hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF_Other"
       
       names(files[[i]]) <- hold_names
-     
+      
       # Compute N as N cases and N control if reported:
       if("N_CAS" %in% colnames(files[[i]]) & "N_CON" %in% colnames(files[[i]])){
         files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
@@ -182,6 +182,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       a2<-files[[i]]$effect[[1]]
       if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
       if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
+      
+      ##remove any rows printed as exactly 0
+      b<-nrow(files[[i]])
+      if("effect" %in% colnames(files[[i]])) {
+        files[[i]]<-subset(files[[i]], files[[i]]$effect != 0)
+      }
+      if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
+      
       
       if(OLS[i] == T){
         cat(print(paste("An OLS transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
@@ -246,7 +254,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       if(linprob[i] == F){
         if(OLS[i] == F){                                     
           if(se.logit[i] == F){
-            cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
+            cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
             
             if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
             if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
@@ -258,7 +266,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
             colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
       
       if(se.logit[i]== T){
-        cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta and the SE column is a logistic SE (i.e., NOT the SE of the odds ratio) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is a logistic SE (i.e., NOT the SE of the odds ratio) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
         
         if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
         if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
@@ -445,6 +453,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
       if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
       
+      ##remove any rows printed as exactly 0
+      b<-nrow(files[[i]])
+      if("effect" %in% colnames(files[[i]])) {
+        files[[i]]<-subset(files[[i]], files[[i]]$effect != 0)
+      }
+      if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
+      
+   
       if(OLS[i] == T){
         cat(print(paste("An OLS transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
         
@@ -508,7 +524,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       if(linprob[i] == F){
         if(OLS[i] == F){                                     
           if(se.logit[i] == F){
-            cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
+            cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
             
             if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
             if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
@@ -520,7 +536,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
             colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
       
       if(se.logit[i]== T){
-        cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta and the SE column is a logistic SE (i.e., NOT the SE of the odds ratio) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is a logistic SE (i.e., NOT the SE of the odds ratio) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
         
         if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
         if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
@@ -536,7 +552,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       output
       
     },mc.cores=int)
-  
+    
     for(i in 1:length){
       if(i == 1){
         data.frame.out <- suppressWarnings(inner_join(data.frame.out,Output[[i]],by="SNP",all.x=F,all.y=F))
@@ -548,7 +564,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   
   b<-nrow(data.frame.out)
   data.frame.out<-data.frame.out[!duplicated(data.frame.out$BP),]
- 
+  
   end.time <- Sys.time()
   
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
@@ -556,20 +572,20 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   secs <- total.time-mins*60
   
   if(parallel == FALSE){
-  cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values")),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = ""),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste0("Sumstats finished running at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste("Please check the log file", paste0(log2, "_sumstats.log"), "to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files.")),file=log.file,sep="\n",append=TRUE)
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values")),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = ""),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste0("Sumstats finished running at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Please check the log file", paste0(log2, "_sumstats.log"), "to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files.")),file=log.file,sep="\n",append=TRUE)
   }
   
   if(parallel == TRUE){
-   print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values"))
-   print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = "") 
-   print(paste0("Sumstats finished running at ",end.time), sep = "")
-   print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = "")
-   print(paste0("Please check the log files to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files."))
+    print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values"))
+    print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = "") 
+    print(paste0("Sumstats finished running at ",end.time), sep = "")
+    print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = "")
+    print(paste0("Please check the log files to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files."))
   }
   
   data.frame.out
