@@ -510,9 +510,13 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       final<-final[order(final$index), ]
       final$index<-NULL
       
-      ##add in p-values
-      final$Z_Estimate<-final$est/final$SE
-      final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+        if(class(final$SE) != "factor"){
+          final$Z_Estimate<-final$est/final$SE
+          final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+        }else{
+          final$SE<-as.character(final$SE)
+          final$Z_Estimate<-NA
+          final$Pval_Estimate<-NA}
       
       if(modelchi == TRUE){
         ##replace V1-VX general form in output with user provided trait names
@@ -802,9 +806,13 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       final<-final[order(final$index), ]
       final$index<-NULL
       
-      ##add in p-values
-      final$Z_Estimate<-final$est/final$SE
-      final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+    if(class(final$SE) != "factor"){
+          final$Z_Estimate<-final$est/final$SE
+          final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+        }else{
+          final$SE<-as.character(final$SE)
+          final$Z_Estimate<-NA
+          final$Pval_Estimate<-NA}
       
       if(modelchi == TRUE){
         ##replace V1-VX general form in output with user provided trait names
@@ -859,9 +867,7 @@ userGWAS<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TR
       }else{##pull results and put into list object
         final2$est<-ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
         Results_List[[i]]<-final2}
-      }
-      else{
-        
+      }else{
         final<-data.frame(t(rep(NA, 13)))
         if(printwarn == TRUE){
           final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
