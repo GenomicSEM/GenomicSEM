@@ -440,10 +440,10 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
   beta_SNP<-suppressWarnings(split(beta_SNP,1:int))
   SE_SNP<-suppressWarnings(split(SE_SNP,1:int))
   varSNP<-suppressWarnings(split(varSNP,1:int))
-  
+ 
   ##estimation for WLS
   if(estimation=="DWLS"){
-    
+ 
     results<-foreach(n = icount(int), .combine = 'rbind') %:% 
       
       foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% { 
@@ -713,8 +713,14 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
           final<-final[order(final$index), ]
           final$index<-NULL
           
-          final$Z_Estimate<-final$est/final$SE
-          final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+          ##add in p-values
+          if(class(final$SE) != "factor"){
+            final$Z_Estimate<-final$est/final$SE
+            final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+          }else{
+            final$SE<-as.character(final$SE)
+            final$Z_Estimate<-NA
+            final$Pval_Estimate<-NA}
           
           if(modelchi == TRUE){
             ##replace V1-VX general form in output with user provided trait names
@@ -759,8 +765,7 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
           ##results to be put into the output
           final2
           
-        }
-        else{
+        }else{
           final<-data.frame(t(rep(NA, 13)))
           if(printwarn == TRUE){
             final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
@@ -771,7 +776,7 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
           colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
           final2 
         }
-        
+  
       }
   }
   
@@ -1024,8 +1029,13 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
         }else{final<-unstand2}
         
         ##add in p-values
-        final$Z_Estimate<-final$est/final$SE
-        final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+        if(class(final$SE) != "factor"){
+          final$Z_Estimate<-final$est/final$SE
+          final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+        }else{
+          final$SE<-as.character(final$SE)
+          final$Z_Estimate<-NA
+          final$Pval_Estimate<-NA}
         
         #reorder based on row numbers so it is in order the user provided
         final$index <- as.numeric(row.names(final))
@@ -1078,7 +1088,7 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
       }
   }
   
-  
+ 
   ##sort results so it is in order of the output lists provided for the function
   results<- results[order(results$i, results$n),] 
   results$n<-NULL
@@ -1108,7 +1118,7 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
   
   time_all<-proc.time()-time
   print(time_all[3])
-  
+  View(Results_List[[1]])
   return(Results_List)
   
 }
