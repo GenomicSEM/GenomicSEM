@@ -5,7 +5,7 @@
 Function to obtain model estimates for a user-specified model across SNPs using parallel processing. 
 }
 \usage{
-userGWASpar(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL, \dots)
+userGWASpar(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE, \dots)
 
 }
 \arguments{
@@ -16,7 +16,7 @@ userGWASpar(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=
    \item{printwarn}{Whether you want warnings and errors printed for each run. This can take up significant space across all SNPs, but the default is set to TRUE as these warnings may not be safe to ignore.} 
    \item{sub}{Whether you want to only output a piece of the model results (e.g., F1 ~ SNP). The argument takes a vector, as multiple pieces of the model result can be output.} 
    \item{cores}{The number of cores to use for parallel processing. If no number is provided, the function will automatically use 1 less than the total number of cores detected in the local environment.} 
-
+   \item{toler}{The tolerance to use for matrix inversion.} 
 }
 
 \value{
