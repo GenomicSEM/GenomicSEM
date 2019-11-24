@@ -523,8 +523,13 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
         final<-final[order(final$index), ]
         final$index<-NULL
         
-        final$Z_Estimate<-final$est/final$SE
-        final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+          if(class(final$SE) != "factor"){
+          final$Z_Estimate<-final$est/final$SE
+          final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+        }else{
+          final$SE<-as.character(final$SE)
+          final$Z_Estimate<-NA
+          final$Pval_Estimate<-NA}
         
         if(modelchi == TRUE){
           ##replace V1-VX general form in output with user provided trait names
@@ -569,8 +574,7 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
         ##results to be put into the output
         final2
         
-        }
-      else{
+        }else{
         final<-data.frame(t(rep(NA, 13)))
         if(printwarn == TRUE){
           final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
@@ -769,9 +773,13 @@ userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn
           final<-rbind(unstand2,other)
         }else{final<-unstand2}
         
-        ##add in p-values
-        final$Z_Estimate<-final$est/final$SE
-        final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+        if(class(final$SE) != "factor"){
+          final$Z_Estimate<-final$est/final$SE
+          final$Pval_Estimate<-2*pnorm(abs(final$Z_Estimate),lower.tail=FALSE)
+        }else{
+          final$SE<-as.character(final$SE)
+          final$Z_Estimate<-NA
+          final$Pval_Estimate<-NA}
         
         #reorder based on row numbers so it is in order the user provided
         final$index <- as.numeric(row.names(final))
