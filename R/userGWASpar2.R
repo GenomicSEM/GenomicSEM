@@ -1,4 +1,5 @@
 
+
 userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE){ 
   time<-proc.time()
   
@@ -409,6 +410,74 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
     z<-(k2*(k2+1))/2
   }
   
+  
+  if(modelchi==FALSE){
+    coords<-which(I_LD != 'NA', arr.ind= T)
+    i<-1
+    #create empty shell of V_SNP matrix
+    V_SNP<-diag(k)
+    
+    #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+    for (p in 1:nrow(coords)) { 
+      x<-coords[p,1]
+      y<-coords[p,2]
+      if (x != y) { 
+        V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
+      if (x == y) {
+        V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+      }
+    }
+    
+    ##create shell of full sampling covariance matrix
+    V_Full<-diag(((k+1)*(k+2))/2)
+    
+    ##input the ld-score regression region of sampling covariance from ld-score regression SEs
+    V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
+    
+    ##add in SE of SNP variance as first observation in sampling covariance matrix
+    V_Full[1,1]<-varSNPSE2
+    
+    ##add in SNP region of sampling covariance matrix
+    V_Full[2:(k+1),2:(k+1)]<-V_SNP
+    
+    kv<-nrow(V_Full)
+    smooth2<-ifelse(eigen(V_Full)$values[kv] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
+    
+    #create empty vector for S_SNP
+    S_SNP<-vector(mode="numeric",length=k+1)
+    
+    #enter SNP variance from reference panel as first observation
+    S_SNP[1]<-varSNP[i]
+    
+    #enter SNP covariances (standardized beta * SNP variance from refference panel)
+    for (p in 1:k) {
+      S_SNP[p+1]<-varSNP[i]*beta_SNP[i,p]
+    }
+    
+    #create shell of the full S (observed covariance) matrix
+    S_Full<-diag(k+1)
+    
+    ##add the LD portion of the S matrix
+    S_Full[(2:(k+1)),(2:(k+1))]<-S_LD
+    
+    ##add in observed SNP variances as first row/column
+    S_Full[1:(k+1),1]<-S_SNP
+    S_Full[1,1:(k+1)]<-t(S_SNP)
+    
+    ##pull in variables names specified in LDSC function and name first column as SNP
+    colnames(S_Full)<-c("SNP", colnames(S_LD))
+    
+    ##name rows like columns
+    rownames(S_Full)<-colnames(S_Full)
+    
+    ##smooth to near positive definite if either V or S are non-positive definite
+    ks<-nrow(S_Full)
+    smooth1<-ifelse(eigen(S_Full)$values[ks] <= 0, S_Full<-as.matrix((nearPD(S_Full, corr = FALSE))$mat), S_Full<-S_Full)
+    
+    k2<-ncol(S_Full)
+  }
+  
+  
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
     
@@ -521,6 +590,14 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
           ##name the columns and rows of the S matrix in general format V1-VX
           rownames(S_Fullrun) <- S_names
           colnames(S_Fullrun) <- S_names
+        }
+        
+        if(modelchi == FALSE){
+          #name the columns
+          colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
+          
+          ##name rows like columns
+          rownames(S_Fullrun)<-colnames(S_Fullrun)
         }
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
@@ -861,6 +938,13 @@ userGWASpar2<-function(covstruc,SNPs,estimation="DWLS",model="",modelchi=FALSE,p
           colnames(S_Fullrun) <- S_names
         }
         
+        if(modelchi == FALSE){
+          #name the columns
+          colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
+          
+          ##name rows like columns
+          rownames(S_Fullrun)<-colnames(S_Fullrun)
+        }
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
         test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
