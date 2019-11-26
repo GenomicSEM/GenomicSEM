@@ -1220,25 +1220,7 @@ warning("You are likely listing arguments in the order of a previous version of 
   }
   
   if(!is.null(Output)){
-    userGWASpar<-function(Output,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE){ 
-      time<-proc.time()
-      
-      ##determine if the model is likely being listed in quotes and print warning if so
-      test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
-      if(all(test) == FALSE){
-        warning("Your model name may be listed in quotes; please remove the quotes and try re-running if the function has returned stopped running after returning an error.")
-      }
-      
-      if(is.null(cores)){
-        ##if no default provided use 1 less than the total number of cores available so your computer will still function
-        int <- detectCores() - 1
-      }else{int<-cores}
-      
-      registerDoParallel(int)
-      
-      ##specify the cores should have access to the local environment
-      makeCluster(int, type="FORK")
-      
+   
       ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
       Output$RS$SNP<-as.character(Output$RS$SNP)
       Output$RS$A1<-as.character(Output$RS$A1)
@@ -2086,9 +2068,6 @@ warning("You are likely listing arguments in the order of a previous version of 
       
       return(Results_List)
       
-    }
   }
-
-}
-
-
+  
+  }
