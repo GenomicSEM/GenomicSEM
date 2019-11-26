@@ -1,5 +1,5 @@
 
-commonfactorGWASpar <-function(covstruc,SNPs,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,Output=NULL){ 
+commonfactorGWASpar <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,Output=NULL){ 
   time<-proc.time()
   
   print("Please note that an update was made to commonfactorGWASpar on 11/21/19 so that it combines addSNPs and commonfactorGWASpar.")
