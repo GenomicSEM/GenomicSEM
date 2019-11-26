@@ -817,7 +817,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           if(!(is.character(Q_CFI_WLS)) & !(is.character(Q_WLS))){
             CFI<-as.numeric(((Q_CFI_WLS-dfCFI)-(Q_WLS-df))/(Q_CFI_WLS-dfCFI))
             CFI<-ifelse(CFI > 1, 1, CFI)
-          }else{CFI<-Q_CFI_WLS}
+          }else{CFI<-"Either the chi-square or null (i.e. independence) model did not converge"}
           
         }
         
@@ -1339,7 +1339,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         if(!(is.character(Q_CFI_ML)) & !(is.character(Q_ML))){
           CFI<-as.numeric(((Q_CFI_ML-dfCFI)-(Q_ML-df))/(Q_CFI_ML-dfCFI))
           CFI<-ifelse(CFI > 1, 1, CFI)
-        }else{CFI<-Q_CFI_ML}
+        }else{CFI<-"Either the chi-square or null (i.e. independence) model did not converge"}
         
       }
       
