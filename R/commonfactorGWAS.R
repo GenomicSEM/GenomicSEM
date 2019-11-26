@@ -3,6 +3,8 @@
 commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",toler=FALSE,SNPSE=FALSE,Output=NULL){ 
   time<-proc.time()
   
+  print("Please note that an update was made to commonfactorGWAS on 11/21/19 so that it combines addSNPs and commonfactorGWAS.")
+  
  
   if(class(covstruc[[1]]) != "matrix"){
     print("You are likely listing arguments in the order of a previous version of commonfactorGWAS. The current version of the function expects the 
