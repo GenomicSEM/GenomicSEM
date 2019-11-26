@@ -5,13 +5,13 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",toler=FALS
   
   print("Please note that an update was made to commonfactorGWAS on 11/21/19 so that it combines addSNPs and commonfactorGWAS.")
   
- 
+   if(!is.null(covstruc)){
   if(class(covstruc[[1]]) != "matrix"){
     print("You are likely listing arguments in the order of a previous version of commonfactorGWAS. The current version of the function expects the 
           output from ldsc followed by the output from sumstats as the first two arguments.")    
     warning("You are likely listing arguments in the order of a previous version of commonfactorGWAS. The current version of the function expects the 
             output from ldsc followed by the output from sumstats as the first two arguments.")
-  }
+  }}
   
   if(is.null(Output)){
   
