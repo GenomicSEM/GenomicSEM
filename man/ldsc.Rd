@@ -5,7 +5,7 @@
 Function to run LD score regression (\link{https://github.com/bulik/ldsc}) to compute the genetic covariance between a series of traits based on genome wide summary statistics obtained from GWAS. The results generate by this function are necessary and sufficient to facilitate the fit of structural equation models (or other multivariate models) to the genetic covariance matrix.
 }
 \usage{
-ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = FALSE, \dots)
+ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = FALSE,chr=22,n.blocks=200 \dots)
 
 }
 \arguments{
@@ -15,8 +15,11 @@ ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = F
    \item{ld}{String which contains the path to the folder in which the LD scores used in the analysis are located. Expects LD scores formated as required by the original LD score regression software. }
    \item{wld}{String which contains the path to the folder in which the LD score weights used in the analysis are located. Expects LD scores formated as required by the original LD score regression software. }
    \item{trait.names}{A character vector specifying how the traits should be named in the genetic covariance (S) matrix. These variable names can subsequently be used in later steps for model specification. If no value is provided, the function will automatically name the variables using the generic from of V1-VX.}
-   \item{sep_weights}{Lological which indicates wheter the weights are different form the LD scores used for the regression, defaults to FALSE. }
-}
+   \item{sep_weights}{Logical which indicates wheter the weights are different form the LD scores used for the regression, defaults to FALSE. }
+   \item{chr}{number of chromosomes over which the LDSC weights are split, defalts to 22 (Human) but can be switched for other species }
+   \item{n.blocks}{Number of blocks to use for the jacknive procedure which is used to estiamte entries in V, higher values will be optimal if you have a large number of variables and also slower, defaults to 200  }
+                      
+       }
 
 \value{
    The function returns a list with 5 named entries
