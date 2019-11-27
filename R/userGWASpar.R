@@ -6,9 +6,9 @@ userGWASpar<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelch
   
   if(class(SNPs) == "character"){
 print("You are likely listing arguments in the order of a previous version of userGWASpar. The current version of the function expects the 
-            output from ldsc followed by the output from sumstats as the first two arguments.")    
-warning("You are likely listing arguments in the order of a previous version of userGWASpar. The current version of the function expects the 
-            output from ldsc followed by the output from sumstats as the first two arguments.")
+            output from ldsc (using covstruct = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWASpar for help on propper usage")    
+stop("You are likely listing arguments in the order of a previous version of userGWASpar. The current version of the function expects the 
+            output from ldsc (using covstruct = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWASpar for help on propper usage")
   }
   
   time<-proc.time()
