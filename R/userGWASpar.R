@@ -3,8 +3,8 @@ userGWASpar<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelch
  
   print("Please note that an update was made to userGWASpar on 11/21/19 so that it combines addSNPs and userGWASpar.")
   
- if(class(SNPs) == "character" | is.null(SNPs){
-    print("You are likely listing arguments in the order of a previous version of userGWASpr, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to userGWASpar. The current version of the function is way faster and expects the 
+  if(class(SNPs) == "character" | is.null(SNPs) | is.null(covstruct)){
+    print("You are likely listing arguments in the order of a previous version of userGWASpar, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to userGWASpar. The current version of the function is way faster and expects the 
           output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWASpae for help on propper usage")    
     stop("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of userGWASpar, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to userGWASpar. The current version of the function is way faster and expects the 
             output from ldsc (using covstruct = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWASpar for help on propper usage")
