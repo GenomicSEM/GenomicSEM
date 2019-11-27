@@ -11,10 +11,10 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
   print("Please note that an update was made to userGWAS on 11/21/19 so that it combines addSNPs and userGWAS.")
   
   
-  if(class(SNPs) == "character"){
-    print("You are likely listing arguments in the order of a previous version of userGWAS. The current version of the function expects the 
+  if(class(SNPs) == "character" | is.null(SNPs){
+    print("You are likely listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to userGWAS. The current version of the function is way faster and expects the 
           output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usag")    
-    stop("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS. The current version of the function expects the 
+    stop("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to userGWAS. The current version of the function is way faster and expects the 
             output from ldsc (using covstruct = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usage")
   }
   
