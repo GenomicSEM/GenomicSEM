@@ -5,13 +5,12 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",toler=FALS
   
   print("Please note that an update was made to commonfactorGWAS on 11/21/19 so that it combines addSNPs and commonfactorGWAS.")
   
-   if(!is.null(covstruc)){
-  if(class(covstruc[[1]]) != "matrix"){
-    print("You are likely listing arguments in the order of a previous version of commonfactorGWAS. The current version of the function expects the 
-          output from ldsc followed by the output from sumstats as the first two arguments.")    
-    warning("You are likely listing arguments in the order of a previous version of commonfactorGWAS. The current version of the function expects the 
-            output from ldsc followed by the output from sumstats as the first two arguments.")
-  }}
+ if(class(SNPs) == "character" | is.null(SNPs){
+    print("You are likely listing arguments in the order of a previous version of commonfactorGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to commonfactorGWAS. The current version of the function is way faster and expects the 
+          output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on propper usage")    
+    stop("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of commonfactorGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to commonfactorGWAS. The current version of the function is way faster and expects the 
+            output from ldsc (using covstruct = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on propper usage")
+  }
   
   if(is.null(Output)){
   
