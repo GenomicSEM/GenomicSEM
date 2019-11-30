@@ -602,7 +602,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           t2<--1
         }
       
-      if(t > 1 | t2 < -1){
+      if(t > 1 | t2 < -1  | t == "NaN"){
         print("Error: The primary model produced correlations among your latent variables that are either greater than 1 or less than -1. 
               Consquently, model fit estimates could not be computed and results should likely not be interpreted. Results are provided below 
               to enable troubleshooting. A model constraint that constrains the latent correlations to be above -1 or less than 1 is suggested.")
