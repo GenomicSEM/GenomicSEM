@@ -5,12 +5,20 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   
   print("Please note that an update was made to commonfactorGWAS on 11/21/19 so that it combines addSNPs and commonfactorGWAS.")
   
-  if(class(SNPs) == "character" | is.null(SNPs) | is.null(covstruct)){
-    print("You are likely listing arguments in the order of a previous version of commonfactorGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to commonfactorGWAS. The current version of the function is way faster and expects the 
-          output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on propper usage")    
-    warning("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of commonfactorGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to commonfactorGWAS. The current version of the function is way faster and expects the 
-         output from ldsc (using covstruct = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on propper usage")
+  if(class(SNPs) == "character"){
+    print("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to commonfactorGWAS. The current version of the function is faster and saves memory. It expects the 
+         output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on proper usage.")
+    warning("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to commonfactorGWAS. The current version of the function is faster and saves memory. It expects the 
+         output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on proper usage.")
+  }else{
+    if(is.null(SNPs) | is.null(covstruc)){
+      print("You may be listing arguments in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to commonfactorGWAS; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
+          output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on proper usage.")          
+      warning("You may be listing arguments in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to commonfactorGWAS; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
+          output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on proper usage.")    
+    }
   }
+  
   
   Operating<-Sys.info()[['sysname']]
   
@@ -1053,7 +1061,8 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
              warning = W)
       }
       
-      
+      ##pull the coordinates of the I_LD matrix to loop making the V_SNP matrix
+      coords<-which(I_LD != 'NA', arr.ind= T)
       
       ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
       for (i in 1) {
@@ -1853,4 +1862,3 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     stop("Parallel processing is not currently available for Windows operating systems. Please set the parallel argument to FALSE, or switch to a Linux or Mac operating system.")
   }
 }
-  
