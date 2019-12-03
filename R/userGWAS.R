@@ -11,12 +11,19 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
   print("Please note that an update was made to userGWAS on 11/21/19 so that it combines addSNPs and userGWAS.")
   
   
-  if(class(SNPs) == "character" | is.null(SNPs) | is.null(covstruct)){
-    print("You are likely listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to userGWAS. The current version of the function is way faster and expects the 
+  if(class(SNPs) == "character"){
+    print("You are likely listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the 
           output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usag")    
-    warning("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to proviide them to userGWAS. The current version of the function is way faster and expects the 
-         output from ldsc (using covstruct = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usage")
-  }
+    warning("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the 
+            output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usage")
+  }else{
+    if(is.null(SNPs) | is.null(covstruc)){
+      print("You may be listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS;if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
+          output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usag")    
+      warning("You may be listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS; ; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
+              output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usage") 
+    }
+    }
   
   Operating<-Sys.info()[['sysname']]
   
@@ -515,7 +522,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
     if(estimation=="DWLS"){
       
       for (i in 1:f) { 
-        
+         
         #create empty shell of V_SNP matrix
         V_SNP<-diag(k)
         
@@ -559,7 +566,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         if(toler!=FALSE){
           W <- solve(V_Full_Reorderb,tol=toler)
         }
-        
+       
         #create empty vector for S_SNP
         S_SNP<-vector(mode="numeric",length=k+1)
         
@@ -601,13 +608,18 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
         test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
-        
+     
         test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
-        
+      
         if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
           Model_WLS <- parTable(Model1_Results)
           
-          if(NA %in% Model_WLS$se){
+          resid_var1<-subset(Model_WLS, Model_WLS$op == "~~" & Model_WLS$free != 0 & Model_WLS$lhs == Model_WLS$rhs)
+          
+          resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
+    
+           if(resid_var2 > 0){
+           if(NA %in% Model_WLS$se){
             SE<-rep("SE could not be computed", max(Model_WLS$free))}else{
               #pull the delta matrix (this doesn't depend on N)
               S2.delt <- lavInspect(Model1_Results, "delta")
@@ -682,7 +694,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             
             tester<-vector(mode="list",length=nrow(ModelQ_WLS))
             
-            ##replace components of saturdated model already estimated with residaul factor estimates
+            ##replace components of saturdated model already estimated with residual factor estimates
             for(g in 1:nrow(ModelQ_WLS)){
               if(ModelQ_WLS$free[g] == 2) { 
                 t<-paste(ModelQ_WLS$lhs[g], ModelQ_WLS$op[g], ModelQ_WLS$rhs[g], sep = "")
@@ -728,11 +740,13 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               
               testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf)) 
             }else{testQ3<-testQ2}
-            
+          
             testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
             testQ3$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ3$warning$message[1])
             
-            if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+            ModelQ_WLS2 <- parTable(ModelQ_Results_WLS)
+            
+            if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!" & !(NA %in% ModelQ_WLS2$se)){
               
               #pull the delta matrix (this doesn't depend on N)
               S2.delt_Q <- lavInspect(ModelQ_Results_WLS, "delta")
@@ -833,9 +847,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           
           ##combine results with SNP, CHR, BP, A1, A2 for particular model
           final2<-cbind(SNPs2[i,],final,row.names=NULL)
-          
-          
-          if(!(sub[[1]]==FALSE)){
+         
+          if(!(sub[[1]])==FALSE){
             final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
             if(i == 1){
               Results_List<-vector(mode="list",length=nrow(final2))
@@ -849,24 +862,32 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 Results_List[[y]][i,]<-final2[y,]
               }
             }
+           
           }else{##pull results and put into list object
             final2$est<-ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
             Results_List[[i]]<-final2}
         }else{
-          
-          final<-data.frame(t(rep(NA, 13)))
+          if(modelchi == TRUE){
+          final<-data.frame(t(rep(NA, 13)))}else{final<-data.frame(t(rep(NA, 9)))}
           if(printwarn == TRUE){
             final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+            if(resid_var2 != -9){
+              final$error<-c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
+            }
             final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
           
           ##combine results with SNP, CHR, BP, A1, A2 for particular model
           final2<-cbind(SNPs2[i,],final,row.names=NULL)
           
-          if(!(sub[[1]]==FALSE)){
+          if(!(sub[[1]])==FALSE){
             final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
             final3[1:length(sub),]<-final2[1,]
+            if(modelchi == TRUE){
             colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-            
+            }else{
+              colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","error","warning")
+            }
+      
             if(i == 1){
               Results_List<-vector(mode="list",length=length(sub))
               for(y in 1:length(sub)){
@@ -885,7 +906,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           
         }
         
-        
+
         if(i == 1){
           cat(paste0("Running Model: ", i, "\n"))
         }else{
@@ -1109,7 +1130,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               S2.W_Q <- lavInspect(ModelQ_Results_ML, "WLS.V") 
               
               #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-              bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=1e-20) 
+              bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler) 
               
               #create the "lettuce" part of the sandwich
               lettuce_Q <- S2.W_Q%*%S2.delt_Q
@@ -1202,7 +1223,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           ##combine results with SNP, CHR, BP, A1, A2 for particular model
           final2<-cbind(SNPs2[i,],final,row.names=NULL)
           
-          if(!(sub[[1]]==FALSE)){
+          if(!(sub[[1]])==FALSE){
             final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
             if(i == 1){
               Results_List<-vector(mode="list",length=nrow(final2))
@@ -1221,7 +1242,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             Results_List[[i]]<-final2}
         }
         else{
-          
+   
           final<-data.frame(t(rep(NA, 13)))
           if(printwarn == TRUE){
             final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
@@ -1230,11 +1251,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           ##combine results with SNP, CHR, BP, A1, A2 for particular model
           final2<-cbind(SNPs2[i,],final,row.names=NULL)
           
-          if(!(sub[[1]]==FALSE)){
+          if(!(sub[[1]])==FALSE){
             final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
             final3[1:length(sub),]<-final2[1,]
             colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-            
+           
             if(i == 1){
               Results_List<-vector(mode="list",length=length(sub))
               for(y in 1:length(sub)){
@@ -1551,7 +1572,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
     #make empty list object for model results
     if(sub[[1]]==FALSE){
       Results_List<-vector(mode="list",length=f)}
-    i<-1
+   
     ##estimation for WLS
     if(estimation=="DWLS"){
       
@@ -1589,6 +1610,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
           Model_WLS <- parTable(Model1_Results)
           
+          resid_var1<-subset(Model_WLS, Model_WLS$op == "~~" & Model_WLS$free != 0 & Model_WLS$lhs == Model_WLS$rhs)
+          
+          resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
+        
+        if(resid_var2 > 0){
           if(NA %in% Model_WLS$se){
             SE<-rep("SE could not be computed", max(Model_WLS$free))}else{
               #pull the delta matrix (this doesn't depend on N)
@@ -1714,7 +1740,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
             testQ3$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ3$warning$message[1])
             
-            if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+            ModelQ_WLS2 <- parTable(ModelQ_Results_WLS)
+            
+            if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!" & !(NA %in% ModelQ_WLS2$se)){
               
               #pull the delta matrix (this doesn't depend on N)
               S2.delt_Q <- lavInspect(ModelQ_Results_WLS, "delta")
@@ -1723,7 +1751,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               S2.W_Q <- lavInspect(ModelQ_Results_WLS, "WLS.V") 
               
               #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-              bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=1e-20) 
+              bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler) 
               
               #create the "lettuce" part of the sandwich
               lettuce_Q <- S2.W_Q%*%S2.delt_Q
@@ -1816,7 +1844,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           final2<-cbind(Output[[3]][i,],final,row.names=NULL)
           
           
-          if(!(sub[[1]]==FALSE)){
+          if(!(sub[[1]])==FALSE){
             final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
             if(i == 1){
               Results_List<-vector(mode="list",length=nrow(final2))
@@ -1834,20 +1862,24 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             final2$est<-ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
             Results_List[[i]]<-final2}
         }else{
-          
-          final<-data.frame(t(rep(NA, 13)))
+          if(modelchi == TRUE){
+          final<-data.frame(t(rep(NA, 13)))}else{final<-data.frame(t(rep(NA, 9)))}
           if(printwarn == TRUE){
             final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+            if(resid_var2 != -9){
+              final$error<-c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
+            }
             final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
           
           ##combine results with SNP, CHR, BP, A1, A2 for particular model
           final2<-cbind(Output[[3]][i,],final,row.names=NULL)
           
-          if(!(sub[[1]]==FALSE)){
+          if(!(sub[[1]])==FALSE){
             final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
             final3[1:length(sub),]<-final2[1,]
+            if(modelchi == TRUE){
             colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-            
+            }else{colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","error","warning")}
             if(i == 1){
               Results_List<-vector(mode="list",length=length(sub))
               for(y in 1:length(sub)){
@@ -2019,7 +2051,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               S2.W_Q <- lavInspect(ModelQ_Results_ML, "WLS.V") 
               
               #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-              bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=1e-20) 
+              bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler) 
               
               #create the "lettuce" part of the sandwich
               lettuce_Q <- S2.W_Q%*%S2.delt_Q
@@ -2111,7 +2143,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           ##combine results with SNP, CHR, BP, A1, A2 for particular model
           final2<-cbind(Output[[3]][i,],final,row.names=NULL)
           
-          if(!(sub[[1]]==FALSE)){
+          if(!(sub[[1]])==FALSE){
             final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
             if(i == 1){
               Results_List<-vector(mode="list",length=nrow(final2))
@@ -2137,7 +2169,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           ##combine results with SNP, CHR, BP, A1, A2 for particular model
           final2<-cbind(Output[[3]][i,],final,row.names=NULL)
           
-          if(!(sub[[1]]==FALSE)){
+          if(!(sub[[1]])==FALSE){
             final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
             final3[1:length(sub),]<-final2[1,]
             colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
@@ -2183,9 +2215,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
       int <- detectCores() - 1
     }else{int<-cores}
-    
+  
     registerDoParallel(int)
-    
+   
     ##specify the cores should have access to the local environment
     makeCluster(int, type="FORK")
     
@@ -2681,14 +2713,14 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       beta_SNP<-suppressWarnings(split(beta_SNP,1:int))
       SE_SNP<-suppressWarnings(split(SE_SNP,1:int))
       varSNP<-suppressWarnings(split(varSNP,1:int))
-      
+
       ##estimation for WLS
       if(estimation=="DWLS"){
+  
+     results<-foreach(n = icount(int), .combine = 'rbind') %:% 
         
-        results<-foreach(n = icount(int), .combine = 'rbind') %:% 
-          
           foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% { 
-            
+         
             #create empty shell of V_SNP matrix
             V_SNP<-diag(k)
             
@@ -2780,7 +2812,12 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
               Model_WLS <- parTable(Model1_Results)
               
-              if(NA %in% Model_WLS$se){
+              resid_var1<-subset(Model_WLS, Model_WLS$op == "~~" & Model_WLS$free != 0 & Model_WLS$lhs == Model_WLS$rhs)
+              
+              resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
+            
+            if(resid_var2 > 0){
+                if(NA %in% Model_WLS$se){
                 SE<-rep("SE could not be computed", max(Model_WLS$free))}else{
                   #pull the delta matrix (this doesn't depend on N)
                   S2.delt <- lavInspect(Model1_Results, "delta")
@@ -2799,7 +2836,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                   
                   #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
                   SE <- as.matrix(sqrt(diag(Ohtt)))}
-              
+             
               #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
               if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
                 #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
@@ -2905,7 +2942,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
                 testQ3$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ3$warning$message[1])
                 
-                if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+                ModelQ_WLS2 <- parTable(ModelQ_Results_WLS)
+                
+                if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!" & !(NA %in% ModelQ_WLS2$se)){
                   
                   #pull the delta matrix (this doesn't depend on N)
                   S2.delt_Q <- lavInspect(ModelQ_Results_WLS, "delta")
@@ -3006,7 +3045,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               ##combine with rs-id, BP, CHR, etc.
               final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
               
-              if(!(sub[[1]]==FALSE)){
+              if(!(sub[[1]])==FALSE){
                 final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
               }else{##pull results 
                 final2$est<-ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)}
@@ -3015,15 +3054,34 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               final2
               
             }else{
+              if(modelchi == TRUE){
               final<-data.frame(t(rep(NA, 13)))
               if(printwarn == TRUE){
                 final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+                if(resid_var2 != -9){
+                  final$error<-c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
+                }
                 final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
               
               ##combine results with SNP, CHR, BP, A1, A2 for particular model
               final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
               colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-              final2 
+              final2
+              }
+              if(modelchi == FALSE){
+                final<-data.frame(t(rep(NA, 9)))
+                if(printwarn == TRUE){
+                  final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+                  if(resid_var2 != -9){
+                    final$error<-c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
+                  }
+                  final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+                
+                ##combine results with SNP, CHR, BP, A1, A2 for particular model
+                final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
+                colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","error","warning")
+                final2
+              }
             }
             
           }
@@ -3334,7 +3392,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             ##combine with rs-id, BP, CHR, etc.
             final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
             
-            if(!(sub[[1]]==FALSE)){
+            if(!(sub[[1]])==FALSE){
               final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
             }else{##pull results 
               final2$est<-ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)}
@@ -3349,7 +3407,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       results<- results[order(results$i, results$n),] 
       results$n<-NULL
       
-      if(!sub[[1]] == FALSE){
+      if(!(sub[[1]])==FALSE){
         results$i<-NULL
         Results_List<-vector(mode="list",length=length(sub))
         for(y in 1:length(sub)){
@@ -3374,7 +3432,6 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       
       time_all<-proc.time()-time
       print(time_all[3])
-      View(Results_List[[1]])
       return(Results_List)
       
     }
@@ -3704,6 +3761,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
               Model_WLS <- parTable(Model1_Results)
               
+              resid_var1<-subset(Model_WLS, Model_WLS$op == "~~" & Model_WLS$free != 0 & Model_WLS$lhs == Model_WLS$rhs)
+              
+              resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
+            
+            if(resid_var2 > 0){
               if(NA %in% Model_WLS$se){
                 SE<-rep("SE could not be computed", max(Model_WLS$free))}else{
                   #pull the delta matrix (this doesn't depend on N)
@@ -3829,7 +3891,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
                 testQ3$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ3$warning$message[1])
                 
-                if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+                ModelQ_WLS2 <- parTable(ModelQ_Results_WLS)
+                
+                if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!" & !(NA %in% ModelQ_WLS2$se)){
                   
                   #pull the delta matrix (this doesn't depend on N)
                   S2.delt_Q <- lavInspect(ModelQ_Results_WLS, "delta")
@@ -3938,15 +4002,33 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               final2
               
             }else{
+              if(modelchi == TRUE){
               final<-data.frame(t(rep(NA, 13)))
               if(printwarn == TRUE){
                 final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+                if(resid_var2 != -9){
+                  final$error<-c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
+                }
                 final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
               
               ##combine results with SNP, CHR, BP, A1, A2 for particular model
               final2<-cbind(i,n,SNPs[[n]][i,],final,row.names=NULL)
               colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-              final2 
+              final2}
+              if(modelchi == FALSE){
+                final<-data.frame(t(rep(NA, 9)))
+                if(printwarn == TRUE){
+                  final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+                  if(resid_var2 != -9){
+                    final$error<-c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
+                  }
+                  final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+                
+                ##combine results with SNP, CHR, BP, A1, A2 for particular model
+                final2<-cbind(i,n,SNPs[[n]][i,],final,row.names=NULL)
+                colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","error","warning")
+                final2
+              }
             }
             
           }
@@ -4200,7 +4282,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       results<- results[order(results$i, results$n),] 
       results$n<-NULL
       
-      if(!sub[[1]] == FALSE){
+      if(!(sub[[1]])==FALSE){
         results$i<-NULL
         Results_List<-vector(mode="list",length=length(sub))
         for(y in 1:length(sub)){
@@ -4235,6 +4317,3 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
     stop("Parallel processing is not currently available for Windows operating systems. Please set the parallel argument to FALSE, or switch to a Linux or Mac operating system.")
   }
 }
-
-  
-    
