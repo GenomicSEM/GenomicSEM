@@ -452,13 +452,13 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       a2<-files2$effect[[1]]
       if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
       if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
-      
-      ##remove any rows printed as exactly 0
-      b<-nrow(files[[i]])
-      if("effect" %in% colnames(files[[i]])) {
-        files[[i]]<-subset(files[[i]], files[[i]]$effect != 0)
+
+     ##remove any rows printed as exactly 0
+      b<-nrow(files2[[i]])
+      if("effect" %in% colnames(files2[[i]])){
+        files2[[i]]<-subset(files2[[i]], files2[[i]]$effect != 0)
       }
-      if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
+      if(b-nrow(files2[[i]]) > 0) cat(print(paste(b-nrow(files2[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
       
    
       if(OLS[i] == T){
