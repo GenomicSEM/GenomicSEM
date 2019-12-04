@@ -3,7 +3,7 @@
 R-package which allows the user to fit structural equation models 
 based on the summary statistics obtained from genome wide association studies (GWAS). Until explicitly stated otherwise the code on this github is an alpha version (now on version **0.0.2**) and under active development. The code may thus produce undesired results on certain operating systems or when run concurrently with specific packages or R versions. Feel free to raise issues if (or when...) the package produces undesired results, we will attempt to swiftly deal with known issues. Please  **[visit the wiki](https://github.com/MichelNivard/GenomicSEM/wiki)** to get started, or **[check out the paper](https://www.nature.com/articles/s41562-019-0566-x)**. If you are having issues and not finding the answers anywhere on the wiki or FAQs page, we encourage you to post your question on the **[google group](https://groups.google.com/forum/#!forum/genomic-sem-users)**.
 
-**Code Update**: On March 10th, 2019 we corrected a bug which impacts the weights used in ld-score regression and caused estimates produced to vary slightly. Substantive results are unlikely to be impacted, but we recommend reinstalling Genomic SEM if it was installed prior to this date.
+**Code Update**: On December 4th, 2019 we combined the addSNPs and multivariate GWAS functions and their parallel counterparts into a single function to reduce memory load and the number of steps in the analytic pipeline. Previous pipelines using addSNPs output can still be used, but the user will need to be sure to specify the correct arguments for the GWAS functions in the subsequent step. 
 
 **PGC worldwide lab meeting on genomicSEM**
 
