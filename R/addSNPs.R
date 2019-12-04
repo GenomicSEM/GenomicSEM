@@ -1,5 +1,9 @@
 
 addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=FALSE,cores=NULL){
+  
+  print("Please note that an update was made on 11/21/19 that combine addSNPs and the multivariate GWAS functions into a single step. Therefore, addSNPs is no longer a necessary function.")    
+   warning("Please note that an update was made on 11/21/19 that combine addSNPs and the multivariate GWAS functions into a single step. Therefore, addSNPs is no longer a necessary function.")
+  
   time<-proc.time()
   
   V_LD<-as.matrix(covstruc[[1]])
