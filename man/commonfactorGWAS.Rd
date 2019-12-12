@@ -30,3 +30,4 @@ commonfactorGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALS
 \examples{
 
 }
+

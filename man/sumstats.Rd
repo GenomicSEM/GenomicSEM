@@ -2,10 +2,10 @@
 \alias{sumstats}
 \title{Allign summary statistics from univariate GWAS for a GWAS in GenomicSEM}
 \description{
-Function to process GWAS summary statistis files and prepair them for a GWAS in genomicSEM
+Function to process GWAS summary statistics files and prepare them for a GWAS in genomicSEM
 }
 \usage{
-sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01,parallel=TRUE,cores=NULL, \dots)
+sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,parallel=TRUE,cores=NULL, \dots)
 }
 \arguments{
    \item{files}{a list of file names, fuiles must be located in the working directory, or a path must be provided.}
@@ -31,3 +31,4 @@ sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=N
 \examples{
 
 }
+

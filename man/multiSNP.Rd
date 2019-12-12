@@ -26,3 +26,4 @@ multiSNP (covstruc, SNPs, LD, SNPSE = "F", SNPlist = "F", \dots)
 \examples{
 
 }
+

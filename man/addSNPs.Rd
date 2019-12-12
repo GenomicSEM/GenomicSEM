@@ -30,3 +30,4 @@ addSNPs(covstruc, SNPs,SNPSE=FALSE,parallel=TRUE,cores=NULL, \dots)
 \examples{
 
 }
+

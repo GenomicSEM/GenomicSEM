@@ -1,12 +1,12 @@
 
 
-sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01,parallel=FALSE,cores=NULL){
+sumstats <- function(filenames,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,parallel=FALSE,cores=NULL){
   
   begin.time <- Sys.time()
   
-  length <- length(files)
+  length <- length(filenames)
   
-  filenames <- as.vector(files)
+  filenames <- as.vector(filenames)
   
   ref2<-ref
   
@@ -35,18 +35,18 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     cat(print(paste0("The preparation of ", length(trait.names), " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
     
     cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
-    ref <- fread(ref,header=T,data.table=F)
+    ref <- fread(file=ref,header=T,data.table=F)
     
     ##filter ref file on user provided maf.filter
-    cat(print(paste("Applying MAF filer of", maf.filter, "to the refernece file.")),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Applying MAF filer of", maf.filter, "to the reference file.")),file=log.file,sep="\n",append=TRUE)
     ref<-subset(ref, ref$MAF >= maf.filter)
     
     data.frame.out <- ref
     
-    cat(print(paste("Reading summary statistics for", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.")),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Reading summary statistics for", paste(filenames,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.")),file=log.file,sep="\n",append=TRUE)
     
     ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
-    files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
+    files = lapply(filenames, read.table, header=T, quote="\"", fill=T, na.string=c(".",NA,"NA",""))
     
     cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
     
@@ -156,9 +156,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
       
       ##merge with ref file
-      cat(print(paste0("Merging file: ", filenames[i], "with the reference file: ", ref2)),file=log.file,sep="\n",append=TRUE)
+      cat(print(paste("Merging file:", filenames[i], "with the reference file:", ref2)),file=log.file,sep="\n",append=TRUE)
       b<-nrow(files[[i]])
-      cat(print(paste0(b, " rows present in the full ", filenames[i], " summary statistics file.")),file=log.file,sep="\n",append=TRUE)
+      cat(print(paste(b, "rows present in the full", filenames[i], "summary statistics file.")),file=log.file,sep="\n",append=TRUE)
       files[[i]] <- suppressWarnings(inner_join(ref,files[[i]],by="SNP",all.x=F,all.y=F))
       cat(print(paste((b-nrow(files[[i]])), "rows were removed from the", filenames[i], "summary statistics file as the rsIDs for these SNPs were not present in the reference file.")),file=log.file,sep="\n",append=TRUE)
       
@@ -292,7 +292,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   if(parallel == TRUE){
     
     print("Reading in reference file")
-    ref <- fread(ref,header=T,data.table=F)
+    ref <- fread(file=ref,header=T,data.table=F)
     
     ##filter ref file on user provided maf.filter
     print(paste("Applying MAF filer of", maf.filter, "to the reference file."))
@@ -314,7 +314,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       i<-X
       
       log.file <- file(paste0(trait.names[i], "_sumstats.log"),open="wt")  
-      files2<-read.table(files[[i]], header = T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
+      files2<-read.table(filenames[i], header = T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
       
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)

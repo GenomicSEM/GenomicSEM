@@ -22,6 +22,8 @@ commonfactor(covstruc,estimation="DWLS", \dots)
 }
 
 
+
 \examples{
 
 }
+
