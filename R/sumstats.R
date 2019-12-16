@@ -1,14 +1,12 @@
 
 
-sumstats <- function(filenames,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,parallel=FALSE,cores=NULL){
+sumstats <- function(filenames,reference,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,parallel=FALSE,cores=NULL){
   
   begin.time <- Sys.time()
   
   length <- length(filenames)
   
   filenames <- as.vector(filenames)
-  
-  ref2<-ref
   
   if(is.null(OLS)){
     OLS<-rep(FALSE,length)
@@ -35,15 +33,15 @@ sumstats <- function(filenames,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NU
     cat(print(paste0("The preparation of ", length(trait.names), " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
     
     cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
-    ref <- fread(file=ref,header=T,data.table=F)
-    
+    ref <- fread(file=reference,header=T,data.table=F)
+
     ##filter ref file on user provided maf.filter
     cat(print(paste("Applying MAF filer of", maf.filter, "to the reference file.")),file=log.file,sep="\n",append=TRUE)
     ref<-subset(ref, ref$MAF >= maf.filter)
     
     data.frame.out <- ref
     
-    cat(print(paste("Reading summary statistics for", paste(filenames,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.")),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste0("Reading summary statistics for ", paste(filenames,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.")),file=log.file,sep="\n",append=TRUE)
     
     ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
     files = lapply(filenames, read.table, header=T, quote="\"", fill=T, na.string=c(".",NA,"NA",""))
@@ -156,7 +154,7 @@ sumstats <- function(filenames,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NU
       files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
       
       ##merge with ref file
-      cat(print(paste("Merging file:", filenames[i], "with the reference file:", ref2)),file=log.file,sep="\n",append=TRUE)
+      cat(print(paste("Merging file:", filenames[i], "with the reference file:", reference)),file=log.file,sep="\n",append=TRUE)
       b<-nrow(files[[i]])
       cat(print(paste(b, "rows present in the full", filenames[i], "summary statistics file.")),file=log.file,sep="\n",append=TRUE)
       files[[i]] <- suppressWarnings(inner_join(ref,files[[i]],by="SNP",all.x=F,all.y=F))
@@ -292,7 +290,7 @@ sumstats <- function(filenames,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NU
   if(parallel == TRUE){
     
     print("Reading in reference file")
-    ref <- fread(file=ref,header=T,data.table=F)
+    ref <- fread(file=reference,header=T,data.table=F)
     
     ##filter ref file on user provided maf.filter
     print(paste("Applying MAF filer of", maf.filter, "to the reference file."))
@@ -426,7 +424,7 @@ sumstats <- function(filenames,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NU
       files2$A2 <- factor(toupper(files2$A2), c("A", "C", "G", "T"))
       
       ##merge with ref file
-      cat(print(paste("Merging file:", filenames[i], "with the reference file:", ref2)),file=log.file,sep="\n",append=TRUE)
+      cat(print(paste("Merging file:", filenames[i], "with the reference file:", ref)),file=log.file,sep="\n",append=TRUE)
       b<-nrow(files2)
       cat(print(paste(b, "rows present in the full", filenames[i], "summary statistics file.")),file=log.file,sep="\n",append=TRUE)
       files2 <- suppressWarnings(inner_join(ref,files2,by="SNP",all.x=F,all.y=F))
