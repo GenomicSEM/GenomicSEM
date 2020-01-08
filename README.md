@@ -5,6 +5,8 @@ based on the summary statistics obtained from genome wide association studies (G
 
 **Code Update**: On December 4th, 2019 we combined the addSNPs and multivariate GWAS functions and their parallel counterparts into a single function to reduce memory load and the number of steps in the analytic pipeline. Previous pipelines using addSNPs output can still be used, but the user will need to be sure to specify the correct arguments for the GWAS functions in the subsequent step. 
 
+**CODE UPDATE 2** On January 8th, 2020 we found a bug in `sumstats`, which prepares summary statistics for GWAS, some SNPs are omitted erroneously. Specifically the code removed SNPs with duplicate basepairs but did not consider chromosome when doing so. This does not effect SEM models without SNPs in them as variables, this does not effect results for GWAS you may have run, it just means  SNPs were omitted from consideration. randomly.
+
 **PGC worldwide lab meeting on genomicSEM**
 
 Click below for a video which provides a very clear introduction to the method/paper:
