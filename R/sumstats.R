@@ -1,6 +1,6 @@
 
 
-sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01,parallel=FALSE,cores=NULL){
+sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01,keep.indel=F,parallel=FALSE,cores=NULL){
   
   begin.time <- Sys.time()
   
@@ -151,9 +151,18 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
           files[[i]]$N<-N[i]
         }}
       
+      if(keep.indel=TRUE){
+       files[[i]]$A1 <- factor(toupper(files[[i]]$A1))
+       files[[i]]$A2 <- factor(toupper(files[[i]]$A2))
+        cat(print(paste0("Keeping variants other than SNPs, this may cause problems when alligning allle's across traits and the reference file")),file=log.file,sep="\n",append=TRUE)
+       }
+      
+      if(keep.indel=FALSE){
       ##make sure all alleles are upper case for matching
       files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
       files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
+        cat(print(paste0("Removing variants other than SNPs (e.g. Indel's). To change behavior set keep.indel=TRUE")),file=log.file,sep="\n",append=TRUE)
+      }
       
       ##merge with ref file
       cat(print(paste0("Merging file: ", filenames[i], "with the reference file: ", ref2)),file=log.file,sep="\n",append=TRUE)
