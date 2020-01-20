@@ -151,13 +151,13 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
           files[[i]]$N<-N[i]
         }}
       
-      if(keep.indel=TRUE){
+      if(keep.indel == TRUE){
        files[[i]]$A1 <- factor(toupper(files[[i]]$A1))
        files[[i]]$A2 <- factor(toupper(files[[i]]$A2))
         cat(print(paste0("Keeping variants other than SNPs, this may cause problems when alligning allle's across traits and the reference file")),file=log.file,sep="\n",append=TRUE)
        }
       
-      if(keep.indel=FALSE){
+      if(keep.indel == FALSE){
       ##make sure all alleles are upper case for matching
       files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
       files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
