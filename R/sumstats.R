@@ -161,7 +161,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       ##make sure all alleles are upper case for matching
       files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
       files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
-        cat(print(paste0("Removing variants other than SNPs (e.g. Indel's). To change behavior set keep.indel=TRUE")),file=log.file,sep="\n",append=TRUE)
+       # cat(print(paste0("Removing variants other than SNPs (e.g. Indel's). To change behavior set keep.indel=TRUE")),file=log.file,sep="\n",append=TRUE)
       }
       
       ##merge with ref file
