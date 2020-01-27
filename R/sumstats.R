@@ -1,6 +1,6 @@
 
 
-sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,parallel=FALSE,cores=NULL){
+sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL){
   
   begin.time <- Sys.time()
   
