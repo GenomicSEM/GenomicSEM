@@ -5,10 +5,10 @@
 Function to process GWAS summary statistics files and prepare them for a GWAS in genomicSEM
 }
 \usage{
-sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,parallel=TRUE,cores=NULL, \dots)
+sumstats(filenames,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,keep.indel=FALSE,parallel=TRUE,cores=NULL, \dots)
 }
 \arguments{
-   \item{files}{A list of file names, files are assumed to be located in the working directory unless an absolute path is provided.}
+   \item{filenames}{A list of file names, files are assumed to be located in the working directory unless an absolute path is provided.}
    \item{ref}{A reference file of SNPs to keep in your GWAS, one based on 1000 genomes phase 3 is provided.}
    \item{trait.names}{A vector of trait names which will be used as names for the munged filesi.}
    \item{se.logit}{A logical vector indicating whether the standard errors in each set of summary statistics is on the logit scale.}
@@ -16,6 +16,7 @@ sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=N
    \item{linprob}{A logical vector indicating whether the GWAS used a linear probability model i.e. a dichotomous trait using OLS (or a LMM).}
    \item{info.filter}{Numeric value used as a lower bound for imputation quality (INFO).}
    \item{maf.filter}{Numeric value used as a lower bound for minor allel frequency.}
+   \item{keep.indel}{Whether to keep insertions/deletions or not.}
    \item{parallel}{Indicates whether sumstats should process the summary statistics files in parallel or serial fashion. Default is TRUE, indicating that it will run in parallel.}
    \item{cores}{Indicates how many cores to use when running in parallel. The default is NULL, in which case sumstats will use 1 less than the total number of cores available in the local environment.}
    
