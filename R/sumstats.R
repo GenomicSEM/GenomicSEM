@@ -6,8 +6,6 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
   
   n.traits <- length(filenames)
   
-  filenames <- as.vector(filenames)
-  
   if(is.null(OLS)){
     OLS<-rep(FALSE,n.traits)
   }
@@ -153,9 +151,18 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
           files[[i]]$N<-N[i]
         }}
       
+      if(keep.indel == TRUE){
+       files[[i]]$A1 <- factor(toupper(files[[i]]$A1))
+       files[[i]]$A2 <- factor(toupper(files[[i]]$A2))
+        cat(print(paste0("Keeping variants other than SNPs, this may cause problems when alligning allle's across traits and the reference file")),file=log.file,sep="\n",append=TRUE)
+       }
+      
+      if(keep.indel == FALSE){
       ##make sure all alleles are upper case for matching
       files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
       files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
+       # cat(print(paste0("Removing variants other than SNPs (e.g. Indel's). To change behavior set keep.indel=TRUE")),file=log.file,sep="\n",append=TRUE)
+      }
       
       ##merge with ref file
       cat(print(paste("Merging file:", filenames[i], "with the reference file:", reference)),file=log.file,sep="\n",append=TRUE)
@@ -316,14 +323,14 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
       i<-X
       
       log.file <- file(paste0(trait.names[i], "_sumstats.log"),open="wt")  
-      files2<-read.table(filenames[i], header = T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
+      tmpfile<-read.table(filenames[i], header = T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
       
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       
       cat(print(paste("Preparing summary statistics for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
       
-      hold_names <- names(files2)
+      hold_names <- names(tmpfile)
       names1<-hold_names
       
       if("SNP" %in% hold_names) cat(print(paste("Interpreting the SNP column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
@@ -405,53 +412,53 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
       ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
       hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF_Other"
       
-      names(files2) <- hold_names
+      names(tmpfile) <- hold_names
       
       # Compute N as N cases and N control if reported:
-      if("N_CAS" %in% colnames(files2) & "N_CON" %in% colnames(files2)){
-        files2$N <- files2$N_CAS + files2$N_CON
+      if("N_CAS" %in% colnames(tmpfile) & "N_CON" %in% colnames(tmpfile)){
+        tmpfile$N <- tmpfile$N_CAS + tmpfile$N_CON
         cat(print(paste("As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the total sample size")),file=log.file,sep="\n",append=TRUE)
       }
       
-      if("N" %in% colnames(files2) & !(is.null(N))){
+      if("N" %in% colnames(tmpfile) & !(is.null(N))){
         if(!(is.na(N[i]))){
           cat(print(paste("As the summary statistics file includes a sample size column, this is being used in place of the user provided sample size. If the user wishes to still use the provided sample size, as opposed to the sample size listed in the summary statistics file, please change the sample size column header to N2. However, we note that sample size is only used for LPM and OLS conversions.")),file=log.file,sep="\n",append=TRUE)
         }}
       
-      if(!(is.null(N)) & !("N" %in% colnames(files2))){
+      if(!(is.null(N)) & !("N" %in% colnames(tmpfile))){
         if(!(is.na(N[i]))){
-          files2$N<-N[i]
+          tmpfile$N<-N[i]
         }}
       
       ##make sure all alleles are upper case for matching
-      files2$A1 <- factor(toupper(files2$A1), c("A", "C", "G", "T"))
-      files2$A2 <- factor(toupper(files2$A2), c("A", "C", "G", "T"))
+      tmpfile$A1 <- factor(toupper(tmpfile$A1), c("A", "C", "G", "T"))
+      tmpfile$A2 <- factor(toupper(tmpfile$A2), c("A", "C", "G", "T"))
       
       ##merge with ref file
       cat(print(paste("Merging file:", filenames[i], "with the reference file:", ref)),file=log.file,sep="\n",append=TRUE)
-      b<-nrow(files2)
+      b<-nrow(tmpfile)
       cat(print(paste(b, "rows present in the full", filenames[i], "summary statistics file.")),file=log.file,sep="\n",append=TRUE)
-      files2 <- suppressWarnings(inner_join(ref,files2,by="SNP",all.x=F,all.y=F))
-      cat(print(paste((b-nrow(files2)), "rows were removed from the", filenames[i], "summary statistics file as the rsIDs for these SNPs were not present in the reference file.")),file=log.file,sep="\n",append=TRUE)
+      tmpfile <- suppressWarnings(inner_join(ref,tmpfile,by="SNP",all.x=F,all.y=F))
+      cat(print(paste((b-nrow(tmpfile)), "rows were removed from the", filenames[i], "summary statistics file as the rsIDs for these SNPs were not present in the reference file.")),file=log.file,sep="\n",append=TRUE)
       
       ##remove any rows with missing p-values
-      b<-nrow(files2)
-      if("P" %in% colnames(files2)) {
-        files2<-subset(files2, !(is.na(files2$P)))
+      b<-nrow(tmpfile)
+      if("P" %in% colnames(tmpfile)) {
+        tmpfile<-subset(tmpfile, !(is.na(tmpfile$P)))
       }
-      if(b-nrow(files2) > 0) cat(print(paste(b-nrow(files2), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the P-value column")),file=log.file,sep="\n",append=TRUE)
+      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the P-value column")),file=log.file,sep="\n",append=TRUE)
       
       ##remove any rows with missing effects
-      b<-nrow(files2)
-      if("effect" %in% colnames(files2)) {
-        files2<-subset(files2, !(is.na(files2$effect)))
+      b<-nrow(tmpfile)
+      if("effect" %in% colnames(tmpfile)) {
+        tmpfile<-subset(tmpfile, !(is.na(tmpfile$effect)))
       }
-      if(b-nrow(files2) > 0) cat(print(paste(b-nrow(files2), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the effect column")),file=log.file,sep="\n",append=TRUE)
+      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the effect column")),file=log.file,sep="\n",append=TRUE)
       
       ##determine whether it is OR or logistic/continuous effect based on median effect size 
-      a1<-files2$effect[[1]]
-      files2$effect<-ifelse(rep(round(median(files2$effect,na.rm=T)) == 1,nrow(files2)), log(files2$effect),files2$effect)
-      a2<-files2$effect[[1]]
+      a1<-tmpfile$effect[[1]]
+      tmpfile$effect<-ifelse(rep(round(median(tmpfile$effect,na.rm=T)) == 1,nrow(tmpfile)), log(tmpfile$effect),tmpfile$effect)
+      a2<-tmpfile$effect[[1]]
       if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
       if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
 
@@ -459,67 +466,67 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
      ##remove any rows printed as exactly 0
 
 
-      b<-nrow(files2)
-      if("effect" %in% colnames(files2)){
-        files2<-subset(files2, files2$effect != 0)
+      b<-nrow(tmpfile)
+      if("effect" %in% colnames(tmpfile)){
+        tmpfile<-subset(tmpfile, tmpfile$effect != 0)
       }
-      if(b-nrow(files2) > 0) cat(print(paste(b-nrow(files2), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
+      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
       
       if(OLS[i] == T){
         cat(print(paste("An OLS transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
         
-        files2$Z <- sign(files2$effect) * sqrt(qchisq(files2$P,1,lower=F))
+        tmpfile$Z <- sign(tmpfile$effect) * sqrt(qchisq(tmpfile$P,1,lower=F))
         
-        if("N" %in% colnames(files2)){
-          files2$effect <- files2$Z/ sqrt(files2$N * 2 * (files2$MAF *(1-files2$MAF)))}else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
+        if("N" %in% colnames(tmpfile)){
+          tmpfile$effect <- tmpfile$Z/ sqrt(tmpfile$N * 2 * (tmpfile$MAF *(1-tmpfile$MAF)))}else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
       
       
       if(linprob[i] == T){
         cat(print(paste("An LPM transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
         
-        files2$Z <- sign(files2$effect) * sqrt(qchisq(files2$P,1,lower=F))
+        tmpfile$Z <- sign(tmpfile$effect) * sqrt(qchisq(tmpfile$P,1,lower=F))
         
-        if("N" %in% colnames(files2)){
-          files2$effect <- files2$Z/sqrt((prop[i]*(1-prop[i])*(2*files2$N*files2$MAF*(1-files2$MAF))))
-          files2$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*files2$N*files2$MAF*(1-files2$MAF))))}else{cat(print("ERROR: A Sample Size (N) is needed for LPM Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
+        if("N" %in% colnames(tmpfile)){
+          tmpfile$effect <- tmpfile$Z/sqrt((prop[i]*(1-prop[i])*(2*tmpfile$N*tmpfile$MAF*(1-tmpfile$MAF))))
+          tmpfile$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*tmpfile$N*tmpfile$MAF*(1-tmpfile$MAF))))}else{cat(print("ERROR: A Sample Size (N) is needed for LPM Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
       
       # Flip effect to match ordering in ref file
-      files2$effect <-  ifelse(files2$A1.x != (files2$A1.y) & files2$A1.x == (files2$A2.y),files2$effect*-1,files2$effect)
+      tmpfile$effect <-  ifelse(tmpfile$A1.x != (tmpfile$A1.y) & tmpfile$A1.x == (tmpfile$A2.y),tmpfile$effect*-1,tmpfile$effect)
       
       ##remove SNPs that don't match A1 or A2 in reference file.
-      b<-nrow(files2)
-      files2<-subset(files2, !(files2$A1.x != (files2$A1.y)  & files2$A1.x != (files2$A2.y)))
-      if(b-nrow(files2) > 0) cat(print(paste(b-nrow(files2), "row(s) were removed from the", filenames[i], "summary statistics file due to the effect allele (A1) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
+      b<-nrow(tmpfile)
+      tmpfile<-subset(tmpfile, !(tmpfile$A1.x != (tmpfile$A1.y)  & tmpfile$A1.x != (tmpfile$A2.y)))
+      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "row(s) were removed from the", filenames[i], "summary statistics file due to the effect allele (A1) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
       
-      b<-nrow(files2)
-      files2<-subset(files2, !(files2$A2.x != (files2$A2.y)  & files2$A2.x !=  (files2$A1.y)))
-      if(b-nrow(files2) > 0) cat(print(paste(b-nrow(files2), "row(s) were removed from the", filenames[i], "summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
+      b<-nrow(tmpfile)
+      tmpfile<-subset(tmpfile, !(tmpfile$A2.x != (tmpfile$A2.y)  & tmpfile$A2.x !=  (tmpfile$A1.y)))
+      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "row(s) were removed from the", filenames[i], "summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
       
       #Check that p-value column does not contain an excess of 1s/0s
-      if((sum(files2$P > 1) + sum(files2$P < 0)) > 100){
+      if((sum(tmpfile$P > 1) + sum(tmpfile$P < 0)) > 100){
         cat(print("In excess of 100 SNPs have P val above 1 or below 0. The P column may be mislabled!"),file=log.file,sep="\n",append=TRUE)
       }
       
-      if("INFO" %in% colnames(files2)) {
-        b<-nrow(files2)
-        files2 <- files2[files2$INFO >= info.filter,]
-        cat(print(paste(b-nrow(files2), "rows were removed from the", filenames[i], "summary statistics file due to INFO values below the designated threshold of", info.filter)),file=log.file,sep="\n",append=TRUE)
+      if("INFO" %in% colnames(tmpfile)) {
+        b<-nrow(tmpfile)
+        tmpfile <- tmpfile[tmpfile$INFO >= info.filter,]
+        cat(print(paste(b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to INFO values below the designated threshold of", info.filter)),file=log.file,sep="\n",append=TRUE)
       }else{cat(print("No INFO column, cannot filter on INFO, which may influence results"),file=log.file,sep="\n",append=TRUE)}
       
-      varSNP<-2*files2$MAF*(1-files2$MAF)  
+      varSNP<-2*tmpfile$MAF*(1-tmpfile$MAF)  
       
       if(OLS[i] == T){
-        output <- cbind.data.frame(files2$SNP,
-                                   files2$effect,
-                                   abs(files2$effect/files2$Z))
+        output <- cbind.data.frame(tmpfile$SNP,
+                                   tmpfile$effect,
+                                   abs(tmpfile$effect/tmpfile$Z))
         output<-na.omit(output)                           
         colnames(output) <- c("SNP",names.beta[i],names.se[i])                           
       }
       
       if(linprob[i] == T){
-        output<-cbind.data.frame(files2$SNP,
-                                 (files2$effect)/((files2$effect^2) * varSNP + (pi^2)/3)^.5,
-                                 (files2$SE)/(((files2$effect)^2) * varSNP + (pi^2)/3)^.5)  
+        output<-cbind.data.frame(tmpfile$SNP,
+                                 (tmpfile$effect)/((tmpfile$effect^2) * varSNP + (pi^2)/3)^.5,
+                                 (tmpfile$SE)/(((tmpfile$effect)^2) * varSNP + (pi^2)/3)^.5)  
         output<-na.omit(output)
         output<-output[apply(output!=0, 1, all),]
         colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
@@ -533,9 +540,9 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
             if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
             if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
             
-            output <- cbind.data.frame(files2$SNP,
-                                       (files2$effect)/((files2$effect^2) * varSNP + (pi^2)/3)^.5,
-                                       (files2$SE/exp(files2$effect))/(((files2$effect)^2 * varSNP + (pi^2)/3)^.5))
+            output <- cbind.data.frame(tmpfile$SNP,
+                                       (tmpfile$effect)/((tmpfile$effect^2) * varSNP + (pi^2)/3)^.5,
+                                       (tmpfile$SE/exp(tmpfile$effect))/(((tmpfile$effect)^2 * varSNP + (pi^2)/3)^.5))
             output<-na.omit(output)  
             colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
       
@@ -545,9 +552,9 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
         if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
         if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
         
-        output <- cbind.data.frame(files2$SNP,
-                                   (files2$effect)/((files2$effect^2) * varSNP + (pi^2)/3)^.5,
-                                   (files2$SE)/(((files2$effect)^2) * varSNP + (pi^2)/3)^.5)  
+        output <- cbind.data.frame(tmpfile$SNP,
+                                   (tmpfile$effect)/((tmpfile$effect^2) * varSNP + (pi^2)/3)^.5,
+                                   (tmpfile$SE)/(((tmpfile$effect)^2) * varSNP + (pi^2)/3)^.5)  
         output<-na.omit(output)  
         colnames(output) <- c("SNP",names.beta[i],names.se[i])}
       
@@ -567,7 +574,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
   }
   
   b<-nrow(data.frame.out)
-  data.frame.out<-data.frame.out[!duplicated(data.frame.out$BP),]
+  #data.frame.out<-data.frame.out[!duplicated(data.frame.out$BP),]
   
   end.time <- Sys.time()
   
@@ -577,7 +584,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
   
   if(parallel == FALSE){
     cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values")),file=log.file,sep="\n",append=TRUE)
+    #cat(print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values")),file=log.file,sep="\n",append=TRUE)
     cat(print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = ""),file=log.file,sep="\n",append=TRUE)
     cat(print(paste0("Sumstats finished running at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
     cat(print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
@@ -585,7 +592,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
   }
   
   if(parallel == TRUE){
-    print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values"))
+    #print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values"))
     print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = "") 
     print(paste0("Sumstats finished running at ",end.time), sep = "")
     print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = "")
