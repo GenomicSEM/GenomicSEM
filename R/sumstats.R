@@ -1,36 +1,40 @@
 
 
-sumstats <- function(filenames,reference,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,parallel=FALSE,cores=NULL){
+sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,parallel=FALSE,cores=NULL){
   
   begin.time <- Sys.time()
   
-  length <- length(filenames)
+  n.traits <- length(filenames)
   
   filenames <- as.vector(filenames)
   
   if(is.null(OLS)){
-    OLS<-rep(FALSE,length)
+    OLS<-rep(FALSE,n.traits)
   }
   
   if(is.null(linprob)){
-    linprob<-rep(FALSE,length)
+    linprob<-rep(FALSE,n.traits)
   }
   
   if(is.null(trait.names)){
-    names.beta <- paste0("beta.",1:length)
-    names.se <- paste0("se.",1:length)
-  }else{
-    names.beta <- paste0("beta.",trait.names)
-    names.se <- paste0("se.",trait.names)
+    trait.names <- paste0("trait.",1:n.traits)
   }
+
+  names.beta <- paste0("beta.",trait.names)
+  names.se <- paste0("se.",trait.names)
   
+  if(is.null(se.logit) || length(se.logit) < n.traits){
+    cat("Please specify one 'se.logit' for each trait.\n")
+    return(NULL)
+  }
+
   if(parallel == FALSE){
     
     log2<-paste(trait.names,collapse="_")
     
     log.file <- file(paste0(log2, "_sumstats.log"),open="wt")
     
-    cat(print(paste0("The preparation of ", length(trait.names), " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste0("The preparation of ", n.traits, " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
     
     cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
     ref <- fread(file=reference,header=T,data.table=F)
@@ -48,7 +52,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit,OLS=NULL,linp
     
     cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
     
-    for(i in 1:length){
+    for(i in 1:n.traits){
       
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
@@ -301,14 +305,14 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit,OLS=NULL,linp
     if(is.null(cores)){
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
       int <- detectCores() - 1
-      if(int > length){
-        int<-length
+      if(int > n.traits){
+        int<-n.traits
       }
     }else{int<-cores}
     
     
     print("Performing conversions of individual summary statistics using parallel processing. Please note this step typically takes 10-20 minutes due to the size of the files.")
-    Output<-mclapply(X=1:length,FUN=function(X){
+    Output<-mclapply(X=1:n.traits,FUN=function(X){
       i<-X
       
       log.file <- file(paste0(trait.names[i], "_sumstats.log"),open="wt")  
@@ -553,7 +557,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit,OLS=NULL,linp
       
     },mc.cores=int)
     
-    for(i in 1:length){
+    for(i in 1:n.traits){
       if(i == 1){
         data.frame.out <- suppressWarnings(inner_join(data.frame.out,Output[[i]],by="SNP",all.x=F,all.y=F))
       }else{
