@@ -1,5 +1,5 @@
 
-ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22,n.blocks=200){
+ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights=FALSE,chr=22,n.blocks=200){
   time <- proc.time()
   
   # Dimensions
