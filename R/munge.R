@@ -1,4 +1,4 @@
-munge <- function(files,hm3,trait.names=NULL,N,info.filter=.9,maf.filter=0.01){
+munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0.01){
   
   length <- length(files)
   filenames <- as.vector(files)
@@ -16,7 +16,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter=.9,maf.filter=0.01){
   ##note that fread is not used here due to formatting differences across summary statistic files
   files = lapply(files, read.table,header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
   cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
-  ref <- fread(hm3,header=T,data.table=F)
+  ref <- fread(reference,header=T,data.table=F)
   cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
  
   for(i in 1:length){
@@ -118,7 +118,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter=.9,maf.filter=0.01){
     files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
     
     ##merge with ref file
-    cat(print(paste("Merging file:", filenames[i], "with the reference file:", hm3)),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Merging file:", filenames[i], "with the reference file:", reference)),file=log.file,sep="\n",append=TRUE)
     b<-nrow(files[[i]])
     cat(print(paste(b, "rows present in the full", filenames[i], "summary statistics file.")),file=log.file,sep="\n",append=TRUE)
     files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
