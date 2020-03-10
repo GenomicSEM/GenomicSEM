@@ -392,8 +392,21 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long")
   modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
   
+   if(std.lv == FALSE){
+    empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+  }
+  
+  if(std.lv == TRUE){
+    empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+  }
+  
+  if(class(empty3$value) != "lavaan"){
+    warning(paste("The function has stopped due to convergence issues for your primary model. Please contact us with your specific model and variables used or try specifying an alternative model"))
+  }
+  
   ##save the ordering
-  order <- rearrange(k = k, fit = ReorderModel1, names = rownames(S_LD))
+  order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
+  
   
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
