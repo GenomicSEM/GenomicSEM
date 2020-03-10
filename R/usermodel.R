@@ -341,7 +341,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       )
     )
     
-    orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
+    orderCFI <- rearrange(k = k, fit = fitCFI, names = rownames(S_LD))
     
     ##reorder matrix for independence (i.e., null) model for CFI calculation
     V_Reorder2<-V_LD[orderCFI,orderCFI]
@@ -402,12 +402,17 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       warn = FALSE,
       std.lv = std.lv,
       optim.dx.tol = +Inf,
-      optim.force.convergedi = TRUE
+      optim.force.converged = TRUE
     )
   )
   
-  if(class(empty3$value) != "lavaan"){
-    warning(paste("The function has stopped due to convergence issues for your primary model. Please contact us with your specific model and variables used or try specifying an alternative model"))
+  if( !( "lavaan" %in% class(empty3$value) ) ) {
+    warning( paste(
+        "The function has stopped due to convergence issues for your primary model.",
+        "Please, contact us with your specific model and variables used or try specifying an",
+        "alternative model",
+        sep='\n'
+    ) )
   }
   
   ##save the ordering
