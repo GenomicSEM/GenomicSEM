@@ -7,6 +7,8 @@ based on the summary statistics obtained from genome wide association studies (G
 
 **CODE UPDATE 2** On January 8th, 2020 we corrected a bug in `sumstats`, which prepares summary statistics for GWAS, Prior to this fix, a small proportion of SNPs were omitted erroneously. In some GWAS of rigourously cleaned SNPs we found no SNPs affected at all, but from all SNP (i.e. analyses that retain low MAF and low INFO SNPs) more SNPs are affected (1-5%). Specifically the code removed SNPs with duplicate basepair positions, but did not consider chromosome when doing so. This bug did not affect Genomic SEM models without SNPs, and did not affect estimates for SNPs that were included in GWAS. The bug simply resulted in a small proportion of SNPs being arbitrarily removed from consideration.
 
+**CODE UPDATE 3** On March 9th, 2020 we discovered and corrected a bug that was introduced to the usermodel function on August 20th, 2019. For some model specifications, the bug had the potential to cause slight changes in point estimates and standard errors due to the sampling covariance (V) matrix not being correctly ordered. This bug did not affect the commonfactor, commonfactorGWAS, or userGWAS functions. All examples on the github wiki, and all examples that we have personally worked with, were not affected by this bug. In most cases, your results are likely to be unchanged. We recommend reinstalling to the most recent update of GenomicSEM, particularly if it was installed or updated between August 20th, 2019 and March 9, 2020.
+
 **PGC worldwide lab meeting on genomicSEM**
 
 Click below for a video which provides a very clear introduction to the method/paper:
