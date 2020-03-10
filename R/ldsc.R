@@ -214,8 +214,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         cat("Results for trait",chi1,"\n")
         cat("Lambda GC:",round(lambda.gc,4),"\n")
         cat("Mean Chi^2:",round(mean.Chi,4),"\n")
-        cat("Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n",sep="")
-        cat("Ratio: ",round(ratio,4),"(",round(ratio.se,4),")","\n",sep="")
+        cat("Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n")
+        cat("Ratio: ",round(ratio,4),"(",round(ratio.se,4),")","\n")
         cat("h2:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
         
         ### Total count
@@ -384,7 +384,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         mean.ZZ <- mean(merged$ZZ)
         cat("Results for covariance between:",chi1,"and",chi2,"\n")
         cat("Mean Z*Z:",round(mean.ZZ,4),"\n")
-        cat("Cross trait Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n",sep="")
+        cat("Cross trait Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n")
         cat("cov_g:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
         
         ### Total count
