@@ -2,10 +2,10 @@
 \alias{munge}
 \title{Clean and munge files to enable LD score regression}
 \description{
-Function to process GWAS summary statistis files and prepare them for LD score regression
+Function to process GWAS summary statistics files and prepare them for LD score regression
 }
 \usage{
-munge(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0.01, \dots)
+munge(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0.01,munge.log='munge.log' \dots)
 
 }
 \arguments{
@@ -14,6 +14,7 @@ munge(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0.01, \dots)
    \item{trait.names}{A vector of trait names which will be used as names for the munged files}
    \item{info.filter}{Numeric value which is used as a lower bound for imputation quality (INFO)}
    \item{maf.filter}{Numeric value used as a lower bound for minor allele frequency}
+   \item{munge.log}{File log}
     
 }
 

@@ -1,11 +1,127 @@
-munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0.01){
+munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0.01,munge.log='munge.log') {
   
+  sink(munge.log, append=FALSE, split=TRUE)
+  
+  variant.tags <- c(
+    "snp",
+    "SNP",
+    "snpid",
+    "rsID",
+    "SNPID",
+    "rsid",
+    "RSID",
+    "RS_NUMBER",
+    "rs_number",
+    "RS_NUMBERS",
+    "rs_numbers",
+    "MarkerName",
+    "Markername",
+    "markername",
+    "MARKERNAME",
+    "ID"
+  )
+  effect.allele.tags <- c(
+    "a1",
+    "A1",
+    "allele1",
+    "Allele1",
+    "ALLELE1",
+    "alt",
+    "ALT",
+    "EA",
+    "Effect_allele",
+    "Effect_Allele",
+    "EFFECT_ALLELE",
+    "INC_ALLELE"
+  )
+  non.effect.allele.tags <- c(
+    "a2",
+    "A2",
+    "allele2",
+    "Allele2",
+    "ALLELE2",
+    "ALLELE0",
+    "DEC_ALLELE",
+    "NEA",
+    "OA",
+    "Other_allele",
+    "Other_Allele",
+    "OTHER_ALLELE",
+    "Non_Effect_allele",
+    "Non_Effect_Allele",
+    "NON_EFFECT_ALLELE",
+    "ref",
+    "REF"
+  )
+  effect.tags <- c(
+    "b",
+    "B",
+    "beta",
+    "Beta",
+    "BETA",
+    "est",
+    "Effect",
+    "Effect_Beta",
+    "Effect.Beta",
+    "EFFECT",
+    "EFFECTS",
+    "LOG_ODDS",
+    "LOG.ODDS",
+    "or",
+    "OR",
+    "SIGNED_SUMSTAT",
+    "SIGNED.SUMSTAT",
+    "Z",
+    "Zscore",
+    "Z.score"
+  )
+  info.tags <- c(
+    "info",
+    "Info",
+    "INFO",
+    "r2",
+    "r_2",
+    "R2",
+    "R_2",
+    "rsq",
+    "r_sq",
+    "Rsq",
+    "R_sq"
+  )
+  pval.tags <- c(
+    "p",
+    "P",
+    "pval",
+    "Pval",
+    "PVal",
+    "PVAL",
+    "p_val",
+    "P_val",
+    "P_Val",
+    "P_VAL",
+    "pvalue",
+    "Pvalue",
+    "PValue",
+    "PVALUE",
+    "p_value",
+    "P_value",
+    "P_Value",
+    "P_VALUE",
+    "p.value",
+    "P.value",
+    "P.Value",
+    "P.VALUE"
+  )
+  pval.tags <- c(
+    paste0( 'gc_', pval.tags ),
+    paste0( 'GC_', pval.tags ),
+    pval.tags
+  )
+
   length <- length(files)
   filenames <- as.vector(files)
 
-  log2<-paste(trait.names,collapse="_")
-
-  log.file <- file(paste0(log2, "_munge.log"),open="wt")
+  log.file <- file(munge.log,open="wt")
   
   begin.time <- Sys.time()
   
@@ -19,7 +135,7 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
   ref <- fread(reference,header=T,data.table=F)
   cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
  
-  for(i in 1:length){
+  for(i in 1:length) {
     
     cat(paste("     "),file=log.file,sep="\n",append=TRUE)
     cat(paste("     "),file=log.file,sep="\n",append=TRUE)
@@ -29,32 +145,32 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
 
     names1<-hold_names
     if("SNP" %in% hold_names) cat(print(paste("Interpreting the SNP column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in% c("snp","SNP","snpid","rsID","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME", "ID")] <- "SNP"
+    hold_names[hold_names %in% variant.tags] <- "SNP"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
    
     names1<-hold_names
     if("A1" %in% hold_names) cat(print(paste("Interpreting the A1 column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","alt","INC_ALLELE","REFERENCE_ALLELE","EA","Effect_allele", "Effect_Allele", "REF")] <- "A1"
+    hold_names[hold_names %in% effect.allele.tags] <- "A1"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
     
     names1<-hold_names
     if("A2" %in% hold_names) cat(print(paste("Interpreting the A2 column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","ALLELE0","OTHER_ALLELE","ref","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA","Other_allele", "Other_Allele", "Non_Effect_allele", "Non_Effect_Allele", "ALT")]  <- "A2"
+    hold_names[hold_names %in% non.effect.allele.tags]  <- "A2"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
     
     names1<-hold_names
     if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","Effect_Beta","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b","est")] <- "effect"
+    hold_names[hold_names %in% effect.tags] <- "effect"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column.")),file=log.file,sep="\n",append=TRUE)
     
     names1<-hold_names
     if("INFO" %in% hold_names) cat(print(paste("Interpreting the INFO column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("INFO","info")] <- "INFO"
+    hold_names[hold_names %in% info.tags] <- "INFO"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
     
     names1<-hold_names
     if("P" %in% hold_names) cat(print(paste("Interpreting the P column as the P column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","P_value","P-value","p-value","P.value","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue", "P_Value", "Pvalue")] <- "P"
+    hold_names[hold_names %in% pval.tags] <- "P"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the P column.")),file=log.file,sep="\n",append=TRUE)
     
     names1<-hold_names
@@ -72,21 +188,21 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
     hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N", "NCON")] <- "N_CON"
     if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
  
-    # Print a message for misisng P value, rs, effect or allele columns
+    # Print a message for missing P value, rs, effect or allele columns
     if(sum(hold_names %in% "P") == 0) cat(print(paste0('Cannot find P-value column, try renaming it to P in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     if(sum(hold_names %in% "A1") == 0) cat(print(paste0('Cannot find effect allele column, try renaming it to A1 in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     if(sum(hold_names %in% "A2") == 0) cat(print(paste0('Cannot find other allele column, try renaming it to A2 in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     if(sum(hold_names %in% "effect") == 0) cat(print(paste0('Cannot find beta or effect column, try renaming it to effect in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     if(sum(hold_names %in% "SNP") == 0) cat(print(paste0('Cannot find rs-id column, try renaming it to SNP in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     
-    # Print a warning message when multiple columns interprets as P value, rs, effect or allele columns
+    # Print a warning message when multiple columns were interpreted as P value, rs, effect or allele columns
     if(sum(hold_names %in% "P") > 1) cat(print(paste0('Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted as P to P2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     if(sum(hold_names %in% "A1") > 1) cat(print(paste0('Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want interpreted as effect allele column to A1_2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     if(sum(hold_names %in% "A2") > 1) cat(print(paste0('Multiple columns are being interpreted as the other allele column. Try renaming the column you dont want interpreted as the other allele column to A2_2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     if(sum(hold_names %in% "effect") > 1) cat(print(paste0('Multiple columns are being interpreted as the beta or effect column. Try renaming the column you dont want interpreted as the beta or effect column to effect2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     if(sum(hold_names %in% "SNP") > 1) cat(print(paste0('Multiple columns are being interpreted as the rs-id column. Try renaming the column you dont want interpreted as rs-id to SNP2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
     
-    # Throw warnings for misisng P valuue, rs, effect or allele columns
+    # Throw warnings for missing P value, rs, effect or allele columns
     if(sum(hold_names %in% "P") == 0) warning(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',filenames[i]))
     if(sum(hold_names %in% "A1") == 0) warning(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',filenames[i]))
     if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',filenames[i]))
@@ -138,22 +254,34 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
     }
     if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the effect column")),file=log.file,sep="\n",append=TRUE)
     
-    ##determine whether it is OR or logistic/continuous effect based on median effect size 
-    a1<-files[[i]]$effect[[1]]
-    files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect,na.rm=T)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
-    a2<-files[[i]]$effect[[1]]
-    if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file. Please ensure this is correct.")),file=log.file,sep="\n",append=TRUE)
+    ##determine whether it is OR or logistic/continuous effect based on median effect size
+    effect.untransf<-files[[i]]$effect[[1]]
+    files[[i]]$effect<-ifelse(
+      rep(round(median(files[[i]]$effect,na.rm=T)) == 1,nrow(files[[i]])),
+      log(files[[i]]$effect),
+      files[[i]]$effect
+    )
+    effect.transf<-files[[i]]$effect[[1]]
+    if(effect.untransf != effect.transf) cat(
+      paste("Values in the effect column identified as odds ratios (ORs) for the", filenames[i] ),
+      "summary statistics file. Please ensure that this is correct.",
+      file=log.file, sep="\n", append=TRUE
+    )
     
     # Flip effect to match ordering in ref file
-    files[[i]]$effect<-ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
+    files[[i]]$effect<-ifelse(
+      files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),
+      -files[[i]]$effect,
+      files[[i]]$effect
+    )
     
     ##remove SNPs that don't match A1 OR A2 in reference file.
     b<-nrow(files[[i]])
-    files[[i]]<-subset(files[[i]], !(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x != (files[[i]]$A2.y)))
+    files[[i]]<-subset(files[[i]], !(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x != (files[[i]]$A2.y)))
     if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "row(s) were removed from the", filenames[i], "summary statistics file due to the effect allele (A1) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
   
     b<-nrow(files[[i]])
-    files[[i]]<-subset(files[[i]], !(files[[i]]$A2.x != (files[[i]]$A2.y)  & files[[i]]$A2.x !=  (files[[i]]$A1.y)))
+    files[[i]]<-subset(files[[i]], !(files[[i]]$A2.x != (files[[i]]$A2.y) & files[[i]]$A2.x !=  (files[[i]]$A1.y)))
     if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "row(s) were removed from the", filenames[i], "summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
     
     ####VALIDITY CHECKS#####
@@ -189,12 +317,16 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
     if(!("N" %in% names(files[[i]])) & (exists("N") == FALSE)) cat(warning(paste0('Cannot find sample size column for',filenames[i], " and a sample size was not provided for the N argument. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N.")),file=log.file,sep="\n",append=TRUE)
 
     colnames(output) <- c("SNP","N","Z","A1","A2")
-    cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC.")),file=log.file,sep="\n",append=TRUE)
+    cat( paste(nrow(output), "SNPs are left from file", filenames[i], "after QC."), sep="\n" )
     
-    write.table(x = output,file = paste0(trait.names[i],".sumstats"),sep="\t", quote = FALSE, row.names = F)
+    write.table(x = output, file = paste0(trait.names[i],".sumstats"), sep = "\t", quote = FALSE, row.names = F)
     gzip(paste0(trait.names[i],".sumstats"))
-    cat(print(paste("I am done munging file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste("The file is saved as", paste0(trait.names[i],".sumstats.gz"), "in the current working directory.")),file=log.file,sep="\n",append=TRUE)
+    cat( paste("I am done munging file:", filenames[i]), sep="\n" )
+    cat(
+      paste("The munged summary statistics are saved as", paste0(trait.names[i],".sumstats.gz")),
+      "in the current working directory.",
+      sep="\n"
+    )
   }
   
   end.time <- Sys.time()
@@ -203,10 +335,15 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
   mins <- floor(floor(total.time)/60)
   secs <- total.time-mins*60
   
-  cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste0("Munging was completed at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
+  cat( "     ", paste( "Munging completed at", end.time), sep="\n" )
+  cat( paste( "Munging of all files took", mins, "minutes and", secs, "seconds"), sep="\n" )
+  cat(
+    paste( "Please check the log file", munge.log, "to ensure that all columns were interpreted" ),
+    "correctly and no warnings were issued for any of the summary statistics files",
+    sep="\n"
+  )
   
-  cat(print(paste0("The munging of all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste("Please check the log file", paste0(log2, "_munge.log"), "to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files")),file=log.file,sep="\n",append=TRUE)
-    
+  sink()
+
 }
+
