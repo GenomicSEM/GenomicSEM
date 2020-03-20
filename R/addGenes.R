@@ -1,5 +1,3 @@
-
-
 addGenes <-function(covstruc, Genes){
   time<-proc.time()
   

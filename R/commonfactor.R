@@ -1,4 +1,3 @@
-
 commonfactor <-function(covstruc,estimation="DWLS"){ 
   time<-proc.time()
   

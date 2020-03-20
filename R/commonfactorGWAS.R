@@ -1,5 +1,3 @@
-
-
 commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL){ 
   time<-proc.time()
   
