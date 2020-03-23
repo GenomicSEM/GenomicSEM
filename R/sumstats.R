@@ -1,5 +1,7 @@
-sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL){
+sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL,sumstats.log='sumstats.log'){
   
+  sink(sumstats.log, append=FALSE, split=TRUE)
+
   begin.time <- Sys.time()
   
   n.traits <- length(filenames)
@@ -26,9 +28,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
 
   if(parallel == FALSE){
     
-    log2<-paste(trait.names,collapse="_")
-    
-    log.file <- file(paste0(log2, "_sumstats.log"),open="wt")
+    log.file <- file(sumstats.log,open="wt")
     
     cat(print(paste0("The preparation of ", n.traits, " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
     
@@ -586,7 +586,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
     cat(print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = ""),file=log.file,sep="\n",append=TRUE)
     cat(print(paste0("Sumstats finished running at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
     cat(print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste("Please check the log file", paste0(log2, "_sumstats.log"), "to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files.")),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Please check the log file", sumstats.log, "to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files.")),file=log.file,sep="\n",append=TRUE)
   }
   
   if(parallel == TRUE){
