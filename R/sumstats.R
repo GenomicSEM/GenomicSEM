@@ -84,7 +84,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
       
       names1<-hold_names
       if("SE" %in% hold_names) cat(print(paste("Interpreting the SE column as the SE column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
+      hold_names[hold_names %in%c("se", "sebeta", "StdErr", "SE", "SEBETA")] <- "SE"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the SE column.")),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
@@ -357,7 +357,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL
       
       names1<-hold_names
       if("SE" %in% hold_names) cat(print(paste("Interpreting the SE column as the SE column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("se","StdErr","SE")] <- "SE"
+      hold_names[hold_names %in%c("se", "sebeta", "StdErr", "SE", "SEBETA")] <- "SE"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the SE column."),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
