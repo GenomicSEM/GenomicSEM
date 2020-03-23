@@ -1,5 +1,5 @@
+ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights=FALSE,chr=22,n.blocks=200) {
 
-ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights=FALSE,chr=22,n.blocks=200){
   time <- proc.time()
   
   # Dimensions
@@ -7,11 +7,15 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   n.V <- (n.traits^2 / 2) + .5*n.traits
   
   # Storage:
-  cov <- matrix(NA,nrow=n.traits,ncol=n.traits)
-  V.hold <- matrix(NA,nrow=n.blocks,ncol=n.V)
-  N.vec <- matrix(NA,nrow=1,ncol=n.V)
-  Liab.S <- matrix(1,nrow=1,ncol=n.traits)
-  I <- matrix(NA,nrow=n.traits,ncol=n.traits)
+ Gcov.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+ I.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+ Gcov_p.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+ I_p.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+#  Gcov_pasympt.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+#  I_pasympt.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+ N.vec <- matrix(NA,nrow=1,ncol=n.V)
+ V.hold <- matrix(NA,nrow=n.blocks,ncol=n.V)
+ liab.scale.conv.fact <- matrix(1,nrow=1,ncol=n.traits)
 
   # Current working directory
   curwd = getwd()
@@ -34,7 +38,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   
   ######### READ weights:
   
-  
   setwd(wld)
   
   if(sep_weights==T){
@@ -53,45 +56,43 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   colnames(w)[ncol(w)] <- "wLD"
   
   ### READ M
+
   setwd(ld)
-  m  <- suppressMessages(read_csv("1.l2.M_5_50",  col_names = FALSE))
+  m <- suppressMessages(read_csv("1.l2.M_5_50", col_names = FALSE))
   for(i in 2:chr){
-    m <- rbind(m,suppressMessages(read_csv(paste0(i,".l2.M_5_50"),  col_names = FALSE)))
+    m <- rbind(m, suppressMessages(read_csv(paste0(i,".l2.M_5_50"), col_names = FALSE)))
   }
   setwd(curwd)
   M.tot <- sum(m)
-  m <- M.tot
+  m <- M.tot  #is this right? in a couple of occasions below, 'm' is treated as an array
   
   # count the total nummer of runs, both loops
   s <- 1
   
-  for(j in 1:n.traits){
+  for(j in 1:n.traits) {
     
     chi1 <- traits[j]
+
     ######### READ chi2
     
-    y1 <- suppressMessages(read_delim(chi1, "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
+    y1 <- suppressMessages(read_delim(chi1, "\t", escape_double = FALSE, trim_ws = TRUE, progress = F))
     
     y1 <- na.omit(y1)
     y1$chi1 <- y1$Z^2
     cat("Read in summary statistics from",chi1,"\n")
     cat("Read in summary statistics for",nrow(y1),"SNPs","\n")
     
-    
-    for(k in j:length(traits)){
+    for(k in j:length(traits)) {
       
       
       
       
       ##### HERITABILITY code
       
-      if(j == k){
+      if(j == k) {
         
         samp.prev <- sample.prev[j]
         pop.prev <- population.prev[j]
-        
-        
-        
         
         ######## Merge files
         
@@ -131,56 +132,55 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         N.bar <- mean(merged$N)
         
-        
         ## preweight LD and chi:
         
         weighted.LD <- as.matrix(cbind(merged$L2,merged$intercept)*merged$weights)
         weighted.chi <- as.matrix(merged$chi1*merged$weights)
         
-        
-        ## Perfrom analysis:
+        ## Perform analysis:
         
         n.annot <- 1
         
-        
-        select.from <- floor(seq(from=1,to=n.snps,length.out =(n.blocks+1)))
+        select.from <- floor(seq(from=1,to=n.snps,length.out=(n.blocks+1)))
         select.to <- c(select.from[2:n.blocks]-1,n.snps)
         
-        xty.block.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
-        xtx.block.values <- matrix(data=NA,nrow =((n.annot+1)* n.blocks),ncol =(n.annot+1))
-        colnames(xty.block.values)<- colnames(xtx.block.values)<- colnames(weighted.LD)
-        replace.from <- seq(from=1,to=nrow(xtx.block.values),by =(n.annot+1))
-        replace.to <- seq(from =(n.annot+1),to=nrow(xtx.block.values),by =(n.annot+1))
+        xty.block.values <- matrix(data=NA,nrow=n.blocks,ncol=(n.annot+1))
+        xtx.block.values <- matrix(data=NA,nrow=((n.annot+1)*n.blocks),ncol=(n.annot+1))
+        colnames(xty.block.values) <- colnames(xtx.block.values) <- colnames(weighted.LD)
+        replace.from <- seq(from=1,to=nrow(xtx.block.values),by=(n.annot+1))
+        replace.to <- seq(from=(n.annot+1),to=nrow(xtx.block.values),by=(n.annot+1))
         for(i in 1:n.blocks){
-          xty.block.values[i,] <- t(t(weighted.LD[select.from[i]:select.to[i],])%*% weighted.chi[select.from[i]:select.to[i],])
-          xtx.block.values[replace.from[i]:replace.to[i],] <- as.matrix(t(weighted.LD[select.from[i]:select.to[i],])%*% weighted.LD[select.from[i]:select.to[i],])
+          xty.block.values[i,] <- t(t(weighted.LD[select.from[i]:select.to[i],]) %*% weighted.chi[select.from[i]:select.to[i],])
+          xtx.block.values[replace.from[i]:replace.to[i],] <- as.matrix(t(weighted.LD[select.from[i]:select.to[i],]) %*% weighted.LD[select.from[i]:select.to[i],])
         }
         xty <- as.matrix(colSums(xty.block.values))
-        xtx <- matrix(data=NA,nrow =(n.annot+1),ncol =(n.annot+1))
-        colnames(xtx)<- colnames(weighted.LD)
-        for(i in 1:nrow(xtx)){xtx[i,] <- t(colSums(xtx.block.values[seq(from=i,to=nrow(xtx.block.values),by=ncol(weighted.LD)),]))}
+        xtx <- matrix(data=NA,nrow=(n.annot+1),ncol=(n.annot+1))
+        colnames(xtx) <- colnames(weighted.LD)
+        for(i in 1:nrow(xtx)) {
+          xtx[i,] <- t(colSums(xtx.block.values[seq(from=i,to=nrow(xtx.block.values),by=ncol(weighted.LD)),]))
+        }
         
-        reg <- solve(xtx)%*% xty
+        reg <- solve(xtx) %*% xty
         intercept <- reg[2]
         coefs <- reg[1]/N.bar
         reg.tot <- coefs*m
         
         delete.from <- seq(from=1,to=nrow(xtx.block.values),by=ncol(xtx.block.values))
         delete.to <- seq(from=ncol(xtx.block.values),to=nrow(xtx.block.values),by=ncol(xtx.block.values))
-        delete.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
-        colnames(delete.values)<- colnames(weighted.LD)
+        delete.values <- matrix(data=NA,nrow=n.blocks,ncol=(n.annot+1))
+        colnames(delete.values) <- colnames(weighted.LD)
         for(i in 1:n.blocks){
           xty.delete <- xty-xty.block.values[i,]
           xtx.delete <- xtx-xtx.block.values[delete.from[i]:delete.to[i],]
-          delete.values[i,] <- solve(xtx.delete)%*% xty.delete
+          delete.values[i,] <- solve(xtx.delete) %*% xty.delete
         }
         
         tot.delete.values <- delete.values[,1:n.annot]
         #end.delete.values <- (tot.delete.values %*% m)/N.bar
         #write.table(x=end.delete.values,file=paste0(out,".end.del.val.txt"),quote=F,sep="\t",row.names=F)
         pseudo.values <- matrix(data=NA,nrow=n.blocks,ncol=length(reg))
-        colnames(pseudo.values)<- colnames(weighted.LD)
-        for(i in 1:n.blocks){pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1)* delete.values[i,])}
+        colnames(pseudo.values) <- colnames(weighted.LD)
+        for(i in 1:n.blocks) pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1) * delete.values[i,])
         
         jackknife.cov <- cov(pseudo.values)/n.blocks
         jackknife.se <- sqrt(diag(jackknife.cov))
@@ -194,18 +194,17 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         V.hold[,s] <- pseudo.values[,1]
         N.vec[1,s] <- N.bar
         
-        
-        
-        if(is.na(pop.prev)==F & is.na(samp.prev)==F){
-          conversion.factor <- (pop.prev^2*(1-pop.prev)^2)/(samp.prev*(1-samp.prev)* dnorm(qnorm(1-pop.prev))^2)
-          Liab.S[,j] <- conversion.factor
-          
+        if ( !is.na(pop.prev) && !is.na(samp.prev) ) {
+          liab.scale.conv.fact[j] <- (pop.prev^2*(1-pop.prev)^2) / (samp.prev*(1-samp.prev)*dnorm(qnorm(1-pop.prev))^2)
         }
         
-        
-        cov[j,j] <- reg.tot
-        I[j,j] <- intercept
-        
+        Gcov.mat[j,j] <- reg.tot
+        I.mat[j,j] <- intercept
+        Gcov_p.mat[j,j] <- 2*pt( abs(reg.tot) / tot.se, df=n.blocks-2, lower.tail=F )
+        I_p.mat[j,j] <- 2*pt( abs(intercept - 1) / intercept.se, df=n.blocks-2, lower.tail=F )
+#         Gcov_pasympt.mat[j,j] <- pnorm( reg.tot / tot.se, lower.tail=F )
+#         I_pasympt.mat[j,j] <- pnorm( intercept / intercept.se, lower.tail=F )
+
         lambda.gc <- median(merged$chi1)/0.4549
         mean.Chi <- mean(merged$chi1)
         ratio <- (intercept-1)/(mean(merged$chi1)-1)
@@ -226,16 +225,13 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
       
       ##### GENETIC COVARIANCE code
       
-      if(j != k)
-      {
-        
+      if(j != k) {
         
         chi2 <- traits[k]
+
         ######### READ chi2
         
         # Reuse the data read in for heritability
-        
-        
         
         y2 <- suppressMessages(read_delim(chi2, "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
         
@@ -244,20 +240,15 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         cat("Read in summary statistics from",chi2,"\n")
         cat("Read in summary statistics for",nrow(y2),"SNPs","\n")
         
-        
-        
-        
         y <- merge(y1,y2,by="SNP")
         
         y[y$A1.y == y$A1.x,]$Z.x <- y[y$A1.y == y$A1.x,]$Z.x
         y[y$A1.y != y$A1.x,]$Z.x <-  -1* y[y$A1.y != y$A1.x,]$Z.x
         
-        
         y$ZZ <- y$Z.y * y$Z.x
         y <- na.omit(y)
         
         cat("After merging",chi1,"and",chi2,"summary statistics for",nrow(y),"SNPs","\n")
-        
         
         ######## Merge files
         
@@ -308,61 +299,59 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged$oc.w2 <- 1/merged$w.ld2
         merged$w2 <- merged$het.w2*merged$oc.w2
         merged$initial.w2 <- sqrt(merged$w2)
-        
-        
-        merged$weights_cov <- (merged$initial.w + merged$initial.w2)/sum(merged$initial.w + merged$initial.w2 )
+        merged$weights_cov <- (merged$initial.w + merged$initial.w2)/sum(merged$initial.w + merged$initial.w2)
         
         N.bar <- sqrt(mean(merged$N.x)*mean(merged$N.y))
          
         ## preweight LD and chi:
         
         weighted.LD <- as.matrix(cbind(merged$L2,merged$intercept)*merged$weights)
-        weighted.chi <- as.matrix(merged$ZZ *merged$weights_cov)
+        weighted.chi <- as.matrix(merged$ZZ*merged$weights_cov)
         
-        ## Perfrom analysis:
+        ## Perform analysis:
         
-
         n.annot <- 1
         
-        
-        select.from <- floor(seq(from=1,to=n.snps,length.out =(n.blocks+1)))
+        select.from <- floor(seq(from=1,to=n.snps,length.out=(n.blocks+1)))
         select.to <- c(select.from[2:n.blocks]-1,n.snps)
         
-        xty.block.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
-        xtx.block.values <- matrix(data=NA,nrow =((n.annot+1)* n.blocks),ncol =(n.annot+1))
-        colnames(xty.block.values)<- colnames(xtx.block.values)<- colnames(weighted.LD)
-        replace.from <- seq(from=1,to=nrow(xtx.block.values),by =(n.annot+1))
-        replace.to <- seq(from =(n.annot+1),to=nrow(xtx.block.values),by =(n.annot+1))
+        xty.block.values <- matrix(data=NA,nrow=n.blocks,ncol=(n.annot+1))
+        xtx.block.values <- matrix(data=NA,nrow=((n.annot+1)*n.blocks),ncol=(n.annot+1))
+        colnames(xty.block.values) <- colnames(xtx.block.values) <- colnames(weighted.LD)
+        replace.from <- seq(from=1,to=nrow(xtx.block.values),by=(n.annot+1))
+        replace.to <- seq(from=(n.annot+1),to=nrow(xtx.block.values),by=(n.annot+1))
         for(i in 1:n.blocks){
-          xty.block.values[i,] <- t(t(weighted.LD[select.from[i]:select.to[i],])%*% weighted.chi[select.from[i]:select.to[i],])
-          xtx.block.values[replace.from[i]:replace.to[i],] <- as.matrix(t(weighted.LD[select.from[i]:select.to[i],])%*% weighted.LD[select.from[i]:select.to[i],])
+          xty.block.values[i,] <- t(t(weighted.LD[select.from[i]:select.to[i],]) %*% weighted.chi[select.from[i]:select.to[i],])
+          xtx.block.values[replace.from[i]:replace.to[i],] <- as.matrix(t(weighted.LD[select.from[i]:select.to[i],]) %*% weighted.LD[select.from[i]:select.to[i],])
         }
         xty <- as.matrix(colSums(xty.block.values))
-        xtx <- matrix(data=NA,nrow =(n.annot+1),ncol =(n.annot+1))
-        colnames(xtx)<- colnames(weighted.LD)
-        for(i in 1:nrow(xtx)){xtx[i,] <- t(colSums(xtx.block.values[seq(from=i,to=nrow(xtx.block.values),by=ncol(weighted.LD)),]))}
+        xtx <- matrix(data=NA,nrow=(n.annot+1),ncol=(n.annot+1))
+        colnames(xtx) <- colnames(weighted.LD)
+        for(i in 1:nrow(xtx)) {
+          xtx[i,] <- t(colSums(xtx.block.values[seq(from=i,to=nrow(xtx.block.values),by=ncol(weighted.LD)),]))
+        }
         
-        reg <- solve(xtx)%*% xty
+        reg <- solve(xtx) %*% xty
         intercept <- reg[2]
         coefs <- reg[1]/N.bar
         reg.tot <- coefs*m
         
         delete.from <- seq(from=1,to=nrow(xtx.block.values),by=ncol(xtx.block.values))
         delete.to <- seq(from=ncol(xtx.block.values),to=nrow(xtx.block.values),by=ncol(xtx.block.values))
-        delete.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
-        colnames(delete.values)<- colnames(weighted.LD)
+        delete.values <- matrix(data=NA,nrow=n.blocks,ncol=(n.annot+1))
+        colnames(delete.values) <- colnames(weighted.LD)
         for(i in 1:n.blocks){
           xty.delete <- xty-xty.block.values[i,]
           xtx.delete <- xtx-xtx.block.values[delete.from[i]:delete.to[i],]
-          delete.values[i,] <- solve(xtx.delete)%*% xty.delete
+          delete.values[i,] <- solve(xtx.delete) %*% xty.delete
         }
         
         tot.delete.values <- delete.values[,1:n.annot]
         #end.delete.values <- (tot.delete.values %*% m)/N.bar
         #write.table(x=end.delete.values,file=paste0(out,".end.del.val.txt"),quote=F,sep="\t",row.names=F)
         pseudo.values <- matrix(data=NA,nrow=n.blocks,ncol=length(reg))
-        colnames(pseudo.values)<- colnames(weighted.LD)
-        for(i in 1:n.blocks){pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1)* delete.values[i,])}
+        colnames(pseudo.values) <- colnames(weighted.LD)
+        for(i in 1:n.blocks) pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1) * delete.values[i,])
         
         jackknife.cov <- cov(pseudo.values)/n.blocks
         jackknife.se <- sqrt(diag(jackknife.cov))
@@ -373,13 +362,21 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         tot.cov <- sum(cat.cov)
         tot.se <- sqrt(tot.cov)
         
-        V.hold[,s] <- (pseudo.values[,1])
+        V.hold[,s] <- pseudo.values[,1]
         N.vec[1,s] <- N.bar
         
-        cov[k,j] <- reg.tot
-        cov[j,k] <- reg.tot
-        I[k,j] <- intercept
-        I[j,k] <- intercept
+        Gcov.mat[k,j] <- reg.tot
+        Gcov.mat[j,k] <- reg.tot
+        I.mat[k,j] <- intercept
+        I.mat[j,k] <- intercept
+        Gcov_p.mat[k,j] <- 2*pt( abs(reg.tot) / tot.se, df=n.blocks-2, lower.tail=F )
+        Gcov_p.mat[j,k] <- Gcov_p.mat[k,j]
+        I_p.mat[k,j] <- 2*pt( abs(intercept) / intercept.se, df=n.blocks-2, lower.tail=F )
+        I_p.mat[j,k] <- I_p.mat[k,j]
+#         Gcov_pasympt.mat[k,j] <- pnorm( reg.tot / tot.se, lower.tail=F )
+#         Gcov_pasympt.mat[j,k] <- Gcov_pasympt.mat[k,j]
+#         I_pasympt.mat[k,j] <- pnorm( intercept / intercept.se, lower.tail=F )
+#         I_pasympt.mat[j,k] <- I_pasympt.mat[k,j]
         
         mean.ZZ <- mean(merged$ZZ)
         cat("Results for covariance between:",chi1,"and",chi2,"\n")
@@ -393,21 +390,22 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
       }
       
     }
+
   }
   
   time_all <- proc.time()-time
   print(time_all[3])
   
   ## Scale V to N per study (assume m constant)
-  v.out <- ((cov(V.hold)/n.blocks) /t(N.vec) %*% N.vec) * m^2
+  v.out <- ((cov(V.hold)/n.blocks) / t(N.vec) %*% N.vec) * m^2
   
   ### Scale S and V to liability:
-  S <- diag(as.vector(sqrt(Liab.S))) %*% cov %*% diag(as.vector(sqrt(Liab.S)))
+  S.mat <- diag(as.vector(sqrt(liab.scale.conv.fact))) %*% Gcov.mat %*% diag(as.vector(sqrt(liab.scale.conv.fact)))
   
   ##Elliot Method
   
   #calculate the ratio of the rescaled and original S matrices
-  scaleO=as.vector(lowerTriangle((S/cov),diag=T))
+  scaleO=as.vector(lowerTriangle((S.mat/Gcov.mat),diag=T))
   
   #obtain diagonals of the original V matrix and take their sqrt to get SE's
   Dvcov<-sqrt(diag(v.out))
@@ -419,20 +417,41 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   vcor<-cov2cor(v.out)
   
   #rescale the sampling correlation matrix by the appropriate diagonals
-  V<-diag(Dvcovl)%*%vcor%*%diag(Dvcovl)
+  V.mat <- diag(Dvcovl)%*%vcor%*%diag(Dvcovl)
  
-  length<-ncol(S)
-  if(is.null(trait.names)){
-
-    traits <- paste0("V",1:length)
-    colnames(S)<-(traits)
-
-  }else{
-    colnames(S)<-(trait.names)
+  n.traits<-ncol(S.mat)
+  if(is.null(trait.names)) {
+    tmp.names <- paste0("V",1:n.traits)
+    colnames(S.mat)<-(tmp.names)
+    rownames(S.mat)<-(tmp.names)
+    colnames(I.mat)<-(tmp.names)
+    rownames(I.mat)<-(tmp.names)
+    colnames(Gcov_p.mat)<-(tmp.names)
+    rownames(Gcov_p.mat)<-(tmp.names)
+    colnames(I_p.mat)<-(tmp.names)
+    rownames(I_p.mat)<-(tmp.names)
+  } else {
+    colnames(S.mat)<-(trait.names)
+    rownames(S.mat)<-(trait.names)
+    colnames(I.mat)<-(trait.names)
+    rownames(I.mat)<-(trait.names)
+    colnames(Gcov_p.mat)<-(trait.names)
+    rownames(Gcov_p.mat)<-(trait.names)
+    colnames(I_p.mat)<-(trait.names)
+    rownames(I_p.mat)<-(trait.names)
   }
-   
-  return(list(V=V,S=S,I=I,N=N.vec,m=m))
   
+  return( list(
+    V=V.mat,
+    S=S.mat,
+    I=I.mat,
+    pS=Gcov_p.mat,
+    pI=I_p.mat,
+#     pSalt=Gcov_pasympt.mat,
+#     pIalt=I_pasympt.mat,
+    N=N.vec,
+    m=m
+  ) )
   
 }
- 
+
