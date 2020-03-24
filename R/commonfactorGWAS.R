@@ -48,6 +48,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       V_LD<-as.matrix(covstruc[[1]])
       S_LD<-as.matrix(covstruc[[2]])
       I_LD<-as.matrix(covstruc[[3]])
+    
+      check_names<-str_detect(colnames(S_LD), "-")
+      if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
       
       beta_SNP<-SNPs[,grep("beta.",fixed=TRUE,colnames(SNPs))] 
       SE_SNP<-SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))] 
@@ -199,7 +202,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         ks<-nrow(S_Fullrun)
         smooth1<-ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
         
-        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         
         order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Fullrun))
       }
@@ -601,6 +604,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       #enter in k for number of phenotypes 
       k<-ncol(S_Full[[1]])-1
       
+      check_names<-str_detect(colnames(S_Full[[1]]), "-")
+      if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
+      
       ##number of models being run
       f<-length(Output[[1]])
       
@@ -678,7 +684,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         
         S_Fullrun<-S_Full[[i]]
         
-        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         
         order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]]))
       }
@@ -983,6 +989,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       S_LD<-as.matrix(covstruc[[2]])
       I_LD<-as.matrix(covstruc[[3]])
       
+      check_names<-str_detect(colnames(S_LD), "-")
+      if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
+     
       beta_SNP<-SNPs[,grep("beta.",fixed=TRUE,colnames(SNPs))] 
       SE_SNP<-SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))] 
       
@@ -1134,7 +1143,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         ks<-nrow(S_Fullrun)
         smooth1<-ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
         
-        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         
         order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Fullrun))
       }
@@ -1522,6 +1531,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       V_Full<-suppressWarnings(split(Output[[1]],1:int))
       S_Full<-suppressWarnings(split(Output[[2]],1:int))
       
+      check_names<-str_detect(colnames(S_Full[[1]][[1]]), "-")
+      if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
+      
       #enter in k for number of phenotypes 
       k<-ncol(S_Full[[1]][[1]])-1
       
@@ -1605,7 +1617,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         
         S_Fullrun<-S_Full[[1]][[i]]
         
-        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         if(class(test2$value)[1]=="lavaan"){
           order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))}else{
             i<-10
@@ -1620,7 +1632,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             
             S_Fullrun<-S_Full[[1]][[i]]
             
-            test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+            test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
             
             order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
           }
