@@ -6,6 +6,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   n.traits <- length(traits)
   n.V <- (n.traits^2 / 2) + .5*n.traits
   
+check_names<-str_detect(trait.names, "-")
+if(any(check_names==TRUE)){warning("Your trait names specified include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits using the trait.names argument.")}
+
+  
   # Storage:
   cov <- matrix(NA,nrow=n.traits,ncol=n.traits)
   V.hold <- matrix(NA,nrow=n.blocks,ncol=n.V)
