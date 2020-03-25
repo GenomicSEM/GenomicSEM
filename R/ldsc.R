@@ -2,29 +2,39 @@
 ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22,n.blocks=200){
   time <- proc.time()
   
+  begin.time <- Sys.time()
+  
+  log2<-paste(trait.names,collapse="_")
+  
+  log.file <- file(paste0(log2, "_ldsc.log"),open="wt")
+  log3<-paste(trait.names,collapse=" ")
+  cat(print(paste0("Multivariate ld-score regression of ", length(traits), " traits ", "(", log3, ")", " began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
+  
+  
   # Dimensions
   n.traits <- length(traits)
   n.V <- (n.traits^2 / 2) + .5*n.traits
   
-check_names<-str_detect(trait.names, "-")
-if(any(check_names==TRUE)){warning("Your trait names specified include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits using the trait.names argument.")}
-
-    if(length(traits)==1){warning("Our version of ldsc requires 2 or more traits. Please include an additional trait.")}
+  check_names<-str_detect(trait.names, "-")
+  if(any(check_names==TRUE)){warning("Your trait names specified include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits using the trait.names argument.")}
   
+  if(length(traits)==1){warning("Our version of ldsc requires 2 or more traits. Please include an additional trait.")}
+  
+
   # Storage:
   cov <- matrix(NA,nrow=n.traits,ncol=n.traits)
   V.hold <- matrix(NA,nrow=n.blocks,ncol=n.V)
   N.vec <- matrix(NA,nrow=1,ncol=n.V)
   Liab.S <- matrix(1,nrow=1,ncol=n.traits)
   I <- matrix(NA,nrow=n.traits,ncol=n.traits)
-
+  
   # Current working directory
   curwd = getwd()
   
   
   
   #########  READ LD SCORES:
-  
+  cat(print("Reading in LD scores"),file=log.file,sep="\n",append=TRUE)
   setwd(ld)
   
   x <- suppressMessages(read_delim("1.l2.ldscore.gz", "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
@@ -75,18 +85,20 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
     chi1 <- traits[j]
     ######### READ chi2
     
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+    
+    cat(print(paste("Estimating heritability for:", traits[j])),file=log.file,sep="\n",append=TRUE)
+    
     y1 <- suppressMessages(read_delim(chi1, "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
     
     y1 <- na.omit(y1)
     y1$chi1 <- y1$Z^2
-    cat("Read in summary statistics from",chi1,"\n")
-    cat("Read in summary statistics for",nrow(y1),"SNPs","\n")
     
+    cat(print(paste("Read in summary statistics from:", chi1)),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Read in summary statistics for", nrow(y1), "SNPs")),file=log.file,sep="\n",append=TRUE)
     
     for(k in j:length(traits)){
-      
-      
-      
       
       ##### HERITABILITY code
       
@@ -95,16 +107,15 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         samp.prev <- sample.prev[j]
         pop.prev <- population.prev[j]
         
-        
-        
-        
         ######## Merge files
         
         merged <- merge(x=y1[,c("SNP","chi1","N")],y=w[,c("SNP","wLD")],by="SNP")
         merged <- merge(x=merged,y=x,by="SNP")
         merged <- merged[with(merged,order(CHR,BP)),]
         remaining.snps <- nrow(merged)
-        cat(remaining.snps,"SNPs remaining","after merging the files","\n")
+        
+        cat(print(paste(remaining.snps, "SNPs remaining after merging file with LD-score files")),file=log.file,sep="\n",append=TRUE)
+      
         
         ## REMOVE SNPS with excess chi-square:
         chisq.max <- max(0.001*max(merged$N),80)
@@ -112,7 +123,8 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         n.snps <- nrow(merged)
         removed.snps <- remaining.snps-n.snps
         
-        cat("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max,paste0("(",n.snps," SNPs remain)"),"\n")
+        cat(print(paste("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max)),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste(n.snps, "SNPs remain")),file=log.file,sep="\n",append=TRUE)
         
         ## ADD INTERCEPT:
         merged$intercept <- 1
@@ -181,8 +193,6 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         }
         
         tot.delete.values <- delete.values[,1:n.annot]
-        #end.delete.values <- (tot.delete.values %*% m)/N.bar
-        #write.table(x=end.delete.values,file=paste0(out,".end.del.val.txt"),quote=F,sep="\t",row.names=F)
         pseudo.values <- matrix(data=NA,nrow=n.blocks,ncol=length(reg))
         colnames(pseudo.values)<- colnames(weighted.LD)
         for(i in 1:n.blocks){pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1)* delete.values[i,])}
@@ -191,7 +201,7 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         jackknife.se <- sqrt(diag(jackknife.cov))
         intercept.se <- jackknife.se[length(jackknife.se)]
         coef.cov <- jackknife.cov[1:n.annot,1:n.annot]/(N.bar^2)
-        #write.table(x=coef.cov,file=paste0(out,".coef.cov.txt"),quote=F,sep="\t")
+     
         cat.cov <- coef.cov*(m %*% t(m))
         tot.cov <- sum(cat.cov)
         tot.se <- sqrt(tot.cov)
@@ -199,14 +209,15 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         V.hold[,s] <- pseudo.values[,1]
         N.vec[1,s] <- N.bar
         
-        
-        
         if(is.na(pop.prev)==F & is.na(samp.prev)==F){
           conversion.factor <- (pop.prev^2*(1-pop.prev)^2)/(samp.prev*(1-samp.prev)* dnorm(qnorm(1-pop.prev))^2)
           Liab.S[,j] <- conversion.factor
+          cat(paste("     "),file=log.file,sep="\n",append=TRUE)
           
-        }
-        
+          cat(print(paste("Please note that the results initially printed to the screen and log file reflect the NON-liability h2 and cov_g. However, a liability conversion is being used for trait", chi1, "when creating the genetic covariance matrix used as input for Genomic SEM and liability scale results are printed at the end of the log file.")),file=log.file,sep="\n",append=TRUE)
+          cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+          t<-1
+           }
         
         cov[j,j] <- reg.tot
         I[j,j] <- intercept
@@ -215,13 +226,16 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         mean.Chi <- mean(merged$chi1)
         ratio <- (intercept-1)/(mean(merged$chi1)-1)
         ratio.se <- intercept.se/(mean(merged$chi1)-1)
+         
+        cat(print(paste("Results for trait:",chi1)),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Lambda GC:",round(lambda.gc,4))),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Mean Chi^2 across remaining SNPs:",round(mean.Chi,4))),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Intercept: ",round(intercept,4),"(",round(intercept.se,4),")")),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Lambda GC:",round(lambda.gc,4))),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Ratio: ",round(ratio,4),"(",round(ratio.se,4),")")),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("h2:",round(reg.tot,4),"(",round(tot.se,4),")")),file=log.file,sep="\n",append=TRUE)
         
-        cat("Results for trait",chi1,"\n")
-        cat("Lambda GC:",round(lambda.gc,4),"\n")
-        cat("Mean Chi^2:",round(mean.Chi,4),"\n")
-        cat("Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n",sep="")
-        cat("Ratio: ",round(ratio,4),"(",round(ratio.se,4),")","\n",sep="")
-        cat("h2:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
+      
         
         ### Total count
         s <- s+1
@@ -232,24 +246,21 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
       ##### GENETIC COVARIANCE code
       
       if(j != k)
-      {
-        
+      {cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+       
         
         chi2 <- traits[k]
         ######### READ chi2
+        cat(print(paste("Calculating genetic covariance for traits:",chi1, "and", chi2)),file=log.file,sep="\n",append=TRUE)
         
         # Reuse the data read in for heritability
-        
-        
-        
         y2 <- suppressMessages(read_delim(chi2, "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
         
         y2 <- na.omit(y2)
         y2$chi2 <- y2$Z^2
-        cat("Read in summary statistics from",chi2,"\n")
-        cat("Read in summary statistics for",nrow(y2),"SNPs","\n")
         
-        
+        cat(print(paste("Read in summary statistics from",chi2)),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Read in summary statistics for",nrow(y2),"SNPs")),file=log.file,sep="\n",append=TRUE)
         
         
         y <- merge(y1,y2,by="SNP")
@@ -261,8 +272,7 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         y$ZZ <- y$Z.y * y$Z.x
         y <- na.omit(y)
         
-        cat("After merging",chi1,"and",chi2,"summary statistics for",nrow(y),"SNPs","\n")
-        
+        cat(print(paste("After merging",chi1,"and",chi2,"summary statistics for",nrow(y),"SNPs remain")),file=log.file,sep="\n",append=TRUE)
         
         ######## Merge files
         
@@ -270,8 +280,9 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         merged <- merge(x=merged,y=x,by="SNP")
         merged <- merged[with(merged,order(CHR,BP)),]
         remaining.snps <- nrow(merged)
-        cat(remaining.snps,"SNPs remaining","after merging the files","\n")
         
+        cat(print(paste(remaining.snps,"SNPs remaining after merging the files with LD-score files")),file=log.file,sep="\n",append=TRUE)
+      
         ## REMOVE SNPS with excess chi-square:
         chisq.max1 <- max(0.001*max(merged$N.x),80)
         merged <- merged[merged$chi1 < chisq.max1,]
@@ -282,8 +293,8 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         n.snps <- nrow(merged)
         removed.snps <- remaining.snps-n.snps
         
-        cat("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max1, "for", chi1, "or SNPs with Chi^2 >",chisq.max2, "for", chi2, paste0("(",n.snps," SNPs remain)"),"\n")
-       
+        cat(print(paste("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max1, "for", chi1, "or SNPs with Chi^2 >",chisq.max2, "for", chi2, paste0("(",n.snps," SNPs remain)"))),file=log.file,sep="\n",append=TRUE)
+        
         ## ADD INTERCEPT:
         merged$intercept <- 1
         merged$x.tot <- merged$L2
@@ -318,7 +329,7 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         merged$weights_cov <- (merged$initial.w + merged$initial.w2)/sum(merged$initial.w + merged$initial.w2 )
         
         N.bar <- sqrt(mean(merged$N.x)*mean(merged$N.y))
-         
+        
         ## preweight LD and chi:
         
         weighted.LD <- as.matrix(cbind(merged$L2,merged$intercept)*merged$weights)
@@ -326,7 +337,7 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         
         ## Perfrom analysis:
         
-
+        
         n.annot <- 1
         
         
@@ -363,8 +374,6 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         }
         
         tot.delete.values <- delete.values[,1:n.annot]
-        #end.delete.values <- (tot.delete.values %*% m)/N.bar
-        #write.table(x=end.delete.values,file=paste0(out,".end.del.val.txt"),quote=F,sep="\t",row.names=F)
         pseudo.values <- matrix(data=NA,nrow=n.blocks,ncol=length(reg))
         colnames(pseudo.values)<- colnames(weighted.LD)
         for(i in 1:n.blocks){pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1)* delete.values[i,])}
@@ -373,7 +382,6 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         jackknife.se <- sqrt(diag(jackknife.cov))
         intercept.se <- jackknife.se[length(jackknife.se)]
         coef.cov <- jackknife.cov[1:n.annot,1:n.annot]/(N.bar^2)
-        #write.table(x=coef.cov,file=paste0(out,".coef.cov.txt"),quote=F,sep="\t")
         cat.cov <- coef.cov*(m %*% t(m))
         tot.cov <- sum(cat.cov)
         tot.se <- sqrt(tot.cov)
@@ -387,11 +395,13 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
         I[j,k] <- intercept
         
         mean.ZZ <- mean(merged$ZZ)
-        cat("Results for covariance between:",chi1,"and",chi2,"\n")
-        cat("Mean Z*Z:",round(mean.ZZ,4),"\n")
-        cat("Cross trait Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n",sep="")
-        cat("cov_g:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
         
+        
+        cat(print(paste("Results for genetic covariance between:",chi1,"and",chi2)),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Mean Z*Z:",round(mean.ZZ,4))),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("Cross trait Intercept: ",round(intercept,4),"(",round(intercept.se,4),")")),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("cov_g:",round(reg.tot,4),"(",round(tot.se,4),")")),file=log.file,sep="\n",append=TRUE)
+      
         ### Total count
         s <- s+1
         
@@ -400,16 +410,12 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
     }
   }
   
-  time_all <- proc.time()-time
-  print(time_all[3])
-  
+
   ## Scale V to N per study (assume m constant)
   v.out <- ((cov(V.hold)/n.blocks) /t(N.vec) %*% N.vec) * m^2
   
   ### Scale S and V to liability:
   S <- diag(as.vector(sqrt(Liab.S))) %*% cov %*% diag(as.vector(sqrt(Liab.S)))
-  
-  ##Elliot Method
   
   #calculate the ratio of the rescaled and original S matrices
   scaleO=as.vector(lowerTriangle((S/cov),diag=T))
@@ -425,19 +431,58 @@ if(any(check_names==TRUE)){warning("Your trait names specified include mathemati
   
   #rescale the sampling correlation matrix by the appropriate diagonals
   V<-diag(Dvcovl)%*%vcor%*%diag(Dvcovl)
- 
+  
+  
+  
   length<-ncol(S)
   if(is.null(trait.names)){
-
+    
     traits <- paste0("V",1:length)
     colnames(S)<-(traits)
-
+    
   }else{
     colnames(S)<-(trait.names)
   }
-   
-  return(list(V=V,S=S,I=I,N=N.vec,m=m))
   
+  if(mean(Liab.S)!=1){
+    r<-nrow(S)
+    SE<-matrix(0, r, r)
+    SE[lower.tri(SE,diag=TRUE)] <-sqrt(diag(V))
+    
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Liability scale results")),file=log.file,sep="\n",append=TRUE)
+    
+    for(j in 1:n.traits){
+      chi1 <- traits[j]
+      for(k in j:length(traits)){
+    if(j == k){
+      cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+      cat(print(paste("Liability scale results for", chi1)),file=log.file,sep="\n",append=TRUE)
+      cat(print(paste0("Liability scale h2:",round(S[j,j],4),"(",round(SE[j,j],4),")")),file=log.file,sep="\n",append=TRUE)
+    }
+      
+  if(j != k){
+    chi2 <- traits[k]
+    cat(print(paste0("Liability scale cov_g between ", chi1, " and ",chi2, ": ", round(S[k,j],4)," (",round(SE[k,j],4),")")),file=log.file,sep="",append=TRUE)
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+  }
+      }
+    }
+  }
+
+  end.time <- Sys.time()
+  
+  total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
+  mins <- floor(floor(total.time)/60)
+  secs <- total.time-mins*60
+  
+  cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+  cat(print(paste0("LDSC finished running at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
+  cat(print(paste0("Running LDSC for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
+  cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+      
+  return(list(V=V,S=S,I=I,N=N.vec,m=m))
+
   
 }
- 
