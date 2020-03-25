@@ -42,7 +42,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       
       #small number because treating MAF as fixed
       if(SNPSE == FALSE){
-        varSNPSE2=(.005)^2
+        varSNPSE2=(.0005)^2
       }
       
       if(SNPSE != FALSE){
@@ -2243,7 +2243,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       
       #small number because treating MAF as fixed
       if(SNPSE == FALSE){
-        varSNPSE2=(.005)^2
+        varSNPSE2=(.0005)^2
       }
       
       if(SNPSE != FALSE){
