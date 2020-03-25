@@ -9,6 +9,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 check_names<-str_detect(trait.names, "-")
 if(any(check_names==TRUE)){warning("Your trait names specified include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits using the trait.names argument.")}
 
+    if(length(traits)==1){warning("Our version of ldsc requires 2 or more traits. Please include an additional trait.")}
   
   # Storage:
   cov <- matrix(NA,nrow=n.traits,ncol=n.traits)
