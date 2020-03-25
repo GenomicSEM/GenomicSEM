@@ -38,7 +38,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       #small number because treating MAF as fixed
       if(SNPSE == FALSE){
-        varSNPSE2=(.00000001)^2
+        varSNPSE2=(.0005)^2
       }
       
       if(SNPSE != FALSE){
@@ -978,7 +978,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       #small number because treating MAF as fixed
       if(SNPSE == FALSE){
-        varSNPSE2=(.00000001)^2
+        varSNPSE2=(.0005)^2
       }
       
       if(SNPSE != FALSE){
