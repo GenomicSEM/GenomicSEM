@@ -60,9 +60,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     f=nrow(beta_SNP) 
     
     #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-    #'k' is the number of variables in the model
-    #'fit' is the fit function of the regression model
-    #'names' is a vector of variable names in the order you used
+    # 'k' is the number of variables in the model
+    # 'fit' is the fit function of the regression model
+    # 'names' is a vector of variable names in the order you used
     rearrange <- function (k, fit, names) {
       order1 <- names
       order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -603,9 +603,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     f<-length(Output[[1]])
     
     #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-    #'k' is the number of variables in the model
-    #'fit' is the fit function of the regression model
-    #'names' is a vector of variable names in the order you used
+    # 'k' is the number of variables in the model
+    # 'fit' is the fit function of the regression model
+    # 'names' is a vector of variable names in the order you used
     rearrange <- function (k, fit, names) {
       order1 <- names
       order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -1139,8 +1139,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       SNPs2<-SNPs[,1:6]
       rm(SNPs)
-      #SNPs2<-suppressWarnings(split(SNPs2,1:int))
+
       #split the V_SNP and S_SNP matrices into as many (cores - 1) as are aviailable on the local computer
+      #SNPs2<-suppressWarnings(split(SNPs2,1:int))
+
       beta_SNP<-suppressWarnings(split(beta_SNP,1:int))
       SE_SNP<-suppressWarnings(split(SE_SNP,1:int))
       varSNP<-suppressWarnings(split(varSNP,1:int))
@@ -1518,9 +1520,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       k<-ncol(S_Full[[1]][[1]])-1
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables

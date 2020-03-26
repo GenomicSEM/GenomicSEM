@@ -65,9 +65,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       f=nrow(beta_SNP) 
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -1305,9 +1305,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       Output$RS$A2<-as.character(Output$RS$A2)
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -2257,9 +2257,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       #f=nrow(beta_SNP) 
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -3456,9 +3456,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       rm(Output)
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables
