@@ -1,5 +1,6 @@
 
 
+
 sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL){
   
   begin.time <- Sys.time()
@@ -74,11 +75,21 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","ALLELE0","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA","Other_allele", "Other_Allele", "Non_Effect_allele", "Non_Effect_Allele")]  <- "A2"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
       
+      if(linprob[i] == F){
+        if(OLS[i] == F){ 
+          if("Z" %in% names1 | "Zscore" %in% names1 | "Z-score" %in% names1 | "Zstatistic" %in% names1 | "Z-statistic" %in% names1){
+            warning(paste0("There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ". Transformations for case/control traits require either an OR or logistic beta column. Please remove/replace the Z-statistic column"))
+            cat(print(paste("WARNING: There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ". Transformations for case/control traits require either an OR or logistic beta column. Please remove/replace the Z-statistic column"),file=log.file,sep="\n",append=TRUE))
+          }
+        }}
+      
+      
       names1<-hold_names
       if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","Effect_Beta","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b")] <- "effect"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-      
+    
+     
       names1<-hold_names
       if("INFO" %in% hold_names) cat(print(paste("Interpreting the INFO column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("INFO","info")] <- "INFO"
@@ -109,6 +120,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
       
+       
+      
       # Print a message for misisng P value, rs, effect or allele column
       if(sum(hold_names %in% "P") == 0) cat(print(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
       if(sum(hold_names %in% "A1") == 0) cat(print(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
@@ -129,6 +142,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]))
       if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]))
       if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]))
+      
+      # Print a warning message when multiple columns interpreted as P-values, rsID, effect or allele columns
+      if(sum(hold_names %in% "P") > 1) warning(paste0('Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted as P to P2 for:',filenames[i]))
+      if(sum(hold_names %in% "A1") > 1) warning(paste0('Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want interpreted as effect allele column to A1_2 for:',filenames[i]))
+      if(sum(hold_names %in% "A2") > 1) warning(paste0('Multiple columns are being interpreted as the other allele column. Try renaming the column you dont want interpreted as the other allele column to A2_2 for:',filenames[i]))
+      if(sum(hold_names %in% "effect") > 1) warning(paste0('Multiple columns are being interpreted as the beta or effect column. Try renaming the column you dont want interpreted as the beta or effect column to effect2 for:',filenames[i]))
+      if(sum(hold_names %in% "SNP") > 1) warning(paste0('Multiple columns are being interpreted as the rs-id column. Try renaming the column you dont want interpreted as rs-id to SNP2 for:',filenames[i]))
+      
       
       ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
       hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF_Other"
@@ -152,16 +173,15 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
         }}
       
       if(keep.indel == TRUE){
-       files[[i]]$A1 <- factor(toupper(files[[i]]$A1))
-       files[[i]]$A2 <- factor(toupper(files[[i]]$A2))
+        files[[i]]$A1 <- factor(toupper(files[[i]]$A1))
+        files[[i]]$A2 <- factor(toupper(files[[i]]$A2))
         cat(print(paste0("Keeping variants other than SNPs, this may cause problems when alligning allle's across traits and the reference file")),file=log.file,sep="\n",append=TRUE)
-       }
+      }
       
       if(keep.indel == FALSE){
-      ##make sure all alleles are upper case for matching
-      files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
-      files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
-       # cat(print(paste0("Removing variants other than SNPs (e.g. Indel's). To change behavior set keep.indel=TRUE")),file=log.file,sep="\n",append=TRUE)
+        ##make sure all alleles are upper case for matching
+        files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
+        files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
       }
       
       ##merge with ref file
@@ -191,7 +211,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       a2<-files[[i]]$effect[[1]]
       if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
       if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
-      
+     
       ##remove any rows printed as exactly 0
       b<-nrow(files[[i]])
       if("effect" %in% colnames(files[[i]])) {
@@ -288,6 +308,11 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       
       cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC and merging with the reference file.")),file=log.file,sep="\n",append=TRUE)
       
+      if(mean(abs(output[,2]/output[,3])) > 5){
+        cat(print(paste0('WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were specified. Please post on the google group if you are unable to figure out the issue.")),file=log.file,sep="\n",append=TRUE)
+        warning(paste0('The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were specified. Please post on the google group if you are unable to figure out the issue."))
+      }
+      
       if(i ==1){
         data.frame.out <- suppressWarnings(inner_join(data.frame.out,output,by="SNP",all.x=F,all.y=F))
       }else{
@@ -347,6 +372,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","ALLELE0","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA","Other_allele", "Other_Allele", "Non_Effect_allele", "Non_Effect_Allele")]  <- "A2"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the A2 column."),file=log.file,sep="\n",append=TRUE)
       
+      if(linprob[i] == F){
+        if(OLS[i] == F){ 
+          if("Z" %in% names1 | "Zscore" %in% names1 | "Z-score" %in% names1 | "Zstatistic" %in% names1 | "Z-statistic" %in% names1){
+            cat(paste("WARNING: There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ". Transformations for case/control traits require either an OR or logistic beta column. Please remove/replace the Z-statistic column"),file=log.file,sep="\n",append=TRUE)
+          }
+        }}
+      
+      
       names1<-hold_names
       if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","Effect_Beta","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b")] <- "effect"
@@ -402,6 +435,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]))
       if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]))
       if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]))
+      
+      # Print a warning message when multiple columns interpreted as P-values, rsID, effect or allele columns
+      if(sum(hold_names %in% "P") > 1) warning(paste0('Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted as P to P2 for:',filenames[i]))
+      if(sum(hold_names %in% "A1") > 1) warning(paste0('Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want interpreted as effect allele column to A1_2 for:',filenames[i]))
+      if(sum(hold_names %in% "A2") > 1) warning(paste0('Multiple columns are being interpreted as the other allele column. Try renaming the column you dont want interpreted as the other allele column to A2_2 for:',filenames[i]))
+      if(sum(hold_names %in% "effect") > 1) warning(paste0('Multiple columns are being interpreted as the beta or effect column. Try renaming the column you dont want interpreted as the beta or effect column to effect2 for:',filenames[i]))
+      if(sum(hold_names %in% "SNP") > 1) warning(paste0('Multiple columns are being interpreted as the rs-id column. Try renaming the column you dont want interpreted as rs-id to SNP2 for:',filenames[i]))
+      
       
       ##rename common MAF labels
       names1<-hold_names
@@ -461,11 +502,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       a2<-files2$effect[[1]]
       if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
       if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
-
-
-     ##remove any rows printed as exactly 0
-
-
+      
+      
+      ##remove any rows printed as exactly 0
       b<-nrow(files2)
       if("effect" %in% colnames(files2)){
         files2<-subset(files2, files2$effect != 0)
@@ -559,6 +598,10 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
         colnames(output) <- c("SNP",names.beta[i],names.se[i])}
       
       cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC and merging with the reference file.")),file=log.file,sep="\n",append=TRUE)
+      
+      if(mean(abs(output[,2]/output[,3])) > 5){
+        cat(print(paste0('WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were specified. Please post on the google group if you are unable to figure out the issue.")),file=log.file,sep="\n",append=TRUE)
+      }
       
       output
       
