@@ -1,6 +1,6 @@
 
 part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample.prev=NULL,out,trait.names=NULL){
-
+  
   #require(plyr)
   #require(e1071)
   #require(data.table)
@@ -11,9 +11,9 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   ##create log file
   log2<-paste(trait.names,collapse="_")
   log.file <- file(paste0(log2, "_Partitioned.log"),open="wt")
-  sink(log.file,split=T,type="output")
-  error.file <- file(paste0(out,".error"),open="wt")
-  sink(error.file,type="message")
+  #sink(log.file,split=T,type="output")
+  #error.file <- file(paste0(out,".error"),open="wt")
+  #sink(error.file,type="message")
   begin.time <- Sys.time()
   
   Operating<-Sys.info()[['sysname']]
@@ -118,6 +118,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   
   colnames(m) <- tail(colnames(x),n=n.annot)
   m <- as.matrix(colSums(m))
+  write.csv(m, file = "Mmatrix.csv")
   M.tot <- sum(m)
   
   cat("LD scores contain",nrow(x),"SNPs and",n.annot,"annotations","\n")
@@ -221,6 +222,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
   overlap.matrix <- matrix(data=NA,nrow=n.annot,ncol=n.annot)
   colnames(overlap.matrix) <- rownames(overlap.matrix) <- rownames(m)
   for(i in 1:n.annot){overlap.matrix[i,] <- annot.matrix[i,]/m}
+  #write.csv(overlap.matrix, file = "overlapmatrix.csv")
   
   ##added##
   j<-1
@@ -252,6 +254,11 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
       if(j == k){
         samp.prev <- sample.prev[j]
         pop.prev <- population.prev[j]
+        
+        if(is.null(samp.prev)){
+          samp.prev<-NA
+          pop.prev<-NA
+        }
         
         cat("Merging the files","\n")
         
@@ -290,6 +297,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         merged[,(ncol(merged)-10-n.annot):(ncol(merged)-11)] <- (merged[,(ncol(merged)-10-n.annot):(ncol(merged)-11)]*merged$N)/N.bar
         
         LD.scores <- as.matrix(merged[,(ncol(merged)-10-n.annot):(ncol(merged)-10)])
+        
         weighted.LD <- as.matrix(LD.scores*merged$weights)
         weighted.chi <- as.matrix(merged$chi*merged$weights)
         
@@ -347,9 +355,9 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         tot.se <- sqrt(tot.cov)
         
         ##for overall heritability
-        if(is.null(c(pop.prev,samp.prev))){
+        if(is.na(c(pop.prev,samp.prev))){
           cat("h2:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
-        }else if(!is.null(c(pop.prev,samp.prev))){
+        }else if(!is.na(c(pop.prev,samp.prev))){
           conversion.factor <- pop.prev^2*(1-pop.prev)^2/(samp.prev*(1-samp.prev)* dnorm(qnorm(1-pop.prev))^2)
           h2.liab <- reg.tot*conversion.factor
           h2.liab.se <- tot.se*conversion.factor
@@ -389,7 +397,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         colnames(pseudo.values) <- colnames(weighted.LD)[1:(ncol(weighted.LD)-1)]
         for(i in 1:n.blocks){pseudo.values[i,] <- (n.blocks*cats)-((n.blocks-1)* delete.values[i,1:(ncol(delete.values)-1)]*m)}
         
-        if(is.null(population.prev)==F & is.null(sample.prev)==F){
+        if(is.na(pop.prev)==F & is.na(samp.prev)==F){
           conversion.factor <- (pop.prev^2*(1-pop.prev)^2)/(samp.prev*(1-samp.prev)* dnorm(qnorm(1-pop.prev))^2)
           Liab.S[,j] <- conversion.factor
         }
@@ -503,6 +511,7 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
         a<-which(colnames(merged)=="baseL2")
         b<-which(colnames(merged)=="intercept")
         LD.scores <- as.matrix(merged[,a:b])
+        
         weighted.LD <- as.matrix(LD.scores*merged$weights_cov)
         weighted.chi <- as.matrix(merged$ZZ *merged$weights_cov)
         
@@ -763,33 +772,82 @@ part_ldsc <- function(ld,traits,wld,frq,n.blocks=200,population.prev=NULL,sample
     }else{Tau_Flag[[i,1]]<-0}
   }
   rownames(Tau_Flag)<-names(S_Tau)
-
-  ##NEW MICHEL SUGGESTION FOR PER SNP COV [4.3.19]
+  
+  ##subset to only binary annotations
+  #binary_annot=as.data.frame(matrix(NA,ncol=1))
+  #tt<-1
+  #for(v in 6:ncol(selected.annot)){
+  #  if(all(selected.annot[,v] == 0 | selected.annot[,v] == 1)){
+  #    binary_annot[tt,1]<-colnames(selected.annot[v])
+  #    tt<-tt+1
+  #  }
+  #}
+  
+  #colnames(LD.scores)<-c(colnames(selected.annot)[5:ncol(selected.annot)],"intercept")
+  #LD.scores<-subset(LD.scores, select = as.vector(binary_annot$V1))
+  
+  #S_Tau2<-S_Tau
+  #V_Tau2<-V_Tau
+  #names(S_Tau2)<-colnames(selected.annot)[5:ncol(selected.annot)]
+  #names(V_Tau2)<-colnames(selected.annot)[5:ncol(selected.annot)]
+  #S_Tau2<-S_Tau2[colnames(LD.scores)]
+  #V_Tau2<-V_Tau2[colnames(LD.scores)]
+  #################
+  
+  
   ##Step 1: create proportion LD scores per annotation (columns = SNPs, rows = annotations)
-  LD.scores2<-apply(LD.scores[,1:(ncol(LD.scores)-1)], 1, function(i) i/sum(i))
+  #remove intercept
+  #LD.scores<-LD.scores[,1:(ncol(LD.scores)-1)]
+  
+  ##FDR corrected
+  #if(FDR == TRUE){
+  #  Z_h2=as.data.frame(matrix(NA,ncol=2,nrow=1))
+  #  for(i in 1:n.annot){
+  #    d<-matrix(0, 11, 11)
+  #    d[lower.tri(d,diag=TRUE)] <-sqrt(diag(V_Tau[[i]]))
+  #    Z<-S_Tau[[i]]/d
+  #    Z_h2[i,1]<-names(S_Tau[i])
+  #    Z_h2[i,2]<-mean(diag(Z))
+  # }
+  
+  #excluding flanking annotatoins from FDR correction; leave out for now
+  #test<-subset(Z_h2, Z_h2$V1 %like% "flanking")
+  #FDR<-qnorm((.05/(n.annot-nrow(test)))/2,lower.tail=FALSE)
+  
+  #  FDR<-qnorm((.05/(n.annot))/2,lower.tail=FALSE)
+  #Z_h2<-subset(Z_h2, Z_h2$V2 >= FDR)
+  #  Z_h2<-subset(Z_h2, Z_h2$V2 >= FDR | Z_h2$V1 %like% "MAFbin")
+  
+  # S_Tau<-S_Tau[Z_h2$V1]
+  #  V_Tau<-V_Tau[Z_h2$V1] 
+  
+  # LD.scores<-subset(LD.scores, select = as.vector(Z_h2$V1))
+  #  LD.scores2<-apply(LD.scores, 1, function(i) (i/sum(i)*ncol(LD.scores)))
+  # }
   
   ##Step 2: Create weighted Per_SNP matrices by multiplying Tau_List by proportional LDscores
   ##note to look into parallelizing this step
-  S_perSNP<-vector(mode="list",length=ncol(LD.scores2))
-  V_perSNP<-vector(mode="list",length=ncol(LD.scores2))
-
- for(g in 1:length(S_perSNP)){
-    Tau_List2<-vector(mode="list",length=(n.annot-1))
-    V_Tau2<-vector(mode="list",length=(n.annot-1))
-    for(i in 2:length(Tau_List)){
-      Tau_List2[[i-1]]<-Tau_List[[i]]*LD.scores2[(i-1),g]
-      V_Tau2[[i-1]]<-V_Tau[[i]]*(LD.scores2[(i-1),g]^2)
-    }
-    S_perSNP[[g]]<-Reduce("+",Tau_List2)
-    V_perSNP[[g]]<-Reduce("+",V_Tau2)
-  }
-
+  #LD.scores2<-LD.scores2[,1:30000]
+  #S_perSNP<-vector(mode="list",length=ncol(LD.scores2))
+  #V_perSNP<-vector(mode="list",length=ncol(LD.scores2))
+  
+  #for(g in 1:length(S_perSNP)){
+  #  S_Tau3<-vector(mode="list",length=nrow(LD.scores2))
+  #  V_Tau3<-vector(mode="list",length=nrow(LD.scores2))
+  #  for(i in 1:length(S_Tau3)){
+  #    S_Tau3[[i]]<-S_Tau[[i]]*LD.scores2[i,g]
+  #    V_Tau3[[i]]<-V_Tau[[i]]*(LD.scores2[i,g]^2)
+  #  }
+  #  S_perSNP[[g]]<-Reduce("+",S_Tau3)
+  #  V_perSNP[[g]]<-Reduce("+",V_Tau3)
+  #  }
+  
+  #merged<-merged[1:30000,]
   ##name per_SNP matrices by rsID
-  names(S_perSNP)<-merged$SNP
-  names(V_perSNP)<-merged$SNP
+  #names(S_perSNP)<-merged$SNP
+  #names(V_perSNP)<-merged$SNP
   
-  
-  return(list(V=V,S=S,S_Tau=S_Tau,V_Tau=V_Tau,Tau_Flag=Tau_Flag,S_perSNP=S_perSNP,V_perSNP=V_perSNP,I=I,N=N.vec,m=m))
+  return(list(V=V,S=S,S_Tau=S_Tau,V_Tau=V_Tau,Tau_Flag=Tau_Flag,I=I,N=N.vec,m=m))
   
   end.time <- Sys.time()
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
