@@ -1473,25 +1473,33 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     modelfit<-data.frame(modelfit)
     
+     
     if(!(is.character(modelfit$chisq)) & !(is.factor(modelfit$chisq))){
       modelfit$chisq<-as.numeric(as.character(modelfit$chisq))
       modelfit$df<-as.numeric(as.character(modelfit$df))
       modelfit$p_chisq<-ifelse(!(is.character(modelfit$chisq)), modelfit$p_chisq<-pchisq(modelfit$chisq, modelfit$df,lower.tail=FALSE), modelfit$p_chisq<-NA)
       modelfit$chisq<-ifelse(modelfit$df == 0, modelfit$chisq == NA, modelfit$chisq)  
       modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)  
-      modelfit$p_chisq<-ifelse(modelfit$df == 0, modelfit$p_chisq == NA, modelfit$p_chisq)  
+      modelfit$p_chisq<-ifelse(modelfit$df == 0, modelfit$p_chisq == NA, modelfit$p_chisq)
+      modelfit$SRMR<-ifelse(modelfit$df == 0, modelfit$SRMR == NA, modelfit$SRMR)
       if(CFIcalc == TRUE){
         order<-c(1,2,6,3,4,5)
         modelfit<-modelfit[,order]
         if(!(is.factor(modelfit$CFI))){
           if(modelfit$CFI < 0){
             warning(paste("CFI estimates below 0 should not be trusted, and indicate that the other model fit estimates should be interpreted with caution. A negative CFI estimates typically appears due to negative residual variances."))
-          }}}else{order<-c(1,2,5,3,4)
+          }}
+        modelfit$CFI<-ifelse(modelfit$df == 0, modelfit$CFI == NA, modelfit$CFI)
+        }else{order<-c(1,2,5,3,4)
           modelfit<-modelfit[,order]
           }}
     
     time_all<-proc.time()-time
     print(time_all[3])
+    
+    if(modelfit$df == 0){
+      print("Model fit statistics are all printed as NA as you have specified a fully saturated model (i.e., df = 0)")
+    }
     
     
     if(LD_sdiff > 0){
