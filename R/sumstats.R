@@ -1,602 +1,363 @@
-sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter=.6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL,sumstats.log='sumstats.log'){
-  
-  sink(sumstats.log, append=FALSE, split=TRUE)
+sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NULL,prev=NA,N=NULL,info.filter=.6,maf.filter=0.01,keep.indel=FALSE,parallel=TRUE,cores=NULL,log.prefix='sumstats') {
+## Pre-process summary statistics for models including individual variants
 
   begin.time <- Sys.time()
-  
+
+  model.types <- c( 'LIN', 'LOG', 'LPM', 'OLS' )
+
   n.traits <- length(filenames)
-  
-  if(is.null(OLS)){
-    OLS<-rep(FALSE,n.traits)
-  }
-  
-  if(is.null(linprob)){
-    linprob<-rep(FALSE,n.traits)
-  }
-  
-  if(is.null(trait.names)){
+
+  if (is.null(trait.names)) {
     trait.names <- paste0("trait.",1:n.traits)
+  } else {
+    if ( length(trait.names) < n.traits ) {
+      cat("Please specify 'trait.names' for all traits.\n")
+      return(NULL)
+    }
   }
 
-  names.beta <- paste0("beta.",trait.names)
-  names.se <- paste0("se.",trait.names)
-  
-  if(is.null(se.logit) || length(se.logit) < n.traits){
-    cat("Please specify one 'se.logit' for each trait.\n")
+  if (is.null(model))
+    model=rep('LIN', n.traits)
+  if (sum(model %in% model.types) < n.traits) {
+    cat("Please specify one of", paste( model.types, collapse=', ' ), "for each trait.\n")
     return(NULL)
   }
 
-  if(parallel == FALSE){
-    
-    log.file <- file(sumstats.log,open="wt")
-    
-    cat(print(paste0("The preparation of ", n.traits, " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
-    
-    cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
-    ref <- fread(file=reference,header=T,data.table=F)
-
-    ##filter ref file on user provided maf.filter
-    cat(print(paste("Applying MAF filer of", maf.filter, "to the reference file.")),file=log.file,sep="\n",append=TRUE)
-    ref<-subset(ref, ref$MAF >= maf.filter)
-    
-    data.frame.out <- ref
-    
-    cat(print(paste0("Reading summary statistics for ", paste(filenames,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.")),file=log.file,sep="\n",append=TRUE)
-    
-    ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
-    files = lapply(filenames, read.table, header=T, quote="\"", fill=T, na.string=c(".",NA,"NA",""))
-    
-    cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
-    
-    for(i in 1:n.traits){
-      
-      cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-      cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-      
-      cat(print(paste("Preparing summary statistics for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-      
-      hold_names <- names(files[[i]])
-      names1<-hold_names
-      
-      if("SNP" %in% hold_names) cat(print(paste("Interpreting the SNP column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in% c("snp","SNP","snpid","rsID","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("A1" %in% hold_names) cat(print(paste("Interpreting the A1 column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","Effect_allele", "Effect_Allele")] <- "A1"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("A2" %in% hold_names) cat(print(paste("Interpreting the A2 column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","ALLELE0","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA","Other_allele", "Other_Allele", "Non_Effect_allele", "Non_Effect_Allele")]  <- "A2"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","Effect_Beta","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b")] <- "effect"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("INFO" %in% hold_names) cat(print(paste("Interpreting the INFO column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("INFO","info")] <- "INFO"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("SE" %in% hold_names) cat(print(paste("Interpreting the SE column as the SE column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("se", "sebeta", "StdErr", "SE", "SEBETA")] <- "SE"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the SE column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("P" %in% hold_names) cat(print(paste("Interpreting the P column as the P column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","P_value","P-value","p-value","P.value","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue", "P_Value", "Pvalue")] <- "P"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the P column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("N" %in% hold_names) cat(print(paste("Interpreting the N column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("N","WEIGHT","nCompleteSamples", "TotalSampleSize", "TotalN", "Total_N")] <- "N"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("N_CAS" %in% hold_names) cat(print(paste("Interpreting the N_CAS column as the N_CAS (sample size for cases) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CAS (sample size for cases) column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("N_CON" %in% hold_names) cat(print(paste("Interpreting the N_CON column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
-      
-      # Print a message for misisng P value, rs, effect or allele column
-      if(sum(hold_names %in% "P") == 0) cat(print(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A1") == 0) cat(print(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A2") == 0) cat(print(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "effect") == 0) cat(print(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "SNP") == 0) cat(print(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
-      
-      # Print a warning message when multiple columns interpreted as P-values, rsID, effect or allele columns
-      if(sum(hold_names %in% "P") > 1) cat(print(paste0('Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted as P to P2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A1") > 1) cat(print(paste0('Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want interpreted as effect allele column to A1_2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A2") > 1) cat(print(paste0('Multiple columns are being interpreted as the other allele column. Try renaming the column you dont want interpreted as the other allele column to A2_2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "effect") > 1) cat(print(paste0('Multiple columns are being interpreted as the beta or effect column. Try renaming the column you dont want interpreted as the beta or effect column to effect2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "SNP") > 1) cat(print(paste0('Multiple columns are being interpreted as the rs-id column. Try renaming the column you dont want interpreted as rs-id to SNP2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-      
-      # Throw warnings for misisng P valuue, rs, effect or allele columns
-      if(sum(hold_names %in% "P") == 0) warning(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i]))
-      if(sum(hold_names %in% "A1") == 0) warning(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i]))
-      if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]))
-      if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]))
-      if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]))
-      
-      ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
-      hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF_Other"
-      
-      names(files[[i]]) <- hold_names
-      
-      # Compute N as N cases and N control if reported:
-      if("N_CAS" %in% colnames(files[[i]]) & "N_CON" %in% colnames(files[[i]])){
-        files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
-        cat(print(paste("As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the total sample size")),file=log.file,sep="\n",append=TRUE)
-      }
-      
-      if("N" %in% colnames(files[[i]]) & !(is.null(N))){
-        if(!(is.na(N[i]))){
-          cat(print(paste("As the summary statistics file includes a sample size column, this is being used in place of the user provided sample size. If the user wishes to still use the provided sample size, as opposed to the sample size listed in the summary statistics file, please change the sample size column header to N2.However, we note that sample size is only used for LPM and OLS conversions.")),file=log.file,sep="\n",append=TRUE)
-        }}
-      
-      if(!(is.null(N)) & !("N" %in% colnames(files[[i]]))){
-        if(!(is.na(N[i]))){
-          files[[i]]$N<-N[i]
-        }}
-      
-      if(keep.indel == TRUE){
-       files[[i]]$A1 <- factor(toupper(files[[i]]$A1))
-       files[[i]]$A2 <- factor(toupper(files[[i]]$A2))
-        cat(print(paste0("Keeping variants other than SNPs, this may cause problems when alligning allle's across traits and the reference file")),file=log.file,sep="\n",append=TRUE)
-       }
-      
-      if(keep.indel == FALSE){
-      ##make sure all alleles are upper case for matching
-      files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
-      files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
-       # cat(print(paste0("Removing variants other than SNPs (e.g. Indel's). To change behavior set keep.indel=TRUE")),file=log.file,sep="\n",append=TRUE)
-      }
-      
-      ##merge with ref file
-      cat(print(paste("Merging file:", filenames[i], "with the reference file:", reference)),file=log.file,sep="\n",append=TRUE)
-      b<-nrow(files[[i]])
-      cat(print(paste(b, "rows present in the full", filenames[i], "summary statistics file.")),file=log.file,sep="\n",append=TRUE)
-      files[[i]] <- suppressWarnings(inner_join(ref,files[[i]],by="SNP",all.x=F,all.y=F))
-      cat(print(paste((b-nrow(files[[i]])), "rows were removed from the", filenames[i], "summary statistics file as the rsIDs for these SNPs were not present in the reference file.")),file=log.file,sep="\n",append=TRUE)
-      
-      ##remove any rows with missing p-values
-      b<-nrow(files[[i]])
-      if("P" %in% colnames(files[[i]])) {
-        files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
-      }
-      if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the P-value column")),file=log.file,sep="\n",append=TRUE)
-      
-      ##remove any rows with missing effects
-      b<-nrow(files[[i]])
-      if("effect" %in% colnames(files[[i]])) {
-        files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$effect)))
-      }
-      if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the effect column")),file=log.file,sep="\n",append=TRUE)
-      
-      ##determine whether it is OR or logistic/continuous effect based on median effect size 
-      a1<-files[[i]]$effect[[1]]
-      files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect,na.rm=T)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
-      a2<-files[[i]]$effect[[1]]
-      if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
-      if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
-      
-      ##remove any rows printed as exactly 0
-      b<-nrow(files[[i]])
-      if("effect" %in% colnames(files[[i]])) {
-        files[[i]]<-subset(files[[i]], files[[i]]$effect != 0)
-      }
-      if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
-      
-      
-      if(OLS[i] == T){
-        cat(print(paste("An OLS transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
-        
-        if("N" %in% colnames(files[[i]])){
-          files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
-      
-      
-      if(linprob[i] == T){
-        cat(print(paste("An LPM transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
-        
-        if("N" %in% colnames(files[[i]])){
-          files[[i]]$effect <- files[[i]]$Z/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))
-          files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))}else{cat(print("ERROR: A Sample Size (N) is needed for LPM Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
-      
-      # Flip effect to match ordering in ref file
-      files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
-      
-      ##remove SNPs that don't match A1 OR A2 in ref. 
-      b<-nrow(files[[i]])
-      files[[i]]<-subset(files[[i]], !(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x != (files[[i]]$A2.y)))
-      if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "row(s) were removed from the", filenames[i], "summary statistics file due to the effect allele (A1) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
-      
-      b<-nrow(files[[i]])
-      files[[i]]<-subset(files[[i]], !(files[[i]]$A2.x != (files[[i]]$A2.y)  & files[[i]]$A2.x !=  (files[[i]]$A1.y)))
-      if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "row(s) were removed from the", filenames[i], "summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
-      
-      #Check that p-value column does not contain an excess of 1s/0s
-      if((sum(files[[i]]$P > 1) + sum(files[[i]]$P < 0)) > 100){
-        cat(print("In excess of 100 SNPs have P val above 1 or below 0. The P column may be mislabled!"),file=log.file,sep="\n",append=TRUE)
-      }
-      
-      if("INFO" %in% colnames(files[[i]])) {
-        b<-nrow(files[[i]])
-        files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
-        cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to INFO values below the designated threshold of", info.filter)),file=log.file,sep="\n",append=TRUE)
-      }else{cat(print("No INFO column, cannot filter on INFO, which may influence results"),file=log.file,sep="\n",append=TRUE)}
-      
-      varSNP<-2*files[[i]]$MAF*(1-files[[i]]$MAF)  
-      
-      if(OLS[i] == T){
-        output <- cbind.data.frame(files[[i]]$SNP,
-                                   files[[i]]$effect,
-                                   abs(files[[i]]$effect/files[[i]]$Z))
-        output<-na.omit(output)                           
-        colnames(output) <- c("SNP",names.beta[i],names.se[i])                           
-      }
-      
-      if(linprob[i] == T){
-        output<-cbind.data.frame(files[[i]]$SNP,
-                                 (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                                 (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
-        output<-na.omit(output)
-        output<-output[apply(output!=0, 1, all),]
-        colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
-      }
-      
-      if(linprob[i] == F){
-        if(OLS[i] == F){                                     
-          if(se.logit[i] == F){
-            cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-            
-            if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
-            if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
-            
-            output <- cbind.data.frame(files[[i]]$SNP,
-                                       (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                                       (files[[i]]$SE/exp(files[[i]]$effect))/(((files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5))
-            output<-na.omit(output)  
-            colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
-      
-      if(se.logit[i]== T){
-        cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is a logistic SE (i.e., NOT the SE of the odds ratio) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
-        if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
-        
-        output <- cbind.data.frame(files[[i]]$SNP,
-                                   (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                                   (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
-        output<-na.omit(output)  
-        colnames(output) <- c("SNP",names.beta[i],names.se[i])}
-      
-      cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC and merging with the reference file.")),file=log.file,sep="\n",append=TRUE)
-      
-      if(i ==1){
-        data.frame.out <- suppressWarnings(inner_join(data.frame.out,output,by="SNP",all.x=F,all.y=F))
-      }else{
-        b<-nrow(output)
-        data.frame.out <- suppressWarnings(inner_join(data.frame.out,output,by="SNP",all.x=F,all.y=F)) 
-        cat(print(paste((b-nrow(data.frame.out)), "rows were removed from the", filenames[i], "summary statistics file as the rsIDs for these SNPs were not present for the other summary statistics.")),file=log.file,sep="\n",append=TRUE)
-      }
+  if (any(model=='LOG')) {
+    if (is.null(se.logit) || any(!is.finite(se.logit[model=='LOG']))) {
+      cat("Please specify one 'se.logit' for each 'LOG' model.\n")
+      return(NULL)
     }
   }
-  
-  if(parallel == TRUE){
-    
-    print("Reading in reference file")
-    ref <- fread(file=reference,header=T,data.table=F)
-    
-    ##filter ref file on user provided maf.filter
-    print(paste("Applying MAF filer of", maf.filter, "to the reference file."))
-    ref<-subset(ref, ref$MAF >= maf.filter)
-    
-    data.frame.out <- ref
-    
-    if(is.null(cores)){
-      ##if no default provided use 1 less than the total number of cores available so your computer will still function
-      int <- detectCores() - 1
-      if(int > n.traits){
-        int<-n.traits
+
+  if (any(model=='LPM')) {
+    if (is.null(prev) || any(!is.finite(prev[model=='LPM']))) {
+      cat("Please specify one numeric 'prev' for each LPM trait (set the others, e.g., to NA).\n")
+      return(NULL)
+    }
+  }
+
+  if (any(model %in% c('LPM','OLS'))) {
+    if (is.null(N) || any(!is.finite(N[model %in% c('LPM','OLS')]))) {
+      cat("Please specify a finite 'N' for each LPM or OLS trait.\n")
+      return(NULL)
+    }
+  }
+
+  # set number of cores
+  if ( is.null(cores) ) {
+    ## if no default provided, use 1 less than the total number of cores available so the computer
+    ## will still function
+    cores <- detectCores() - 1
+    if ( cores > n.traits ) {
+      cores <- n.traits
+    }
+  }
+
+  if ( parallel ) {
+    split.log = FALSE  ## no standard output if processing all in parallel
+    cat( 'note: standard output is partially suppressed for parallel processing.\n' )
+  } else {
+    cores = 1  ## this defaults mclapply() to lapply()
+    split.log = TRUE  ## restore standard output if processing all sequentially
+  }
+
+
+  .sumstats.process <- function(X) {
+  ## Work horse for the mclapply() call
+
+    i = X
+
+    log.file <- paste0( log.prefix, '_', make.names( trait.names[i] ), '.log' )
+    sink(log.file, append=FALSE, split=split.log)
+
+    names.beta <- paste0("beta.",trait.names)
+    names.se <- paste0("se.",trait.names)
+
+    writeLines( strwrap( paste0(
+      "Reading summary statistics for '", filenames[i], "'. ",
+      "Please note that this step usually takes a few minutes due to the size of the summary ",
+      "statistics files."
+    ) ) )
+    ##note that fread is not used here as we have observed different formatting for headers causing mismatched columns
+    tmpfile <- read.table( filenames[i], header=T, quote="\"", fill=T, na.string=c(".",NA,"NA","") )
+
+    writeLines( strwrap( paste0(
+      "Pre-processing summary statistics for '", filenames[i], "'."
+    ) ) )
+
+    names(tmpfile) <- GenomicSEM:::.sumstats.parse.header( tmpfile, maf.override=T )
+
+    # Compute N as N cases plus N controls if reported:
+    if ( "N_CAS" %in% colnames(tmpfile) && "N_CON" %in% colnames(tmpfile) ) {
+      tmpfile$N <- tmpfile$N_CAS + tmpfile$N_CON
+      cat(
+        "As the file includes both N_CAS and N_CON columns, the sum of these two columns will be",
+        "used as the total sample size.",
+        sep="\n"
+      )
+    }
+
+    if ( !is.null(N) && !is.na(N[i]) ) {
+      if ( "N" %in% colnames(tmpfile) ) {
+        writeLines( strwrap( paste(
+          "As the summary statistics file includes a sample size column, this is being used in",
+          "place of the user-provided sample size. If you wish to still use the provided sample",
+          "size, instead of the sample size reported in the summary statistics file, please change",
+          "the sample size column header to N2, for example. However, note that the sample size",
+          "is only used for LPM and OLS conversions."
+        ) ) )
+      } else {
+        tmpfile$N<-N[i]
       }
-    }else{int<-cores}
-    
-    
-    print("Performing conversions of individual summary statistics using parallel processing. Please note this step typically takes 10-20 minutes due to the size of the files.")
-    Output<-mclapply(X=1:n.traits,FUN=function(X){
-      i<-X
-      
-      log.file <- file(paste0(trait.names[i], "_sumstats.log"),open="wt")  
-      tmpfile<-read.table(filenames[i], header = T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
-      
-      cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-      cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-      
-      cat(print(paste("Preparing summary statistics for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-      
-      hold_names <- names(tmpfile)
-      names1<-hold_names
-      
-      if("SNP" %in% hold_names) cat(print(paste("Interpreting the SNP column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in% c("snp","SNP","snpid","rsID","SNPID","rsid","RSID","RS_NUMBER","rs_number","RS_NUMBERS","rs_numbers","MarkerName","Markername", "markername", "MARKERNAME")] <- "SNP"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the SNP column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("A1" %in% hold_names) cat(print(paste("Interpreting the A1 column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("a1","A1","allele1","Allele1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","Effect_allele", "Effect_Allele")] <- "A1"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the A1 column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("A2" %in% hold_names) cat(print(paste("Interpreting the A2 column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("a2","A2","allele2","Allele2","ALLELE2","ALLELE0","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA","Other_allele", "Other_Allele", "Non_Effect_allele", "Non_Effect_Allele")]  <- "A2"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the A2 column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("OR","or","B","Beta","beta","BETA","LOG_ODDS","EFFECTS","Effect_Beta","EFFECT","SIGNED_SUMSTAT", "Effect","Z","Zscore","b")] <- "effect"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("INFO" %in% hold_names) cat(print(paste("Interpreting the INFO column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("INFO","info")] <- "INFO"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the INFO column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("SE" %in% hold_names) cat(print(paste("Interpreting the SE column as the SE column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("se", "sebeta", "StdErr", "SE", "SEBETA")] <- "SE"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the SE column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("P" %in% hold_names) cat(print(paste("Interpreting the P column as the P column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("P","p","PVALUE","Pval","pvalue","P_VALUE","P_value","P-value","p-value","P.value","p_value","PVAL","pval","P_VAL","p_val","GC_PVALUE","gc_pvalue", "P_Value", "Pvalue")] <- "P"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the P column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("N" %in% hold_names) cat(print(paste("Interpreting the N column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("N","WEIGHT","nCompleteSamples", "TotalSampleSize", "TotalN", "Total_N")] <- "N"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N (sample size) column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("N_CAS" %in% hold_names) cat(print(paste("Interpreting the N_CAS column as the N_CAS (sample size for cases) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CAS (sample size for cases) column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("N_CON" %in% hold_names) cat(print(paste("Interpreting the N_CON column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CON (sample size for controls) column."),file=log.file,sep="\n",append=TRUE)
-      
-      # Print a message for misisng P value, rs, effect or allele column
-      if(sum(hold_names %in% "P") == 0) cat(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A1") == 0) cat(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A2") == 0) cat(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "effect") == 0) cat(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "SNP") == 0) cat(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
-      
-      # Print a warning message when multiple columns interpreted as P-values, rsID, effect or allele columns
-      if(sum(hold_names %in% "P") > 1) cat(paste0('Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted as P to P2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A1") > 1) cat(paste0('Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want interpreted as effect allele column to A1_2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A2") > 1) cat(paste0('Multiple columns are being interpreted as the other allele column. Try renaming the column you dont want interpreted as the other allele column to A2_2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "effect") > 1) cat(paste0('Multiple columns are being interpreted as the beta or effect column. Try renaming the column you dont want interpreted as the beta or effect column to effect2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "SNP") > 1) cat(paste0('Multiple columns are being interpreted as the rs-id column. Try renaming the column you dont want interpreted as rs-id to SNP2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
-      
-      # Throw warnings for misisng P valuue, rs, effect or allele columns
-      if(sum(hold_names %in% "P") == 0) warning(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i]))
-      if(sum(hold_names %in% "A1") == 0) warning(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i]))
-      if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]))
-      if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]))
-      if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]))
-      
-      ##rename common MAF labels
-      names1<-hold_names
-      if("MAF" %in% hold_names) cat(paste("Interpreting the MAF column as the MAF (minor allele frequency) column."),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in% c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF"
-      if(length(setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the MAF (minor allele frequency) column."),file=log.file,sep="\n",append=TRUE)
-      
-      ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
-      hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF_Other"
-      
-      names(tmpfile) <- hold_names
-      
-      # Compute N as N cases and N control if reported:
-      if("N_CAS" %in% colnames(tmpfile) & "N_CON" %in% colnames(tmpfile)){
-        tmpfile$N <- tmpfile$N_CAS + tmpfile$N_CON
-        cat(print(paste("As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the total sample size")),file=log.file,sep="\n",append=TRUE)
-      }
-      
-      if("N" %in% colnames(tmpfile) & !(is.null(N))){
-        if(!(is.na(N[i]))){
-          cat(print(paste("As the summary statistics file includes a sample size column, this is being used in place of the user provided sample size. If the user wishes to still use the provided sample size, as opposed to the sample size listed in the summary statistics file, please change the sample size column header to N2. However, we note that sample size is only used for LPM and OLS conversions.")),file=log.file,sep="\n",append=TRUE)
-        }}
-      
-      if(!(is.null(N)) & !("N" %in% colnames(tmpfile))){
-        if(!(is.na(N[i]))){
-          tmpfile$N<-N[i]
-        }}
-      
+    }
+
+    if ( keep.indel ) {
+      tmpfile$A1 <- factor(toupper(tmpfile$A1))
+      tmpfile$A2 <- factor(toupper(tmpfile$A2))
+      cat(
+        "Keeping variants other than SNPs: this may cause problems when aligning alleles across",
+        "trait summary statistics and reference file.",
+        sep="\n"
+      )
+    } else {
       ##make sure all alleles are upper case for matching
       tmpfile$A1 <- factor(toupper(tmpfile$A1), c("A", "C", "G", "T"))
       tmpfile$A2 <- factor(toupper(tmpfile$A2), c("A", "C", "G", "T"))
-      
-      ##merge with ref file
-      cat(print(paste("Merging file:", filenames[i], "with the reference file:", ref)),file=log.file,sep="\n",append=TRUE)
-      b<-nrow(tmpfile)
-      cat(print(paste(b, "rows present in the full", filenames[i], "summary statistics file.")),file=log.file,sep="\n",append=TRUE)
-      tmpfile <- suppressWarnings(inner_join(ref,tmpfile,by="SNP",all.x=F,all.y=F))
-      cat(print(paste((b-nrow(tmpfile)), "rows were removed from the", filenames[i], "summary statistics file as the rsIDs for these SNPs were not present in the reference file.")),file=log.file,sep="\n",append=TRUE)
-      
-      ##remove any rows with missing p-values
-      b<-nrow(tmpfile)
-      if("P" %in% colnames(tmpfile)) {
-        tmpfile<-subset(tmpfile, !(is.na(tmpfile$P)))
-      }
-      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the P-value column")),file=log.file,sep="\n",append=TRUE)
-      
-      ##remove any rows with missing effects
-      b<-nrow(tmpfile)
-      if("effect" %in% colnames(tmpfile)) {
-        tmpfile<-subset(tmpfile, !(is.na(tmpfile$effect)))
-      }
-      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the effect column")),file=log.file,sep="\n",append=TRUE)
-      
-      ##determine whether it is OR or logistic/continuous effect based on median effect size 
-      a1<-tmpfile$effect[[1]]
-      tmpfile$effect<-ifelse(rep(round(median(tmpfile$effect,na.rm=T)) == 1,nrow(tmpfile)), log(tmpfile$effect),tmpfile$effect)
-      a2<-tmpfile$effect[[1]]
-      if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
-      if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
+#       cat(
+#         "Removing variants other than SNPs, e.g., indels. To change this behavior set",
+#         "keep.indel=TRUE in the function call.",sep="\n"
+#       )
+    }
 
+    ##merge with reference file
+    writeLines( strwrap( paste("Merging file:", filenames[i], "with the reference file:", reference) ) )
+    b<-nrow(tmpfile)
+    writeLines( strwrap( paste(b, "rows present in the full", filenames[i], "summary statistics file.") ) )
+    tmpfile <- suppressWarnings(inner_join(ref,tmpfile,by="SNP",all.x=F,all.y=F))
+    writeLines( strwrap( paste(
+      (b-nrow(tmpfile)), "rows were removed from the", filenames[i], "summary statistics file as",
+      "the rsIDs for these SNPs were not present in the reference file."
+    ) ) )
 
-     ##remove any rows printed as exactly 0
+    ##remove any rows with missing p-values
+    b<-nrow(tmpfile)
+    if ("P" %in% colnames(tmpfile)) {
+      tmpfile<-subset(tmpfile, !(is.na(tmpfile$P)))
+    }
+    if (b-nrow(tmpfile) > 0) writeLines( strwrap( paste(
+      b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to",
+      "missing values in the P-value column."
+    ) ) )
 
+    ##check that p-value column does not contain an excess of 1s/0s
+    if ((sum(tmpfile$P > 1) + sum(tmpfile$P < 0)) > 100) writeLines( strwrap(
+      "More than 100 SNPs have P-value above 1 or below 0. The P column may be mislabled!"
+    ) )
 
+    ##remove any rows with missing effects
+    b<-nrow(tmpfile)
+    if ("EFFECT" %in% colnames(tmpfile)) {
+      tmpfile<-subset(tmpfile, !(is.na(tmpfile$EFFECT)))
+    }
+    if (b-nrow(tmpfile) > 0) writeLines( strwrap( paste(
+      b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to",
+      "missing values in the effect column."
+    ) ) )
+
+    ##remove SNPs that don't match A1 or A2 in the reference file.
+    b<-nrow(tmpfile)
+    tmpfile<-subset(tmpfile, !(tmpfile$A1.x != (tmpfile$A1.y) & tmpfile$A1.x != (tmpfile$A2.y)))
+    if (b-nrow(tmpfile) > 0) writeLines( strwrap( paste(
+      b-nrow(tmpfile), "row(s) were removed from the", filenames[i], "summary statistics file due",
+      "to the effect allele (A1) column not matching A1 or A2 in the reference file."
+    ) ) )
+    b<-nrow(tmpfile)
+    tmpfile<-subset(tmpfile, !(tmpfile$A2.x != (tmpfile$A2.y) & tmpfile$A2.x != (tmpfile$A1.y)))
+    if (b-nrow(tmpfile) > 0) writeLines( strwrap( paste(
+      b-nrow(tmpfile), "row(s) were removed from the", filenames[i], "summary statistics file due",
+      "to the other allele (A2) column not matching A1 or A2 in the reference file."
+    ) ) )
+
+    ##check the presence of SE, needed for some of GenomicSEM's functionality
+    if (sum(colnames(tmpfile) %in% "SE") == 0)
+      writeLines( strwrap( paste( 'Cannot find a SE column, try renaming it SE in', filenames[i] ) ) )
+    if (sum(colnames(tmpfile) %in% "SE") == 0)
+      warning( paste( 'Cannot find a SE column, try renaming it SE in', filenames[i] ) )
+
+    ##check the presence of INFO
+    if ("INFO" %in% colnames(tmpfile)) {
       b<-nrow(tmpfile)
-      if("effect" %in% colnames(tmpfile)){
-        tmpfile<-subset(tmpfile, tmpfile$effect != 0)
+      tmpfile <- tmpfile[tmpfile$INFO >= info.filter,]
+      writeLines( strwrap( paste0(
+        b-nrow(tmpfile), "rows were removed from the '", filenames[i], "' summary statistics due ",
+        "to INFO values below the designated threshold of ", info.filter, "."
+      ) ) )
+    } else {
+      writeLines( strwrap( "No INFO column, cannot filter on INFO, which may influence results." ) )
+    }
+
+    ##determine whether it is OR or logistic/continuous effect based on median effect size
+    EFFECT.untransf<-tmpfile$EFFECT[[1]]
+    tmpfile$EFFECT<-ifelse(
+      rep(round(median(tmpfile$EFFECT,na.rm=T)) == 1,nrow(tmpfile)),
+      log(tmpfile$EFFECT),
+      tmpfile$EFFECT
+    )
+    EFFECT.transf<-tmpfile$EFFECT[[1]]
+    if (EFFECT.untransf == EFFECT.transf) {
+      writeLines( strwrap( paste(
+        "The values in the effect column were NOT identified as odds ratios (OR) for the", filenames[i],
+        "summary statistics file based on the median of the effect column being close to 0.",
+        "Please, make sure that this was the correct interpretation."
+      ) ) )
+    } else {
+      writeLines( strwrap( paste(
+        "The values in the effect column were identified as odds ratios (OR) for the", filenames[i],
+        "summary statistics file based on the median of the effect column being close to 1.",
+        "Please, make sure that this was the correct interpretation."
+      ) ) )
+    }
+
+    ##flip effect to match ordering in reference file
+    tmpfile$EFFECT <- ifelse(
+      tmpfile$A1.x != (tmpfile$A1.y) & tmpfile$A1.x == (tmpfile$A2.y),
+      -tmpfile$EFFECT,
+      tmpfile$EFFECT
+    )
+
+    ##remove any rows printed as exactly 0
+    b<-nrow(tmpfile)
+    if("EFFECT" %in% colnames(tmpfile)) {
+      tmpfile<-subset(tmpfile, tmpfile$EFFECT != 0)
+    }
+    if(b-nrow(tmpfile) > 0) writeLines( strwrap( paste(
+      b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to",
+      "effect values estimated as exactly 0, which cause problems for matrix inversion in later",
+      "Genomic SEM analyses.") ) )
+
+    ##compute the variants' variances
+    varSNP <- 2 * tmpfile$MAF * (1-tmpfile$MAF)
+
+    if (model[i] == 'LOG') {
+      writeLines( strwrap( paste( "LOG transformation is being used for file:", filenames[i] ) ) )
+      ##correction factor for logistic regression coefficients
+      logCF <- 1 / ((tmpfile$EFFECT^2) * varSNP + (pi^2)/3)^.5
+      tmpfile$SE <- tmpfile$SE * logCF
+      if (se.logit[i]) {
+        writeLines( strwrap( paste(
+          "Performing transformation under the assumption that the effect column is an odds ratio",
+          "or a logarithm of one (please see output above to determine how it was interpreted) and",
+          "the SE column is the standard error of the latter (i.e., in the logistic scale) for:",
+          filenames[i]
+        ) ) )
+      } else {
+        writeLines( strwrap( paste(
+          "Performing transformation under the assumption that the effect column is an odds ratio",
+          "or a logarithm of one (please see output above to determine how it was interpreted) and",
+          "the SE column is the standard error of the former (i.e. NOT in the logistic scale) for:",
+          filenames[i]
+        ) ) )
+        tmpfile$SE <- tmpfile$SE / exp(tmpfile$EFFECT)
       }
-      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
-      
-      if(OLS[i] == T){
-        cat(print(paste("An OLS transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        tmpfile$Z <- sign(tmpfile$effect) * sqrt(qchisq(tmpfile$P,1,lower=F))
-        
-        if("N" %in% colnames(tmpfile)){
-          tmpfile$effect <- tmpfile$Z/ sqrt(tmpfile$N * 2 * (tmpfile$MAF *(1-tmpfile$MAF)))}else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
-      
-      
-      if(linprob[i] == T){
-        cat(print(paste("An LPM transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        tmpfile$Z <- sign(tmpfile$effect) * sqrt(qchisq(tmpfile$P,1,lower=F))
-        
-        if("N" %in% colnames(tmpfile)){
-          tmpfile$effect <- tmpfile$Z/sqrt((prop[i]*(1-prop[i])*(2*tmpfile$N*tmpfile$MAF*(1-tmpfile$MAF))))
-          tmpfile$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*tmpfile$N*tmpfile$MAF*(1-tmpfile$MAF))))}else{cat(print("ERROR: A Sample Size (N) is needed for LPM Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
-      
-      # Flip effect to match ordering in ref file
-      tmpfile$effect <-  ifelse(tmpfile$A1.x != (tmpfile$A1.y) & tmpfile$A1.x == (tmpfile$A2.y),tmpfile$effect*-1,tmpfile$effect)
-      
-      ##remove SNPs that don't match A1 or A2 in reference file.
-      b<-nrow(tmpfile)
-      tmpfile<-subset(tmpfile, !(tmpfile$A1.x != (tmpfile$A1.y)  & tmpfile$A1.x != (tmpfile$A2.y)))
-      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "row(s) were removed from the", filenames[i], "summary statistics file due to the effect allele (A1) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
-      
-      b<-nrow(tmpfile)
-      tmpfile<-subset(tmpfile, !(tmpfile$A2.x != (tmpfile$A2.y)  & tmpfile$A2.x !=  (tmpfile$A1.y)))
-      if(b-nrow(tmpfile) > 0) cat(print(paste(b-nrow(tmpfile), "row(s) were removed from the", filenames[i], "summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
-      
-      #Check that p-value column does not contain an excess of 1s/0s
-      if((sum(tmpfile$P > 1) + sum(tmpfile$P < 0)) > 100){
-        cat(print("In excess of 100 SNPs have P val above 1 or below 0. The P column may be mislabled!"),file=log.file,sep="\n",append=TRUE)
-      }
-      
-      if("INFO" %in% colnames(tmpfile)) {
-        b<-nrow(tmpfile)
-        tmpfile <- tmpfile[tmpfile$INFO >= info.filter,]
-        cat(print(paste(b-nrow(tmpfile), "rows were removed from the", filenames[i], "summary statistics file due to INFO values below the designated threshold of", info.filter)),file=log.file,sep="\n",append=TRUE)
-      }else{cat(print("No INFO column, cannot filter on INFO, which may influence results"),file=log.file,sep="\n",append=TRUE)}
-      
-      varSNP<-2*tmpfile$MAF*(1-tmpfile$MAF)  
-      
-      if(OLS[i] == T){
-        output <- cbind.data.frame(tmpfile$SNP,
-                                   tmpfile$effect,
-                                   abs(tmpfile$effect/tmpfile$Z))
-        output<-na.omit(output)                           
-        colnames(output) <- c("SNP",names.beta[i],names.se[i])                           
-      }
-      
-      if(linprob[i] == T){
-        output<-cbind.data.frame(tmpfile$SNP,
-                                 (tmpfile$effect)/((tmpfile$effect^2) * varSNP + (pi^2)/3)^.5,
-                                 (tmpfile$SE)/(((tmpfile$effect)^2) * varSNP + (pi^2)/3)^.5)  
-        output<-na.omit(output)
-        output<-output[apply(output!=0, 1, all),]
-        colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
-      }
-      
-      if(linprob[i] == F){
-        if(OLS[i] == F){                                     
-          if(se.logit[i] == F){
-            cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-            
-            if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
-            if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
-            
-            output <- cbind.data.frame(tmpfile$SNP,
-                                       (tmpfile$effect)/((tmpfile$effect^2) * varSNP + (pi^2)/3)^.5,
-                                       (tmpfile$SE/exp(tmpfile$effect))/(((tmpfile$effect)^2 * varSNP + (pi^2)/3)^.5))
-            output<-na.omit(output)  
-            colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
-      
-      if(se.logit[i]== T){
-        cat(print(paste("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is a logistic SE (i.e., NOT the SE of the odds ratio) for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        if(sum(hold_names %in% "SE") == 0) cat(print(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
-        if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
-        
-        output <- cbind.data.frame(tmpfile$SNP,
-                                   (tmpfile$effect)/((tmpfile$effect^2) * varSNP + (pi^2)/3)^.5,
-                                   (tmpfile$SE)/(((tmpfile$effect)^2) * varSNP + (pi^2)/3)^.5)  
-        output<-na.omit(output)  
-        colnames(output) <- c("SNP",names.beta[i],names.se[i])}
-      
-      cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC and merging with the reference file.")),file=log.file,sep="\n",append=TRUE)
-      
-      output
-      
-    },mc.cores=int)
-    
-    for(i in 1:n.traits){
-      if(i == 1){
-        data.frame.out <- suppressWarnings(inner_join(data.frame.out,Output[[i]],by="SNP",all.x=F,all.y=F))
-      }else{
-        data.frame.out <- suppressWarnings(inner_join(data.frame.out,Output[[i]],by="SNP",all.x=F,all.y=F)) 
+      tmpfile$EFFECT <- tmpfile$EFFECT * logCF
+    }
+
+    if (model[i] == 'LPM') {
+      writeLines( strwrap( paste( "LPM transformation is being used for file:", filenames[i] ) ) )
+      tmpfile$Z <- sign(tmpfile$EFFECT) * sqrt(qchisq(tmpfile$P,1,lower=F))
+      if ("N" %in% colnames(tmpfile) && is.finite(prev[i])) {
+        tmpfile$SE <- 1 / sqrt( prev[i]*(1-prev[i]) * tmpfile$N * varSNP )
+        tmpfile$EFFECT <- tmpfile$Z * tmpfile$SE
+        ##correction factor for logistic regression coefficients (uses the re-estimated effect)
+        logCF <- 1 / ((tmpfile$EFFECT^2) * varSNP + (pi^2)/3)^.5
+        tmpfile$SE <- tmpfile$SE * logCF
+        tmpfile$EFFECT <- tmpfile$EFFECT * logCF
+      } else {
+        writeLines( strwrap( paste(
+          "ERROR: sample size (N) and prevalence (prev) are needed for LPM Standardization.",
+          "Please, provide prev as argument to the function and either do the same for N or try",
+          "changing the name of the sample size column to N."
+        ) ) )
       }
     }
+
+    if (model[i] == 'OLS') {
+      writeLines( strwrap( paste( "OLS transformation is being used for file:", filenames[i] ) ) )
+      tmpfile$Z <- sign(tmpfile$EFFECT) * sqrt(qchisq(tmpfile$P,1,lower=F))
+      if ("N" %in% colnames(tmpfile)) {
+        tmpfile$SE <- 1 / sqrt( tmpfile$N * varSNP )
+        tmpfile$EFFECT <- tmpfile$Z * tmpfile$SE
+      } else {
+        writeLines( strwrap( paste(
+          "ERROR: the sample size (N) is needed for OLS Standardization. Please, either provide",
+          "the sample size N as argument to the function or try changing the name of the sample",
+          "size column to N."
+        ) ) )
+      }
+    }
+
+    output <- cbind.data.frame( tmpfile$SNP,
+                                tmpfile$EFFECT,
+                                tmpfile$SE )
+    output <- na.omit(output)
+    output <- output[apply(output!=0, 1, all),]
+    colnames(output) <- c("SNP",names.beta[i],names.se[i])
+
+    writeLines( strwrap( paste(
+      nrow(output), "SNPs are left from the summary statistics file", filenames[i], "after QC and",
+      "merging with the reference file."
+    ) ) )
+
+    cat( '\n\n' )
+
+    sink()
+
+    output
+
   }
-  
+
+
+  print("Reading in reference file.")
+  ref <- fread(file=reference,header=T,data.table=F)
+
+  ##filter reference file on user provided maf.filter
+  cat("Applying MAF filer of", maf.filter, "to the reference file.\n")
+  ref<-subset(ref, ref$MAF >= maf.filter)
+
+  data.frame.out <- ref
+
+  data.frame.tmp <- mclapply(1:n.traits, .sumstats.process, mc.cores=cores)
+
+  for ( i in 1:length(data.frame.tmp) ) data.frame.out <-
+    suppressWarnings(inner_join(data.frame.out,data.frame.tmp[[i]],by="SNP",all.x=F,all.y=F))
+
   b<-nrow(data.frame.out)
   #data.frame.out<-data.frame.out[!duplicated(data.frame.out$BP),]
-  
+
   end.time <- Sys.time()
-  
+
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
   mins <- floor(floor(total.time)/60)
   secs <- total.time-mins*60
-  
-  if(parallel == FALSE){
-    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-    #cat(print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values")),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = ""),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste0("Sumstats finished running at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste("Please check the log file", sumstats.log, "to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files.")),file=log.file,sep="\n",append=TRUE)
-  }
-  
-  if(parallel == TRUE){
-    #print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values"))
-    print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = "") 
-    print(paste0("Sumstats finished running at ",end.time), sep = "")
-    print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = "")
-    print(paste0("Please check the log files to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files."))
-  }
-  
+
+  writeLines( strwrap( paste0( 
+    "After merging all summary statistics using listwise deletion, performing QC, and merging ",
+    "with the reference, ", nrow(data.frame.out), " SNPs are left in the final multivariate ",
+    "summary statistics file."
+  ) ) )
+  writeLines( strwrap( paste0( 
+    "Finished running at ", end.time, "."
+  ) ) )
+  writeLines( strwrap( paste0( 
+    "Running sumstats for all files took ", mins," minutes and ", secs," seconds."
+  ) ) )
+  writeLines( strwrap( paste0( 
+    "Please check the log file(s) '", log.prefix, "_*.log' to ensure that all columns were ",
+    "interpreted correctly and no warnings were issued for any of the summary statistics files."
+  ) ) )
+
   data.frame.out
-  
+
 }
+
