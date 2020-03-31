@@ -1,4 +1,5 @@
 commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL){ 
+  
   time<-proc.time()
   
   print("Please note that an update was made to commonfactorGWAS on 11/21/19 so that it combines addSNPs and commonfactorGWAS.")
@@ -37,7 +38,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       #small number because treating MAF as fixed
       if(SNPSE == FALSE){
-        varSNPSE2=(.00000001)^2
+        varSNPSE2=(.0005)^2
       }
       
       if(SNPSE != FALSE){
@@ -47,6 +48,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       V_LD<-as.matrix(covstruc[[1]])
       S_LD<-as.matrix(covstruc[[2]])
       I_LD<-as.matrix(covstruc[[3]])
+    
+      check_names<-str_detect(colnames(S_LD), "-")
+      if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
       
       beta_SNP<-SNPs[,grep("beta.",fixed=TRUE,colnames(SNPs))] 
       SE_SNP<-SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))] 
@@ -198,7 +202,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         ks<-nrow(S_Fullrun)
         smooth1<-ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
         
-        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         
         order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Fullrun))
       }
@@ -390,7 +394,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
             
           }else{
-            results[i,]<-data.frame(i,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+            results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
           } 
         }
       }
@@ -575,7 +579,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
             
           }else{
-            results[i,]<-data.frame(i,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+            results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
           }
         }
       }
@@ -600,6 +604,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       #enter in k for number of phenotypes 
       k<-ncol(S_Full[[1]])-1
+      
+      check_names<-str_detect(colnames(S_Full[[1]]), "-")
+      if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
       
       ##number of models being run
       f<-length(Output[[1]])
@@ -678,7 +685,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         
         S_Fullrun<-S_Full[[i]]
         
-        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         
         order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]]))
       }
@@ -805,7 +812,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
             
           }else{
-            results[i,]<-data.frame(i,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+            results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
           } 
         }
       }
@@ -928,7 +935,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
             
           }else{
-            results[i,]<-data.frame(i,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+            results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
           }
         }
       }
@@ -974,7 +981,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       #small number because treating MAF as fixed
       if(SNPSE == FALSE){
-        varSNPSE2=(.00000001)^2
+        varSNPSE2=(.0005)^2
       }
       
       if(SNPSE != FALSE){
@@ -985,6 +992,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       S_LD<-as.matrix(covstruc[[2]])
       I_LD<-as.matrix(covstruc[[3]])
       
+      check_names<-str_detect(colnames(S_LD), "-")
+      if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
+     
       beta_SNP<-SNPs[,grep("beta.",fixed=TRUE,colnames(SNPs))] 
       SE_SNP<-SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))] 
       
@@ -999,9 +1009,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -1136,7 +1146,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         ks<-nrow(S_Fullrun)
         smooth1<-ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
         
-        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         
         order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Fullrun))
       }
@@ -1146,7 +1156,6 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
 
       #split the V_SNP and S_SNP matrices into as many (cores - 1) as are aviailable on the local computer
       #SNPs2<-suppressWarnings(split(SNPs2,1:int))
-
       beta_SNP<-suppressWarnings(split(beta_SNP,1:int))
       SE_SNP<-suppressWarnings(split(SE_SNP,1:int))
       varSNP<-suppressWarnings(split(varSNP,1:int))
@@ -1316,7 +1325,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
               ##pull all the results into a single row
               cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
             }else{
-              cbind(i,n,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+              se<-NA
+              se_c<-NA
+              Q<-NA
+              cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],se,se_c,Q,ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
             } 
           }
       }
@@ -1488,7 +1500,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
               ##put the corrected standard error and Q in same dataset
               cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
             }else{
-              cbind(i,n,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+              se<-NA
+              se_c<-NA
+              Q<-NA
+              cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],se,se_c,Q,ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
             }
             
           }
@@ -1519,6 +1534,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       ##split the V and S matrices into as many (cores - 1) as are aviailable on the local computer
       V_Full<-suppressWarnings(split(Output[[1]],1:int))
       S_Full<-suppressWarnings(split(Output[[2]],1:int))
+      
+      check_names<-str_detect(colnames(S_Full[[1]][[1]]), "-")
+      if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
       
       #enter in k for number of phenotypes 
       k<-ncol(S_Full[[1]][[1]])-1
@@ -1603,7 +1621,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         
         S_Fullrun<-S_Full[[1]][[i]]
         
-        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         if(class(test2$value)[1]=="lavaan"){
           order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))}else{
             i<-10
@@ -1618,7 +1636,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             
             S_Fullrun<-S_Full[[1]][[i]]
             
-            test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+            test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
             
             order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
           }
@@ -1732,7 +1750,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
               ##pull all the results into a single row
               cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
             }else{
-              cbind(i,n,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+              se<-NA
+              se_c<-NA
+              Q<-NA
+              cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],se,se_c,Q,ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
             } 
           }
       }
@@ -1835,7 +1856,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
               ##put the corrected standard error and Q in same dataset
               cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
             }else{
-              cbind(i,n,rep(NA,7),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+              se<-NA
+              se_c<-NA
+              Q<-NA
+              cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],se,se_c,Q,ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
             }
             
           }
