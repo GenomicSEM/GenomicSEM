@@ -141,7 +141,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   LD_sdiff2<-max(diff2)
   
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
-  #transform V_LD matrix into a weight matrix:
+  #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
   
   tryCatch.W.E <- function(expr)
@@ -1154,6 +1154,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       modelfit$chisq<-ifelse(modelfit$df == 0, modelfit$chisq == NA, modelfit$chisq)
       modelfit$AIC<-ifelse(modelfit$df == 0, modelfit$AIC == NA, modelfit$AIC)
       modelfit$p_chisq<-ifelse(modelfit$df == 0, modelfit$p_chisq == NA, modelfit$p_chisq)
+      modelfit$SRMR<-ifelse(modelfit$df == 0, modelfit$SRMR == NA, modelfit$SRMR)
       if(CFIcalc == TRUE){
         order<-c(1,2,6,3,4,5)
         modelfit<-modelfit[,order]
@@ -1162,6 +1163,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
             warning(paste("CFI estimates below 0 should not be trusted, and indicate that the other model fit estimates should be interpreted with caution. A negative CFI estimates typically appears due to negative residual variances."))
           }
         }
+        modelfit$CFI<-ifelse(modelfit$df == 0, modelfit$CFI == NA, modelfit$CFI)
       } else {
         order<-c(1,2,5,3,4)
         modelfit<-modelfit[,order]
@@ -1171,6 +1173,9 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     time_all<-proc.time()-time
     print(time_all[3])
     
+    if(modelfit$df == 0){
+      print("Model fit statistics are all printed as NA as you have specified a fully saturated model (i.e., df = 0)")
+    }
     
     if(LD_sdiff > 0){
       print(paste("The S matrix was smoothed prior to model estimation due to a non-positive definite matrix. The largest
