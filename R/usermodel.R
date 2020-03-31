@@ -1147,6 +1147,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     
     modelfit<-data.frame(modelfit)
     
+     
     if(!(is.character(modelfit$chisq)) & !(is.factor(modelfit$chisq))){
       modelfit$chisq<-as.numeric(as.character(modelfit$chisq))
       modelfit$df<-as.numeric(as.character(modelfit$df))

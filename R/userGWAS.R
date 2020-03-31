@@ -41,7 +41,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       
       #small number because treating MAF as fixed
       if(SNPSE == FALSE){
-        varSNPSE2=(.00000001)^2
+        varSNPSE2=(.0005)^2
       }
       
       if(SNPSE != FALSE){
@@ -184,7 +184,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           }
           
           ##run the model to determine number of latent variables
-          suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Full, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+          suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Full, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
           
           if(class(suppress$value)[1]=="lavaan"){
             ##pull the column names specified in the munge function
@@ -260,7 +260,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               
               
               ##run the model to determine number of latent variables
-              suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Full, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+              suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Full, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
               traits<-colnames(S_Full)
               
             }
@@ -504,10 +504,13 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           colnames(S_Full) <- S_names
         }
         
-        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
-        
+        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
+     
         order <- rearrange(k = k2, fit = ReorderModel, names = rownames(S_Full))
         
+        df<-lavInspect(ReorderModel, "fit")["df"]
+        npar<-lavInspect(ReorderModel, "fit")["npar"]
+      
       }
       
       #make empty list object for model results
@@ -521,7 +524,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       if(estimation=="DWLS"){
         
         for (i in 1:f) { 
-          
+         
           #create empty shell of V_SNP matrix
           V_SNP<-diag(k)
           
@@ -607,7 +610,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           
           ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
           test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
-          
+       
           test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
           
           if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
@@ -831,9 +834,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               ##add in model fit components to each row
               if(!(is.na(Q_WLS))){
                 final$chisq<-rep(Q_WLS,nrow(final))
-                final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+                final$chisq_df<-df
                 final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-                final$AIC<-rep(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+                final$AIC<-rep(Q_WLS + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
                 final$chisq_df<-rep(NA,nrow(final))
                 final$chisq_pval<-rep(NA,nrow(final))
                 final$AIC<-rep(NA, nrow(final))}
@@ -843,10 +846,10 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(printwarn == TRUE){
               final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
               final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
-            
+           
             ##combine results with SNP, CHR, BP, A1, A2 for particular model
             final2<-cbind(SNPs2[i,],final,row.names=NULL)
-            
+        
             if(!(sub[[1]])==FALSE){
               final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
               if(i == 1){
@@ -905,7 +908,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             
           }
           
-          
+         
           if(i == 1){
             cat(paste0("Running Model: ", i, "\n"))
           }else{
@@ -1206,9 +1209,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               ##add in model fit components to each row
               if(!(is.na(Q_ML))){
                 final$chisq<-rep(Q_ML,nrow(final))
-                final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+                final$chisq_df<-df
                 final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-                final$AIC<-rep(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+                final$AIC<-rep(Q_ML + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
                 final$chisq_df<-rep(NA,nrow(final))
                 final$chisq_pval<-rep(NA,nrow(final))
                 final$AIC<-rep(NA, nrow(final))}
@@ -1361,7 +1364,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         S_Fulltest<-S_Full[[1]]
         
         ##run the model to determine number of latent variables
-        suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         
         ##pull the column names specified in the munge function
         traits<-colnames(S_Full[[1]])
@@ -1541,9 +1544,12 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         
         S_Fullrun<-S_Full[[i]]
         
-        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
         if(class(test2$value)[1]=="lavaan"){
           order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[i]]))
+          df<-lavInspect(ReorderModel, "fit")["df"]
+          npar<-lavInspect(ReorderModel, "fit")["npar"]
+          
         }else{
           i<-10
           #transform sampling covariance matrix into a weight matrix: 
@@ -1563,8 +1569,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           
           S_Fullrun<-S_Full[[i]]
           
-          test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+          test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
           order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[i]]))
+          df<-lavInspect(ReorderModel, "fit")["df"]
+          npar<-lavInspect(ReorderModel, "fit")["npar"]
+          
         }
       }
       
@@ -1826,9 +1835,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               ##add in model fit components to each row
               if(!(is.na(Q_WLS))){
                 final$chisq<-rep(Q_WLS,nrow(final))
-                final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+                final$chisq_df<-df
                 final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-                final$AIC<-rep(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+                final$AIC<-rep(Q_WLS + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
                 final$chisq_df<-rep(NA,nrow(final))
                 final$chisq_pval<-rep(NA,nrow(final))
                 final$AIC<-rep(NA, nrow(final))}
@@ -2126,9 +2135,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               ##add in model fit components to each row
               if(!(is.na(Q_ML))){
                 final$chisq<-rep(Q_ML,nrow(final))
-                final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+                final$chisq_df<-df
                 final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-                final$AIC<-rep(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+                final$AIC<-rep(Q_ML + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
                 final$chisq_df<-rep(NA,nrow(final))
                 final$chisq_pval<-rep(NA,nrow(final))
                 final$AIC<-rep(NA, nrow(final))}
@@ -2233,7 +2242,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       
       #small number because treating MAF as fixed
       if(SNPSE == FALSE){
-        varSNPSE2=(.00000001)^2
+        varSNPSE2=(.0005)^2
       }
       
       if(SNPSE != FALSE){
@@ -2376,7 +2385,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           }
           
           ##run the model to determine number of latent variables
-          suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Full, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+          suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Full, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
           
           if(class(suppress$value)[1]=="lavaan"){
             ##pull the column names specified in the munge function
@@ -2452,7 +2461,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               
               
               ##run the model to determine number of latent variables
-              suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Full, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+              suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Full, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
               traits<-colnames(S_Full)
               
             }
@@ -2698,9 +2707,12 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           colnames(S_Full) <- S_names
         }
         
-        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
         
         order <- rearrange(k = k2, fit = ReorderModel, names = rownames(S_Full))
+        df<-lavInspect(ReorderModel, "fit")["df"]
+        npar<-lavInspect(ReorderModel, "fit")["npar"]
+        
         
       }
       
@@ -3028,9 +3040,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 ##add in model fit components to each row
                 if(!(is.na(Q_WLS))){
                   final$chisq<-rep(Q_WLS,nrow(final))
-                  final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+                  final$chisq_df<-df
                   final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-                  final$AIC<-rep(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+                  final$AIC<-rep(Q_WLS + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
                   final$chisq_df<-rep(NA,nrow(final))
                   final$chisq_pval<-rep(NA,nrow(final))
                   final$AIC<-rep(NA, nrow(final))}
@@ -3375,9 +3387,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               ##add in model fit components to each row
               if(!(is.na(Q_ML))){
                 final$chisq<-rep(Q_ML,nrow(final))
-                final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+                final$chisq_df<-df
                 final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-                final$AIC<-rep(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+                final$AIC<-rep(Q_ML + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
                 final$chisq_df<-rep(NA,nrow(final))
                 final$chisq_pval<-rep(NA,nrow(final))
                 final$AIC<-rep(NA, nrow(final))}
@@ -3513,7 +3525,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         S_Fulltest<-S_Full[[1]][[1]]
         
         ##run the model to determine number of latent variables
-        suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+        suppress<-tryCatch.W.E(ReorderModel1 <- sem(model, sample.cov = S_Fulltest, estimator = "DWLS", WLS.V = W_test, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
         
         ##pull the column names specified in the munge function
         traits<-colnames(S_Full[[1]][[1]])
@@ -3691,9 +3703,12 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         
         S_Fullrun<-S_Full[[1]][[i]]
         
-        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+        test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
         if(class(test2$value)[1]=="lavaan"){
           order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
+          df<-lavInspect(ReorderModel, "fit")["df"]
+          npar<-lavInspect(ReorderModel, "fit")["npar"]
+          
         }else{
           i<-10
           
@@ -3713,9 +3728,12 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           
           S_Fullrun<-S_Full[[1]][[i]]
           
-          test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE))
+          test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
           
           order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
+          df<-lavInspect(ReorderModel, "fit")["df"]
+          npar<-lavInspect(ReorderModel, "fit")["npar"]
+          
         }
         
       }
@@ -3976,9 +3994,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 ##add in model fit components to each row
                 if(!(is.na(Q_WLS))){
                   final$chisq<-rep(Q_WLS,nrow(final))
-                  final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+                  final$chisq_df<-df
                   final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-                  final$AIC<-rep(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+                  final$AIC<-rep(Q_WLS + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
                   final$chisq_df<-rep(NA,nrow(final))
                   final$chisq_pval<-rep(NA,nrow(final))
                   final$AIC<-rep(NA, nrow(final))}
@@ -4250,9 +4268,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               ##add in model fit components to each row
               if(!(is.na(Q_ML))){
                 final$chisq<-rep(Q_ML,nrow(final))
-                final$chisq_df<-lavInspect(Model1_Results, "fit")["df"]
+                final$chisq_df<-df
                 final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-                final$AIC<-rep(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"],nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+                final$AIC<-rep(Q_ML + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
                 final$chisq_df<-rep(NA,nrow(final))
                 final$chisq_pval<-rep(NA,nrow(final))
                 final$AIC<-rep(NA, nrow(final))}
@@ -4315,4 +4333,4 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
   if(parallel == TRUE & Operating == "Windows"){
     stop("Parallel processing is not currently available for Windows operating systems. Please set the parallel argument to FALSE, or switch to a Linux or Mac operating system.")
   }
-  }
+}

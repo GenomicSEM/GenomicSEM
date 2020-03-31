@@ -27,7 +27,7 @@ addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=FALSE,cores=NULL){
   
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
-    varSNPSE2=(.00000001)^2
+    varSNPSE2=(.0005)^2
   }
   
   if(SNPSE != FALSE){

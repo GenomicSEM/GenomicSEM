@@ -5,6 +5,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   sink(log.file, append=FALSE, split=TRUE)
 
   cat(paste0("Multivariate LD-score regression of ", length(traits), " traits ", "(", paste(trait.names,collapse=", "), ")", " began at: ", begin.time), sep = "")
+
   # Dimensions
   n.traits <- length(traits)
   n.V <- (n.traits^2 / 2) + .5*n.traits
@@ -230,7 +231,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         mean.Chi <- mean(merged$chi1)
         ratio <- (intercept-1)/(mean(merged$chi1)-1)
         ratio.se <- intercept.se/(mean(merged$chi1)-1)
-        
+         
         cat("Results for trait",chi1,"\n")
         cat("Lambda GC:",round(lambda.gc,4),"\n")
         cat("Mean Chi^2:",round(mean.Chi,4),"\n")
@@ -281,8 +282,9 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged <- merge(x=merged,y=x,by="SNP")
         merged <- merged[with(merged,order(CHR,BP)),]
         remaining.snps <- nrow(merged)
-        cat(remaining.snps,"SNPs remaining","after merging the files","\n")
         
+        cat(print(paste(remaining.snps,"SNPs remaining after merging the files with LD-score files")),file=log.file,sep="\n",append=TRUE)
+      
         ## REMOVE SNPS with excess chi-square:
         chisq.max1 <- max(0.001*max(merged$N.x),80)
         merged <- merged[merged$chi1 < chisq.max1,]
@@ -293,8 +295,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         n.snps <- nrow(merged)
         removed.snps <- remaining.snps-n.snps
         
-        cat("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max1, "for", chi1, "or SNPs with Chi^2 >",chisq.max2, "for", chi2, paste0("(",n.snps," SNPs remain)"),"\n")
-       
+        cat(print(paste("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max1, "for", chi1, "or SNPs with Chi^2 >",chisq.max2, "for", chi2, paste0("(",n.snps," SNPs remain)"))),file=log.file,sep="\n",append=TRUE)
+        
         ## ADD INTERCEPT:
         merged$intercept <- 1
         merged$x.tot <- merged$L2
@@ -327,7 +329,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged$weights_cov <- (merged$initial.w + merged$initial.w2)/sum(merged$initial.w + merged$initial.w2)
         
         N.bar <- sqrt(mean(merged$N.x)*mean(merged$N.y))
-         
+        
         ## preweight LD and chi:
         
         weighted.LD <- as.matrix(cbind(merged$L2,merged$intercept)*merged$weights)
@@ -372,8 +374,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         }
         
         tot.delete.values <- delete.values[,1:n.annot]
-        #end.delete.values <- (tot.delete.values %*% m)/N.bar
-        #write.table(x=end.delete.values,file=paste0(out,".end.del.val.txt"),quote=F,sep="\t",row.names=F)
         pseudo.values <- matrix(data=NA,nrow=n.blocks,ncol=length(reg))
         colnames(pseudo.values) <- colnames(weighted.LD)
         for(i in 1:n.blocks) pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1) * delete.values[i,])
@@ -382,7 +382,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         jackknife.se <- sqrt(diag(jackknife.cov))
         intercept.se <- jackknife.se[length(jackknife.se)]
         coef.cov <- jackknife.cov[1:n.annot,1:n.annot]/(N.bar^2)
-        #write.table(x=coef.cov,file=paste0(out,".coef.cov.txt"),quote=F,sep="\t")
         cat.cov <- coef.cov*(m %*% t(m))
         tot.cov <- sum(cat.cov)
         tot.se <- sqrt(tot.cov)
@@ -408,7 +407,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         cat("Mean Z*Z:",round(mean.ZZ,4),"\n")
         cat("Cross trait Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n")
         cat("cov_g:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
-        
+      
         ### Total count
         s <- s+1
         
@@ -424,8 +423,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   
   ### Scale S and V to liability:
   S.mat <- diag(as.vector(sqrt(liab.scale.conv.fact))) %*% Gcov.mat %*% diag(as.vector(sqrt(liab.scale.conv.fact)))
-  
-  ##Elliot Method
   
   #calculate the ratio of the rescaled and original S matrices
   scaleO=as.vector(lowerTriangle((S.mat/Gcov.mat),diag=T))
