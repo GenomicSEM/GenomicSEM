@@ -29,19 +29,19 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
     names(files[[i]]) <- GenomicSEM:::.sumstats.parse.header( files[[i]] )
 
     # Print a warning message when multiple columns are interpreted as p-values, effects, rsIDs or alleles columns
-    if(sum(names(files[[i]] %in% "P") > 1) warning(paste0(
+    if(sum(names(files[[i]]) %in% "P") > 1) warning(paste0(
       'Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted"
       "as P, e.g., to P2 for:', filenames[i]))
-    if(sum(names(files[[i]] %in% "effect") > 1) warning(paste0(
+    if(sum(names(files[[i]]) %in% "effect") > 1) warning(paste0(
       'Multiple columns are being interpreted as the effect column. Try renaming the column you dont want interpreted"
       "as effect, e.g., to effect2 for:', filenames[i]))
-    if(sum(names(files[[i]] %in% "SNP") > 1) warning(paste0(
+    if(sum(names(files[[i]]) %in% "SNP") > 1) warning(paste0(
       'Multiple columns are being interpreted as the variant ID column. Try renaming the column you dont want"
       "interpreted as variant ID, e.g., to SNP2 for:', filenames[i]))
-    if(sum(names(files[[i]] %in% "A1") > 1) warning(paste0(
+    if(sum(names(files[[i]]) %in% "A1") > 1) warning(paste0(
       'Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want"
       "interpreted as effect allele, e.g., to A1_2 for:', filenames[i]))
-    if(sum(names(files[[i]] %in% "A2") > 1) warning(paste0(
+    if(sum(names(files[[i]]) %in% "A2") > 1) warning(paste0(
       'Multiple columns are being interpreted as the non-effect allele column. Try renaming the column you dont want"
       "interpreted as non-effect allele, e.g., to A2_2 for:', filenames[i]))
 
