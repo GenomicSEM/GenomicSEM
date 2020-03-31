@@ -86,7 +86,40 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
       "Pre-processing summary statistics for '", filenames[i], "'."
     ) ) )
 
+    ss.tags <- GenomicSEM:::.sumstats.tags()
     names(tmpfile) <- GenomicSEM:::.sumstats.parse.header( tmpfile, maf.override=T )
+
+    # Print a warning message when multiple columns are interpreted as p-values, effects, rsIDs or alleles columns
+    if(sum(names(tmpfile) %in% "P") > 1) warning(paste0(
+      'Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted"
+      "as P, e.g., to P2 for:', filenames[i]))
+    if(sum(names(tmpfile) %in% "effect") > 1) warning(paste0(
+      'Multiple columns are being interpreted as the effect column. Try renaming the column you dont want interpreted"
+      "as effect, e.g., to effect2 for:', filenames[i]))
+    if(sum(names(tmpfile) %in% "SNP") > 1) warning(paste0(
+      'Multiple columns are being interpreted as the variant ID column. Try renaming the column you dont want"
+      "interpreted as variant ID, e.g., to SNP2 for:', filenames[i]))
+    if(sum(names(tmpfile) %in% "A1") > 1) warning(paste0(
+      'Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want"
+      "interpreted as effect allele, e.g., to A1_2 for:', filenames[i]))
+    if(sum(names(tmpfile) %in% "A2") > 1) warning(paste0(
+      'Multiple columns are being interpreted as the non-effect allele column. Try renaming the column you dont want"
+      "interpreted as non-effect allele, e.g., to A2_2 for:', filenames[i]))
+
+    if ( model == 'LOG' ) {
+      if ( length( intersect( names(tmpfile), ss.tags$zscore ) ) > 0 ) {
+        warning( paste0(
+          "There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ".",
+          "Transformations for case/control traits require an OR or a logistic beta column. Please remove/replace the",
+          "Z-statistic column"
+        ) )
+        writeLines( strwrap( paste0(
+          "There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ".",
+          "Transformations for case/control traits require an OR or a logistic beta column. Please remove/replace the",
+          "Z-statistic column"
+        ) ) )
+      }
+    }
 
     # Compute N as N cases plus N controls if reported:
     if ( "N_CAS" %in% colnames(tmpfile) && "N_CON" %in% colnames(tmpfile) ) {
@@ -308,6 +341,19 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
       nrow(output), "SNPs are left from the summary statistics file", filenames[i], "after QC and",
       "merging with the reference file."
     ) ) )
+
+    if ( mean( abs( output[,names.beta[i]] / output[,names.se[i]] ) ) > 5 ) {
+      writeLines( strwrap( paste0(
+        "WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ", trait.names[i],
+        ". This suggests a column was misinterpreted or arguments were specified. Please, post on the google group if",
+        "you are unable to figure this issue out yourself."
+      ) ) )
+      warning( paste0( 
+        "The average value of estimate over standard error (i.e., Z) is > 5 for ", trait.names[i],
+        ". This suggests a column was misinterpreted or arguments were specified. Please, post on the google group if",
+        "you are unable to figure this issue out yourself."
+      ) )
+    }
 
     cat( '\n\n' )
 
