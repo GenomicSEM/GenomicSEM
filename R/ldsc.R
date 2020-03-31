@@ -1,21 +1,30 @@
-ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights=FALSE,chr=22,n.blocks=200) {
+ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights=FALSE,chr=22,n.blocks=200,log.file='ldsc.log') {
 
-  time <- proc.time()
+  begin.time <- Sys.time()
   
+  sink(log.file, append=FALSE, split=TRUE)
+
+  cat(paste0("Multivariate LD-score regression of ", length(traits), " traits ", "(", paste(trait.names,collapse=", "), ")", " began at: ", begin.time), sep = "")
   # Dimensions
   n.traits <- length(traits)
   n.V <- (n.traits^2 / 2) + .5*n.traits
   
+  check_names<-str_detect(trait.names, "-")
+  if(any(check_names==TRUE)){warning("Your trait names specified include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits using the trait.names argument.")}
+  
+  if(length(traits)==1){warning("Our version of ldsc requires 2 or more traits. Please include an additional trait.")}
+  
+
   # Storage:
- Gcov.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
- I.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
- Gcov_p.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
- I_p.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+  Gcov.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+  I.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+  Gcov_p.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
+  I_p.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
 #  Gcov_pasympt.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
 #  I_pasympt.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
- N.vec <- matrix(NA,nrow=1,ncol=n.V)
- V.hold <- matrix(NA,nrow=n.blocks,ncol=n.V)
- liab.scale.conv.fact <- matrix(1,nrow=1,ncol=n.traits)
+  N.vec <- matrix(NA,nrow=1,ncol=n.V)
+  V.hold <- matrix(NA,nrow=n.blocks,ncol=n.V)
+  liab.scale.conv.fact <- matrix(1,nrow=1,ncol=n.traits)
 
   # Current working directory
   curwd = getwd()
@@ -23,6 +32,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   
   
   #########  READ LD SCORES:
+
+  cat("Reading in LD scores.\n")
   
   setwd(ld)
   
@@ -75,17 +86,19 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
     ######### READ chi2
     
+    cat('\n\n')
+    
+    cat("Estimating heritability for:", traits[j], "\n")
+    
     y1 <- suppressMessages(read_delim(chi1, "\t", escape_double = FALSE, trim_ws = TRUE, progress = F))
     
     y1 <- na.omit(y1)
     y1$chi1 <- y1$Z^2
+
     cat("Read in summary statistics from",chi1,"\n")
     cat("Read in summary statistics for",nrow(y1),"SNPs","\n")
     
     for(k in j:length(traits)) {
-      
-      
-      
       
       ##### HERITABILITY code
       
@@ -100,6 +113,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged <- merge(x=merged,y=x,by="SNP")
         merged <- merged[with(merged,order(CHR,BP)),]
         remaining.snps <- nrow(merged)
+
         cat(remaining.snps,"SNPs remaining","after merging the files","\n")
         
         ## REMOVE SNPS with excess chi-square:
@@ -109,6 +123,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         removed.snps <- remaining.snps-n.snps
         
         cat("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max,paste0("(",n.snps," SNPs remain)"),"\n")
+        cat(n.snps, "SNPs remain\n")
         
         ## ADD INTERCEPT:
         merged$intercept <- 1
@@ -176,8 +191,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         }
         
         tot.delete.values <- delete.values[,1:n.annot]
-        #end.delete.values <- (tot.delete.values %*% m)/N.bar
-        #write.table(x=end.delete.values,file=paste0(out,".end.del.val.txt"),quote=F,sep="\t",row.names=F)
         pseudo.values <- matrix(data=NA,nrow=n.blocks,ncol=length(reg))
         colnames(pseudo.values) <- colnames(weighted.LD)
         for(i in 1:n.blocks) pseudo.values[i,] <- (n.blocks*reg)-((n.blocks-1) * delete.values[i,])
@@ -186,7 +199,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         jackknife.se <- sqrt(diag(jackknife.cov))
         intercept.se <- jackknife.se[length(jackknife.se)]
         coef.cov <- jackknife.cov[1:n.annot,1:n.annot]/(N.bar^2)
-        #write.table(x=coef.cov,file=paste0(out,".coef.cov.txt"),quote=F,sep="\t")
         cat.cov <- coef.cov*(m %*% t(m))
         tot.cov <- sum(cat.cov)
         tot.se <- sqrt(tot.cov)
@@ -196,6 +208,15 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         
         if ( !is.na(pop.prev) && !is.na(samp.prev) ) {
           liab.scale.conv.fact[j] <- (pop.prev^2*(1-pop.prev)^2) / (samp.prev*(1-samp.prev)*dnorm(qnorm(1-pop.prev))^2)
+          cat("\n")
+          writeLines( strwrap( paste(
+            "Please note that the results initially printed to screen and log file reflect the observed dichotomous",
+            "phenotype's h2 and cov_g. However, a conversion to the liability scale is being used for trait", chi2,
+            chi1, "when creating the genetic covariance matrix used as input for Genomic SEM and liability scale",
+            "results are printed at the end of the log file."
+          ) ) )
+          cat("\n")
+#           t<-1  # what is this?
         }
         
         Gcov.mat[j,j] <- reg.tot
@@ -227,9 +248,13 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
       
       if(j != k) {
         
+        cat('\n')
+
         chi2 <- traits[k]
 
         ######### READ chi2
+
+        cat("Calculating genetic covariance for traits:",chi1, "and", chi2, "\n")
         
         # Reuse the data read in for heritability
         
@@ -393,8 +418,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
   }
   
-  time_all <- proc.time()-time
-  print(time_all[3])
   
   ## Scale V to N per study (assume m constant)
   v.out <- ((cov(V.hold)/n.blocks) / t(N.vec) %*% N.vec) * m^2
@@ -441,8 +464,42 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     rownames(I_p.mat)<-(trait.names)
   }
   
-  return( list(
-    V=V.mat,
+  if(mean(liab.scale.conv.fact)!=1){
+    r<-nrow(S)
+    SE<-matrix(0, r, r)
+    SE[lower.tri(SE,diag=TRUE)] <-sqrt(diag(V))
+    
+    cat("\n\n")
+    cat("Liability scale results\n")
+    
+    for(j in 1:n.traits){
+      chi1 <- traits[j]
+      for(k in j:length(traits)){
+        if(j == k){
+          cat("\n")
+          cat("Liability scale results for", chi1, "\n")
+          cat("Liability scale h2", ":", round(S[j,j],4), "(", round(SE[j,j],4), ")\n")
+        }
+        if(j != k){
+          chi2 <- traits[k]
+          cat("Liability scale cov_g between", chi1, "and", chi2, ":", round(S[k,j],4), "(", round(SE[k,j],4), ")\n\n")
+        }
+      }
+    }
+  }
+
+  end.time <- Sys.time()
+  
+  total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
+  mins <- floor(floor(total.time)/60)
+  secs <- total.time-mins*60
+  
+  cat("\n")
+  cat("LDSC finished running at",end.time,"\n")
+  cat("Running LDSC for all files took",mins,"minutes and",secs,"seconds.\n")
+
+return( list(
+  V=V.mat,
     S=S.mat,
     I=I.mat,
     pS=Gcov_p.mat,
