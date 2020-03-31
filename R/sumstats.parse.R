@@ -60,6 +60,14 @@
     "REF"
   )
   
+  m$zscore <-c(
+    "Z",
+    "Zscore",
+    "Z.score",
+    "Zstatistic",
+    "Z.statistic"
+  )
+
   m$effect <- c(
     "b",
     "B",
@@ -78,9 +86,7 @@
     "OR",
     "SIGNED_SUMSTAT",
     "SIGNED.SUMSTAT",
-    "Z",
-    "Zscore",
-    "Z.score"
+    m$zscore
   )
 
   m$se <- c(
