@@ -106,7 +106,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
       'Multiple columns are being interpreted as the non-effect allele column. Try renaming the column you dont want"
       "interpreted as non-effect allele, e.g., to A2_2 for:', filenames[i]))
 
-    if ( model == 'LOG' ) {
+    if ( model[i] == 'LOG' ) {
       if ( length( intersect( names(tmpfile), ss.tags$zscore ) ) > 0 ) {
         warning( paste0(
           "There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ".",
@@ -213,10 +213,11 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
     ) ) )
 
     ##check the presence of SE, needed for some of GenomicSEM's functionality
-    if (sum(colnames(tmpfile) %in% "SE") == 0)
+    if (sum(colnames(tmpfile) %in% "SE") == 0) {
       writeLines( strwrap( paste( 'Cannot find a SE column, try renaming it SE in', filenames[i] ) ) )
-    if (sum(colnames(tmpfile) %in% "SE") == 0)
       warning( paste( 'Cannot find a SE column, try renaming it SE in', filenames[i] ) )
+      tmpfile$SE = NA
+    }
 
     ##check the presence of INFO
     if ("INFO" %in% colnames(tmpfile)) {
