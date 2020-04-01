@@ -171,7 +171,8 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       warn = FALSE,
       std.lv = std.lv,
       optim.dx.tol = +Inf,
-      optim.force.converged = TRUE
+      optim.force.converged = TRUE,
+      control=list(iter.max=1)
     )
   )
   
@@ -402,7 +403,8 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       warn = FALSE,
       std.lv = std.lv,
       optim.dx.tol = +Inf,
-      optim.force.converged = TRUE
+      optim.force.converged = TRUE,
+      control=list(iter.max=1)
     )
   )
   
