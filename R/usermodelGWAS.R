@@ -1,4 +1,4 @@
-userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL){ 
+usermodelGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL){ 
   time<-proc.time()
   
   ##determine if the model is likely being listed in quotes and print warning if so
