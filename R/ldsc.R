@@ -462,7 +462,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   }
   
   if(mean(liab.scale.conv.fact)!=1){
-    r<-nrow(S)
+    r<-nrow(S.mat)
     SE<-matrix(0, r, r)
     SE[lower.tri(SE,diag=TRUE)] <-sqrt(diag(V))
     
