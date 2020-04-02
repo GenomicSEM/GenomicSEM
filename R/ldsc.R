@@ -466,8 +466,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     SE<-matrix(0, r, r)
     SE[lower.tri(SE,diag=TRUE)] <-sqrt(diag(V.mat))
     
-    cat("\n\n")
-    cat("Liability scale results\n")
+    cat("\n\nLiability scale results\n")
     
     for(j in 1:n.traits){
       chi1 <- traits[j]
@@ -479,10 +478,11 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         }
         if(j != k){
           chi2 <- traits[k]
-          cat("Liability scale cov_g between", chi1, "and", chi2, ":", round(S.mat[k,j],4), "(", round(SE[k,j],4), ")\n\n")
+          cat("Liability scale cov_g between", chi1, "and", chi2, ":", round(S.mat[k,j],4), "(", round(SE[k,j],4), ")\n")
         }
       }
     }
+    cat("\n")
   }
 
   end.time <- Sys.time()
@@ -491,21 +491,24 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   mins <- floor(floor(total.time)/60)
   secs <- total.time-mins*60
   
-  cat("\n")
-  cat("LDSC finished running at",end.time,"\n")
-  cat("Running LDSC for all files took",mins,"minutes and",secs,"seconds.\n")
+  writeLines( strwrap( paste0( 
+    "Finished running at ", end.time, "."
+  ) ) )
+  writeLines( strwrap( paste0( 
+    "Running ldsc for all files took ", mins," minutes and ", secs," seconds."
+  ) ) )
 
-return( list(
-  V=V.mat,
-  S=S.mat,
-  I=I.mat,
-  pS=Gcov_p.mat,
-  pI=I_p.mat,
-#     pSalt=Gcov_pasympt.mat,
-#     pIalt=I_pasympt.mat,
-  N=N.vec,
-  m=m
-) )
+  return( list(
+    V=V.mat,
+    S=S.mat,
+    I=I.mat,
+    pS=Gcov_p.mat,
+    pI=I_p.mat,
+  #     pSalt=Gcov_pasympt.mat,
+  #     pIalt=I_pasympt.mat,
+    N=N.vec,
+    m=m
+  ) )
   
 }
 
