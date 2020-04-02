@@ -464,7 +464,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   if(mean(liab.scale.conv.fact)!=1){
     r<-nrow(S.mat)
     SE<-matrix(0, r, r)
-    SE[lower.tri(SE,diag=TRUE)] <-sqrt(diag(V))
+    SE[lower.tri(SE,diag=TRUE)] <-sqrt(diag(V.mat))
     
     cat("\n\n")
     cat("Liability scale results\n")
@@ -497,15 +497,15 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
 return( list(
   V=V.mat,
-    S=S.mat,
-    I=I.mat,
-    pS=Gcov_p.mat,
-    pI=I_p.mat,
+  S=S.mat,
+  I=I.mat,
+  pS=Gcov_p.mat,
+  pI=I_p.mat,
 #     pSalt=Gcov_pasympt.mat,
 #     pIalt=I_pasympt.mat,
-    N=N.vec,
-    m=m
-  ) )
+  N=N.vec,
+  m=m
+) )
   
 }
 
