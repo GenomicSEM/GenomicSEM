@@ -475,11 +475,11 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         if(j == k){
           cat("\n")
           cat("Liability scale results for", chi1, "\n")
-          cat("Liability scale h2", ":", round(S[j,j],4), "(", round(SE[j,j],4), ")\n")
+          cat("Liability scale h2", ":", round(S.mat[j,j],4), "(", round(SE[j,j],4), ")\n")
         }
         if(j != k){
           chi2 <- traits[k]
-          cat("Liability scale cov_g between", chi1, "and", chi2, ":", round(S[k,j],4), "(", round(SE[k,j],4), ")\n\n")
+          cat("Liability scale cov_g between", chi1, "and", chi2, ":", round(S.mat[k,j],4), "(", round(SE[k,j],4), ")\n\n")
         }
       }
     }
