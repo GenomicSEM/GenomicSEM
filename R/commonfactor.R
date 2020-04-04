@@ -2,9 +2,9 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   time<-proc.time()
   
   #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-  #'k' is the number of variables in the model
-  #'fit' is the fit function of the regression model
-  #'names' is a vector of variable names in the order you used
+  # 'k' is the number of variables in the model
+  # 'fit' is the fit function of the regression model
+  # 'names' is a vector of variable names in the order you used
   rearrange <- function (k, fit, names) {
     order1 <- names
     order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -816,7 +816,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   }
   
   ##name the columns of the results file
-  colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate","Unstandardized_SE","Standardized_Est","Standardized_SE")
+  colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate","Unstandardized_SE","Standardized_Estimate","Standardized_SE")
   
   ##replace V1-VX general form in output with user provided trait names
   for(i in 1:nrow(results)){
