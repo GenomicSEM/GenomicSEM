@@ -1,12 +1,17 @@
 
-ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22,n.blocks=200){
+ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22,n.blocks=200,ldsc.log=NULL){
   time <- proc.time()
   
   begin.time <- Sys.time()
   
+  if(is.null(ldsc.log)){
   log2<-paste(traits,collapse="_")
-  
+  if(object.size(log2) > 200){
+    log2<-substr(log2,1,100)
+    }
   log.file <- file(paste0(log2, "_ldsc.log"),open="wt")
+  }else{log.file<-file(paste0(ldsc.log, "_ldsc.log"),open="wt")}
+
   log3<-paste(traits,collapse=" ")
   cat(print(paste0("Multivariate ld-score regression of ", length(traits), " traits ", "(", log3, ")", " began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
   
