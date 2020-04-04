@@ -4,10 +4,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   
   begin.time <- Sys.time()
   
-  log2<-paste(trait.names,collapse="_")
+  log2<-paste(traits,collapse="_")
   
   log.file <- file(paste0(log2, "_ldsc.log"),open="wt")
-  log3<-paste(trait.names,collapse=" ")
+  log3<-paste(traits,collapse=" ")
   cat(print(paste0("Multivariate ld-score regression of ", length(traits), " traits ", "(", log3, ")", " began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
   
   
@@ -15,8 +15,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   n.traits <- length(traits)
   n.V <- (n.traits^2 / 2) + .5*n.traits
   
+  if(!(is.null(trait.names))){
   check_names<-str_detect(trait.names, "-")
   if(any(check_names==TRUE)){warning("Your trait names specified include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits using the trait.names argument.")}
+  }
   
   if(length(traits)==1){warning("Our version of ldsc requires 2 or more traits. Please include an additional trait.")}
   
