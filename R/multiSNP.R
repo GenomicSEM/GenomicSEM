@@ -9,12 +9,21 @@ multiSNP <-function(covstruc, SNPs, LD, SNPSE = FALSE, SNPlist = NA){
   
   LD<-as.matrix(LD)
   
+  
+  LD_names<-rownames(LD)
+  SNPs_LD<-gsub("_.*","",LD_names)
+  #A2_LD<-gsub(".*_","",LD_names)
+  A1_LD<-substr(sub(".*?_",'',LD_names),start=1,stop=1)
+  
   ##take SNPs and go from long to wide? or just assume that the full dataset is all the SNPs wanted...
   ##option to only pull SNPs on a list, otherwise assume using full dataset
   if(!is.na(SNPlist)){
     SNPs<-subset(SNPs, SNPs$SNP %in% SNPlist)
   }
   
+  ##order sumstats by LD matrix
+  SNPs<-SNPs[match(SNPs_LD, SNPs$SNP),]
+
   beta_SNP<-SNPs[,grep("beta.",fixed=TRUE,colnames(SNPs))] 
   SE_SNP<-SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))] 
   
@@ -32,12 +41,28 @@ multiSNP <-function(covstruc, SNPs, LD, SNPSE = FALSE, SNPlist = NA){
   #f = number of SNPs in dataset
   f=nrow(beta_SNP) 
   
+  LD_coords1<-which(LD != 'NA', arr.ind= T)
+  
+  p<-1
+  #loop to flip sign of LD if A1/A2 is flipped for only one of the SNPs
+  #if A1/A2 are flipped for both SNPs (or neither SNP) then sign is maintained
+  for (p in 1:nrow(LD_coords1)){ 
+    x<-LD_coords1[p,1]
+    y<-LD_coords1[p,2]
+    if (x != y) { 
+    if(A1_LD[x] != SNPs$A1[x] & A1_LD[y] == SNPs$A1[y] | A1_LD[x] == SNPs$A1[x] & A1_LD[y] != SNPs$A1[y])
+      LD[x,y]<-LD[x,y]*-1}
+    if (x == y) {
+      LD[x,y]<-LD[x,y]
+    }
+  }
+  
   #SNP variance (updated with 1KG phase 3 MAFs)
   varSNP=2*SNPs$MAF*(1-SNPs$MAF)  
   
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
-    varSNPSE2=(.00000001)^2
+    varSNPSE2=(.0005)^2
   }
   
   ##if user provides own SNPSE use that instead 
@@ -181,14 +206,14 @@ multiSNP <-function(covstruc, SNPs, LD, SNPSE = FALSE, SNPlist = NA){
   r<-1
   u<-1
   p<-1
-  coords4<-coords2[1:55,]
-  
+  coords4<-coords2[1:((k*(k+1))/2-k),]
+
   for(p in 1:f){
     for(u in 1:((k*(k+1))/2-k)){
       x<-coords2[r,1]
       y<-coords2[r,2]
-      x2<-coords4[u,1]-2
-      y2<-coords4[u,2]-2
+      x2<-coords4[u,1]-nrow(LD)
+      y2<-coords4[u,2]-nrow(LD)
       V_SNP[y,x]<-(SE_SNP2[p,x2]*SE_SNP2[p,y2]*I_LD2[u])
       r<-r+1
     }
