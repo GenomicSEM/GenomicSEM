@@ -5,7 +5,7 @@
 Function to process GWAS summary statistis files and prepair them for a GWAS in genomicSEM
 }
 \usage{
-sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01,parallel=TRUE,cores=NULL, \dots)
+sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL, \dots)
 }
 \arguments{
    \item{files}{a list of file names, fuiles must be located in the working directory, or a path must be provided.}
@@ -16,6 +16,7 @@ sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=N
    \item{linprob}{a logical vector indicating whether the GWAS used a linear probability model i.e. a dichotomous trait using OLS (or a LMM)}
    \item{info.filter}{ Numeric value which is used as a lower bound for inputation quality (INFO) }
    \item{maf.filter}{ Numeric value used as a lower bound for minor allel frequency}
+   \item{keep.indel}{Indicates whether insertion-deletion mutations (indels) should be included in your summary statistics. The default is FALSE.}
    \item{parallel}{Indicates whether sumstats should process the summary statistics files in parallel or serial fashion. Default is TRUE, indicating that it will run in parallel.}
    \item{cores}{Indicates how many cores to use when running in parallel. The default is NULL, in which case sumstats will use 1 less than the total number of cores available in the local environment.}
    
