@@ -1,4 +1,3 @@
-
 userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL){ 
   time<-proc.time()
   
@@ -506,12 +505,12 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         }
         
         test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
-     
+        
         order <- rearrange(k = k2, fit = ReorderModel, names = rownames(S_Full))
         
-        df<-lavInspect(ReorderModel, "fit")["df"]
-        npar<-lavInspect(ReorderModel, "fit")["npar"]
-      
+        suppressWarnings(df<-lavInspect(ReorderModel, "fit")["df"])
+        suppressWarnings(npar<-lavInspect(ReorderModel, "fit")["npar"])
+        
       }
       
       #make empty list object for model results
@@ -525,7 +524,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       if(estimation=="DWLS"){
         
         for (i in 1:f) { 
-         
+          
           #create empty shell of V_SNP matrix
           V_SNP<-diag(k)
           
@@ -611,7 +610,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           
           ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
           test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
-       
+          
           test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
           
           if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
@@ -847,10 +846,10 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(printwarn == TRUE){
               final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
               final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
-           
+            
             ##combine results with SNP, CHR, BP, A1, A2 for particular model
             final2<-cbind(SNPs2[i,],final,row.names=NULL)
-        
+            
             if(!(sub[[1]])==FALSE){
               final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
               if(i == 1){
@@ -909,7 +908,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             
           }
           
-         
+          
           if(i == 1){
             cat(paste0("Running Model: ", i, "\n"))
           }else{
@@ -1548,8 +1547,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
         if(class(test2$value)[1]=="lavaan"){
           order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[i]]))
-          df<-lavInspect(ReorderModel, "fit")["df"]
-          npar<-lavInspect(ReorderModel, "fit")["npar"]
+          suppressWarnings(df<-lavInspect(ReorderModel, "fit")["df"])
+          suppressWarnings(npar<-lavInspect(ReorderModel, "fit")["npar"])
           
         }else{
           i<-10
@@ -1572,8 +1571,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           
           test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
           order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[i]]))
-          df<-lavInspect(ReorderModel, "fit")["df"]
-          npar<-lavInspect(ReorderModel, "fit")["npar"]
+          suppressWarnings(df<-lavInspect(ReorderModel, "fit")["df"])
+          suppressWarnings(npar<-lavInspect(ReorderModel, "fit")["npar"])
           
         }
       }
@@ -2711,12 +2710,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
         
         order <- rearrange(k = k2, fit = ReorderModel, names = rownames(S_Full))
-        df<-lavInspect(ReorderModel, "fit")["df"]
-        npar<-lavInspect(ReorderModel, "fit")["npar"]
-        
+
+        suppressWarnings(df<-lavInspect(ReorderModel, "fit")["df"])
+        suppressWarnings(npar<-lavInspect(ReorderModel, "fit")["npar"])
         
       }
-      
       
       SNPs2<-SNPs[,1:6]
       rm(SNPs)
@@ -2725,14 +2723,14 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       beta_SNP<-suppressWarnings(split(beta_SNP,1:int))
       SE_SNP<-suppressWarnings(split(SE_SNP,1:int))
       varSNP<-suppressWarnings(split(varSNP,1:int))
-      
+    
       ##estimation for WLS
       if(estimation=="DWLS"){
-        
+       
         results<-foreach(n = icount(int), .combine = 'rbind') %:% 
           
           foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% { 
-            
+  
             #create empty shell of V_SNP matrix
             V_SNP<-diag(k)
             
@@ -2827,7 +2825,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               resid_var1<-subset(Model_WLS, Model_WLS$op == "~~" & Model_WLS$free != 0 & Model_WLS$lhs == Model_WLS$rhs)
               
               resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
-            
+          
             if(resid_var2 > 0){
               if(NA %in% Model_WLS$se){
                 SE<-rep("SE could not be computed", max(Model_WLS$free))}else{
@@ -3065,7 +3063,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               ##results to be put into the output
               final2
               
-            }else{
+            }else{ 
               if(modelchi == TRUE){
                 final<-data.frame(t(rep(NA, 13)))
                 if(printwarn == TRUE){
@@ -3078,8 +3076,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 ##combine results with SNP, CHR, BP, A1, A2 for particular model
                 final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
                 colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-                final2
               }
+             
               if(modelchi == FALSE){
                 final<-data.frame(t(rep(NA, 9)))
                 if(printwarn == TRUE){
@@ -3092,13 +3090,13 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 ##combine results with SNP, CHR, BP, A1, A2 for particular model
                 final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
                 colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","error","warning")
-                final2
               }
+              final2
             }
-            
+        
           }
       }
-      
+
       ##ML estimation
       if(estimation=="ML"){
         results<-foreach(n = icount(int), .combine = 'rbind') %:% 
@@ -3707,8 +3705,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
         if(class(test2$value)[1]=="lavaan"){
           order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
-          df<-lavInspect(ReorderModel, "fit")["df"]
-          npar<-lavInspect(ReorderModel, "fit")["npar"]
+          suppressWarnings(df<-lavInspect(ReorderModel, "fit")["df"])
+          suppressWarnings(npar<-lavInspect(ReorderModel, "fit")["npar"])
           
         }else{
           i<-10
@@ -3732,8 +3730,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
           
           order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_Full[[1]][[i]]))
-          df<-lavInspect(ReorderModel, "fit")["df"]
-          npar<-lavInspect(ReorderModel, "fit")["npar"]
+          suppressWarnings(df<-lavInspect(ReorderModel, "fit")["df"])
+          suppressWarnings(npar<-lavInspect(ReorderModel, "fit")["npar"])
           
         }
         
@@ -4032,7 +4030,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 ##combine results with SNP, CHR, BP, A1, A2 for particular model
                 final2<-cbind(i,n,SNPs[[n]][i,],final,row.names=NULL)
                 colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-                final2}
+               }
               if(modelchi == FALSE){
                 final<-data.frame(t(rep(NA, 9)))
                 if(printwarn == TRUE){
@@ -4045,8 +4043,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 ##combine results with SNP, CHR, BP, A1, A2 for particular model
                 final2<-cbind(i,n,SNPs[[n]][i,],final,row.names=NULL)
                 colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","error","warning")
-                final2
+            
               }
+              final2
             }
             
           }
