@@ -1,3 +1,4 @@
+
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
@@ -368,7 +369,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long") 
   modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
   
-   if(std.lv == FALSE){
+  if(std.lv == FALSE){
     empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
   }
   
@@ -389,7 +390,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   V_Reorderb<-diag(z)
   diag(V_Reorderb)<-diag(V_Reorder)
   W_Reorder<-solve(V_Reorderb)
-
+  
   ##estimation for DWLS
   if(estimation=="DWLS"){
     
@@ -402,7 +403,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     if(std.lv == TRUE){
       empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
     }
- 
+    
     empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
     
     if(class(empty4$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
@@ -616,7 +617,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         }
       
       if(t > 1 | t2 < -1  | t == "NaN"){
-             print("Error: The primary model produced correlations among your latent variables that are either greater than 1 or less than -1, or to have negative variances. 
+        print("Error: The primary model produced correlations among your latent variables that are either greater than 1 or less than -1, or to have negative variances. 
               Consquently, model fit estimates could not be computed and results should likely not be interpreted. Results are provided below 
               to enable troubleshooting. A model constraint that constrains the latent correlations to be above -1, less than 1, or to have positive variances is suggested.")
         
@@ -962,7 +963,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         std_all<-subset(std_all, std_all$est.std != "NaN" & std_all$est.std != 0)
         
         results<-cbind(unstand2, stand2)
-       
+        
         ##add in fixed effects
         base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
         base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
@@ -1429,12 +1430,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       std_all<-standardizedSolution(ML.fit_stand)
       std_all<-subset(std_all, std_all$est.std != "NaN" & std_all$est.std != 0)
       
-      results<-cbind(unstand2, stand2)
+      results<-cbind(unstand,SE,stand,SE_stand)
       
       ##add in fixed effects
       base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
-      base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
+      base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand$lhs, unstand$op, unstand$rhs)))
       base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
+      
       if(nrow(base_model) > 0){
         base_model$free<-NULL
         base_model$SE<-""
@@ -1473,7 +1475,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     modelfit<-data.frame(modelfit)
     
-     
+    
     if(!(is.character(modelfit$chisq)) & !(is.factor(modelfit$chisq))){
       modelfit$chisq<-as.numeric(as.character(modelfit$chisq))
       modelfit$df<-as.numeric(as.character(modelfit$df))
@@ -1490,9 +1492,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
             warning(paste("CFI estimates below 0 should not be trusted, and indicate that the other model fit estimates should be interpreted with caution. A negative CFI estimates typically appears due to negative residual variances."))
           }}
         modelfit$CFI<-ifelse(modelfit$df == 0, modelfit$CFI == NA, modelfit$CFI)
-        }else{order<-c(1,2,5,3,4)
-          modelfit<-modelfit[,order]
-          }}
+      }else{order<-c(1,2,5,3,4)
+      modelfit<-modelfit[,order]
+      }}
     
     time_all<-proc.time()-time
     print(time_all[3])
@@ -1516,6 +1518,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       print("Please note that when equality constraints are used in the current version of Genomic SEM that
             the standardized output will also impose the same constraint.")
     }
+    results$p_value<-2*pnorm(abs(as.numeric(results$Unstand_Est)/as.numeric(results$Unstand_SE)),lower.tail=FALSE)
+    results$p_value<-ifelse(results$p_value == 0, "< 5e-300", results$p_value)
     
     if(imp_cov == FALSE){
       return(list(modelfit=modelfit,results=results))
