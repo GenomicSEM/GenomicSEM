@@ -440,16 +440,23 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   V.mat <- diag(Dvcovl)%*%vcor%*%diag(Dvcovl)
  
   n.traits<-ncol(S.mat)
+  utlog<-upper.tri(S.mat, diag=T)
   if(is.null(trait.names)) {
     tmp.names <- paste0("V",1:n.traits)
-    colnames(S.mat)<-(tmp.names)
-    rownames(S.mat)<-(tmp.names)
-    colnames(I.mat)<-(tmp.names)
-    rownames(I.mat)<-(tmp.names)
-    colnames(Gcov_p.mat)<-(tmp.names)
-    rownames(Gcov_p.mat)<-(tmp.names)
-    colnames(I_p.mat)<-(tmp.names)
-    rownames(I_p.mat)<-(tmp.names)
+    colnames(S.mat)<-tmp.names
+    rownames(S.mat)<-tmp.names
+    colnames(I.mat)<-tmp.names
+    rownames(I.mat)<-tmp.names
+    colnames(Gcov_p.mat)<-tmp.names
+    rownames(Gcov_p.mat)<-tmp.names
+    colnames(I_p.mat)<-tmp.names
+    rownames(I_p.mat)<-tmp.names
+    colnames(V.mat)<-c( matrix(
+      unlist( lapply( tmp.names, paste, tmp.names, sep='.' ) ),
+      length( tmp.names )
+    )[utlog] )
+    rownames(V.mat)<-colnames(V.mat)
+    colnames(N.vec)<-colnames(V.mat)
   } else {
     colnames(S.mat)<-(trait.names)
     rownames(S.mat)<-(trait.names)
@@ -459,6 +466,15 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     rownames(Gcov_p.mat)<-(trait.names)
     colnames(I_p.mat)<-(trait.names)
     rownames(I_p.mat)<-(trait.names)
+    colnames(V.mat)<-c( matrix(
+      unlist( lapply(
+        make.names(substr(trait.names,1,3), unique=T), paste,
+        make.names(substr(trait.names,1,3), unique=T), sep='.'
+      ) ),
+      length( trait.names )
+    )[utlog] )
+    rownames(V.mat)<-colnames(V.mat)
+    colnames(N.vec)<-colnames(V.mat)
   }
   
   if(mean(liab.scale.conv.fact)!=1){
