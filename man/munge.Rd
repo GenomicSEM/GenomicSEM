@@ -9,20 +9,35 @@ munge(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0.01,munge.lo
 
 }
 \arguments{
-   \item{files}{A list of file names. the files are assumed to be located in the working directory unless an absolute path is provided.}
-   \item{reference}{A file (UNZIPPED) of HAPMAP3 SNPs with some basic cleaning applied. one was created and supplied by the original LD score regression developers and is available here: https://data.broadinstitute.org/alkesgroup/LDSCORE/w_hm3.snplist.bz2}
-   \item{trait.names}{A vector of trait names which will be used as names for the munged files}
-   \item{info.filter}{Numeric value which is used as a lower bound for imputation quality (INFO)}
-   \item{maf.filter}{Numeric value used as a lower bound for minor allele frequency}
-   \item{munge.log}{File log}
-    
+  \item{files}{
+    A list of file names. the files are assumed to be located in the working directory unless an
+    absolute path is provided.
+  }
+  \item{reference}{
+    A variant list file with A1, A2 and rsID used to align alleles across traits. We suggest using
+    the (UNZIPPED) list of HAPMAP3 SNPs with some basic cleaning applied (e.g., MHC region removed)
+    created and supplied by the original LD score regression developers
+    (\url{https://data.broadinstitute.org/alkesgroup/LDSCORE/w_hm3.snplist.bz2}).
+  }
+  \item{trait.names}{
+    A vector of trait names which will be used as names for the munged files.
+  }
+  \item{info.filter}{
+    Numeric value which is used as a lower bound for imputation quality (INFO).
+  }
+  \item{maf.filter}{
+    Numeric value used as a lower bound for minor allele frequency.
+  }
+  \item{munge.log}{
+    File log.
+  }
 }
 
 \value{
-   The function writes files of the ".sumstats" format, which can be used to estimate SNP heritability and genetic covariance using the ldsc() function.  
-   The function will also output a .log file that should be examined to ensure that column names are being interpret correctly. 
+   The function writes files in the ".sumstats" format, which can be used to estimate SNP
+   heritability and genetic covariance using the ldsc() function. The function will also write a
+   .log file that should be examined to ensure that column names are being interpret correctly.
 }
-
 
 
 \examples{
