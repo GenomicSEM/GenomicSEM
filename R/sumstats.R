@@ -309,8 +309,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC and merging with the reference file.")),file=log.file,sep="\n",append=TRUE)
       
       if(mean(abs(output[,2]/output[,3])) > 5){
-        cat(print(paste0('WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were specified. Please post on the google group if you are unable to figure out the issue.")),file=log.file,sep="\n",append=TRUE)
-        warning(paste0('The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were specified. Please post on the google group if you are unable to figure out the issue."))
+        cat(print(paste0('WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were misspecified. Please post on the google group if you are unable to figure out the issue.")),file=log.file,sep="\n",append=TRUE)
+        warning(paste0('The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were misspecified. Please post on the google group if you are unable to figure out the issue."))
       }
       
       if(i ==1){
@@ -600,7 +600,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC and merging with the reference file.")),file=log.file,sep="\n",append=TRUE)
       
       if(mean(abs(output[,2]/output[,3])) > 5){
-        cat(print(paste0('WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were specified. Please post on the google group if you are unable to figure out the issue.")),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste0('WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were misspecified. Please post on the google group if you are unable to figure out the issue.")),file=log.file,sep="\n",append=TRUE)
       }
       
       output
