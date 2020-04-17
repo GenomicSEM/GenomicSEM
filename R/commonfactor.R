@@ -504,9 +504,12 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     stand<-subset(stand, stand$free != 0)
     stand$free<-NULL
     
-    if(Q_CFI_WLS != "NA"){
-      CFI<-as.numeric(((Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"])-(Q_WLS-lavInspect(Model1_Results, "fit")["df"]))/(Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"]))
-      CFI<-ifelse(CFI > 1, 1, CFI)}else{CFI_WLS<-"NA"}
+    if (Q_CFI_WLS != "NA") {
+      CFI <- as.numeric( (
+        (Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"]) - (Q_WLS-lavInspect(Model1_Results, "fit")["df"])
+      ) / (Q_CFI_WLS-lavInspect(fitCFI, "fit")["df"]) )
+      CFI <- ifelse(CFI > 1, 1, CFI)
+    } else { CFI_WLS <- "NA" }
     
     chisq<-Q_WLS
     df<-lavInspect(Model1_Results, "fit")["df"]
