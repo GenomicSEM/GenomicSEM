@@ -1,6 +1,3 @@
-
-
-
 sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL){
   
   begin.time <- Sys.time()
@@ -112,12 +109,12 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       
       names1<-hold_names
       if("N_CAS" %in% hold_names) cat(print(paste("Interpreting the N_CAS column as the N_CAS (sample size for cases) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
+      hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS", "Nca")] <- "N_CAS"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CAS (sample size for cases) column.")),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
       if("N_CON" %in% hold_names) cat(print(paste("Interpreting the N_CON column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
+      hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N", "Nco")] <- "N_CON"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
       
        
@@ -407,12 +404,12 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       
       names1<-hold_names
       if("N_CAS" %in% hold_names) cat(print(paste("Interpreting the N_CAS column as the N_CAS (sample size for cases) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS")] <- "N_CAS"
+      hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS", "Nca")] <- "N_CAS"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CAS (sample size for cases) column."),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
       if("N_CON" %in% hold_names) cat(print(paste("Interpreting the N_CON column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N")] <- "N_CON"
+      hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N", "Nco")] <- "N_CON"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CON (sample size for controls) column."),file=log.file,sep="\n",append=TRUE)
       
       # Print a message for misisng P value, rs, effect or allele column
