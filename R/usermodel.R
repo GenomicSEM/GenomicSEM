@@ -465,10 +465,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
           Model2<-paste(Model2, linestart2, " \n ", sep = "")}
         
+        #create unique combination of letters for residual variance parameter labels
+        n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
+       
         Model3<-""
         for (p in 1:k) {
-          linestart3a <- paste(label, p, " ~~ ", letters[p], letters[p],letters[p+2], "*", label, p, sep = "")
-          linestart3b <- paste(letters[p], letters[p],letters[p+2], " > .001", sep = "")
+          linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
+          linestart3b <- paste(paste(n[,p],collapse=""), " > .001", sep = "")
           Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
         
         Model4<-""
@@ -1062,10 +1065,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
           Model2<-paste(Model2, linestart2, " \n ", sep = "")}
         
+       #create unique combination of letters for residual variance parameter labels
+        n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
+       
         Model3<-""
         for (p in 1:k) {
-          linestart3a <- paste(label, p, " ~~ ", letters[p],leters[p],leters[p+1], "*", label, p, sep = "")
-          linestart3b <- paste(letters[p],leters[p],leters[p+1], " > .001", sep = "")
+          linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
+          linestart3b <- paste(paste(n[,p],collapse=""), " > .001", sep = "")
           Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
         
         Model4<-""
