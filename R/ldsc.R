@@ -454,17 +454,18 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   }
   
   
+  if(all(diag(S) > 0)){
   ##calculate standardized results to print genetic correlations to log and screen
-  D=sqrt(diag(diag(S)))
+  D<-sqrt(diag(diag(S)))
   S_Stand=solve(D)%*%S%*%solve(D)
-
+  
   #obtain diagonals of the original V matrix and take their sqrt to get SE's
   Dvcov<-sqrt(diag(V))
   
   #calculate the ratio of the rescaled and original S matrices
   scaleO=as.vector(lowerTriangle((S_Stand/S),diag=T))
   
-  ## MAke sure that if ratio in NaN (devision by zero) we put the zero back in: ### TEMP STUPID MICHEL FIX!
+  ## MAke sure that if ratio in NaN (devision by zero) we put the zero back in
   scaleO[is.nan(scaleO)] <- 0
   
   #rescale the SEs by the same multiples that the S matrix was rescaled by
@@ -487,7 +488,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   
   for(j in 1:n.traits){
     if(is.null(trait.names)){
-   chi1<-traits[j]
+      chi1<-traits[j]
     }else{chi1 <- trait.names[j]}
     for(k in j:length(traits)){
       if(j != k){
@@ -499,6 +500,12 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
       }
     }
   }
+  }else{
+    warning("Your genetic covariance matrix includes traits estimated to have a negative heritability.")
+    cat(paste0("Your genetic covariance matrix includes traits estimated to have a negative heritability."),file=log.file,sep="",append=TRUE)
+    cat(print(paste0("Genetic correlation results could not be computed due to negative heritability estimates.")),file=log.file,sep="",append=TRUE)
+  }
+  
   
 
     
