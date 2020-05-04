@@ -31,7 +31,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     log.file <- file(paste0(log2, "_sumstats.log"),open="wt")
     
     cat(print(paste0("The preparation of ", length(trait.names), " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
-    
+    cat(print(paste0("Please note that the files should be in the same order that they were listed for the ldsc function"), sep = ""),file=log.file,sep="\n",append=TRUE)
+  
     cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
     ref <- fread(ref,header=T,data.table=F)
     
@@ -322,6 +323,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   
   if(parallel == TRUE){
     
+    print("Please note that the files should be in the same order that they were listed for the ldsc function.")
     print("Reading in reference file")
     ref <- fread(ref,header=T,data.table=F)
     
@@ -350,6 +352,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       
+      cat(print(paste0("Please note that the files should be in the same order that they were listed for the ldsc function"), sep = ""),file=log.file,sep="\n",append=TRUE)
       cat(print(paste("Preparing summary statistics for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
       
       hold_names <- names(files2)
