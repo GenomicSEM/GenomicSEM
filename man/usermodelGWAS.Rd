@@ -1,11 +1,11 @@
-\name{userGWAS}
-\alias{userGWAS}
-\title{Create genetic covariance matrices for individaul SNPs and estimate SNP effects for a user specified multivariate GWAS}
+\name{usermodelGWAS}
+\alias{usermodelGWAS}
+\title{Create genetic covariance matrices for individual SNPs and estimate SNP effects for a user specified multivariate GWAS}
 \description{
 Function to obtain model estimates for a user-specified model across SNPs. 
 }
 \usage{
-userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL, \dots)
+usermodelGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL, \dots)
 
 }
 \arguments{
