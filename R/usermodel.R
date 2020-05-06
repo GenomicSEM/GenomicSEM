@@ -509,6 +509,9 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
         }
       } else {Model1c <- ""}
       
+      #create unique combination of letters for residual variance parameter labels
+      n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
+
       Model2<-""
       for (p in 1:k) {
         linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
@@ -516,8 +519,8 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       
       Model3<-""
       for (p in 1:k) {
-        linestart3a <- paste(label, p, " ~~ ", letters[p], letters[p], letters[p+letter.off], "*", label, p, sep = "")
-        linestart3b <- paste(letters[p], letters[p], letters[p+letter.off], " > .001", sep = "")
+        linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
+        linestart3b <- paste(paste(n[,p],collapse=""), " > .001", sep = "")
         Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")
       }
       
@@ -1107,11 +1110,11 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     std_all<-standardizedSolution(sem.fit_stand)
     std_all<-subset(std_all, std_all$est.std != "NaN" & std_all$est.std != 0)
     
-    results<-cbind(unstand2, stand2)
+    results<-cbind(unstand,SE,stand,SE_stand)
 
     ##add in fixed effects
     base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
-    base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
+    base_model<-subset(base_model, !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand$lhs, unstand$op, unstand$rhs)))
     base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
     if(nrow(base_model) > 0){
       base_model$free<-NULL
@@ -1149,7 +1152,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     
     modelfit<-data.frame(modelfit)
     
-     
+    
     if(!(is.character(modelfit$chisq)) & !(is.factor(modelfit$chisq))){
       modelfit$chisq<-as.numeric(as.character(modelfit$chisq))
       modelfit$df<-as.numeric(as.character(modelfit$df))
@@ -1194,6 +1197,8 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       print("Please note that when equality constraints are used in the current version of Genomic SEM that
             the standardized output will also impose the same constraint.")
     }
+    results$p_value<-2*pnorm(abs(as.numeric(results$Unstand_Est)/as.numeric(results$Unstand_SE)),lower.tail=FALSE)
+    results$p_value<-ifelse(results$p_value == 0, "<5e-300", results$p_value)
     
     if(imp_cov == FALSE){
       return(list(modelfit=modelfit,results=results,lavaan.out=empty4))

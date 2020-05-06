@@ -346,13 +346,13 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
     if ( mean( abs( output[,names.beta[i]] / output[,names.se[i]] ) ) > 5 ) {
       writeLines( strwrap( paste0(
         "WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ", trait.names[i],
-        ". This suggests a column was misinterpreted or arguments were specified. Please, post on the google group if",
-        "you are unable to figure this issue out yourself."
+        ". This suggests a column was misinterpreted or arguments were misspecified. Please, post on the google group",
+        "if you are unable to figure this issue out yourself."
       ) ) )
       warning( paste0( 
         "The average value of estimate over standard error (i.e., Z) is > 5 for ", trait.names[i],
-        ". This suggests a column was misinterpreted or arguments were specified. Please, post on the google group if",
-        "you are unable to figure this issue out yourself."
+        ". This suggests a column was misinterpreted or arguments were misspecified. Please, post on the google group",
+        "if you are unable to figure this issue out yourself."
       ) )
     }
 
@@ -364,8 +364,11 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
 
   }
 
+  writeLines( strwrap( paste0(
+    "Please note that the files should be in the same order in which they were listed in the ldsc function call."
+  ) ) )
 
-  print("Reading in reference file.")
+  cat("Reading in reference file.\n")
   ref <- fread(file=reference,header=T,data.table=F)
 
   ##filter reference file on user provided maf.filter

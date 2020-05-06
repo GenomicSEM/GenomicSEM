@@ -4,18 +4,29 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   
   sink(log.file, append=FALSE, split=TRUE)
 
-  cat(paste0("Multivariate LD-score regression of ", length(traits), " traits ", "(", paste(trait.names,collapse=", "), ")", " began at: ", begin.time), sep = "")
+  writeLines( strwrap( paste0(
+    "Multivariate LD-score regression of ", length(traits), " traits ", "(", paste(trait.names,collapse=", "), ")",
+    " began at: ", begin.time, "\n"
+  ) ) )
 
   # Dimensions
   n.traits <- length(traits)
   n.V <- (n.traits^2 / 2) + .5*n.traits
   
-  check_names<-str_detect(trait.names, "-")
-  if(any(check_names==TRUE)){warning("Your trait names specified include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits using the trait.names argument.")}
+  if(!(is.null(trait.names))) {
+    check_names<-str_detect(trait.names, "-")
+    if(any(check_names==TRUE)) {
+      warning( paste(
+        "The trait names you specified include mathematical arguments (e.g., + or -) that will be misread by lavaan.",
+        "Please rename the traits using the trait.names argument.", sep='\n'
+      ) )
+    }
+  }
   
-  if(length(traits)==1){warning("Our version of ldsc requires 2 or more traits. Please include an additional trait.")}
+  if(length(traits)==1) {
+    warning( "Our version of ldsc requires 2 or more traits to give meaningful results." )
+  }
   
-
   # Storage:
   Gcov.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
   I.mat <- matrix(NA,nrow=n.traits,ncol=n.traits)
@@ -212,8 +223,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
           cat("\n")
           writeLines( strwrap( paste(
             "Please note that the results initially printed to screen and log file reflect the observed dichotomous",
-            "phenotype's h2 and cov_g. However, a conversion to the liability scale is being used for trait", chi2,
-            chi1, "when creating the genetic covariance matrix used as input for Genomic SEM and liability scale",
+            "phenotype's h2 and cov_g. However, a conversion to the liability scale is being used for dichotomous",
+            "traits when creating the genetic covariance matrix used as input for Genomic SEM, and liability scale",
             "results are printed at the end of the log file."
           ) ) )
           cat("\n")
@@ -232,12 +243,14 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         ratio <- (intercept-1)/(mean(merged$chi1)-1)
         ratio.se <- intercept.se/(mean(merged$chi1)-1)
          
-        cat("Results for trait",chi1,"\n")
-        cat("Lambda GC:",round(lambda.gc,4),"\n")
+        cat("Heritability results for trait",chi1,"\n")
         cat("Mean Chi^2:",round(mean.Chi,4),"\n")
-        cat("Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n")
-        cat("Ratio: ",round(ratio,4),"(",round(ratio.se,4),")","\n")
-        cat("h2:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
+        cat("Intercept:",round(intercept,4),"(",round(intercept.se,4),")","\n")
+        cat("Lambda GC:",round(lambda.gc,4),"\n")
+        cat("Ratio:",round(ratio,4),"(",round(ratio.se,4),")","\n")
+        cat("Total observed scale h2:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
+        cat("Total standardized h2:", format(reg.tot/tot.se,digits=3),"\n")
+        cat("Total h2 P-value:", format(2*pnorm(abs(reg.tot/tot.se),lower.tail=FALSE),digits=5),"\n")
         
         ### Total count
         s <- s+1
@@ -255,7 +268,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
         ######### READ chi2
 
-        cat("Calculating genetic covariance for traits:",chi1, "and", chi2, "\n")
+        cat("Calculating genetic covariance for traits:", chi1, "and", chi2, "\n")
         
         # Reuse the data read in for heritability
         
@@ -284,7 +297,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         remaining.snps <- nrow(merged)
         
         cat(print(paste(remaining.snps,"SNPs remaining after merging the files with LD-score files")),file=log.file,sep="\n",append=TRUE)
-      
+        
         ## REMOVE SNPS with excess chi-square:
         chisq.max1 <- max(0.001*max(merged$N.x),80)
         merged <- merged[merged$chi1 < chisq.max1,]
@@ -295,7 +308,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         n.snps <- nrow(merged)
         removed.snps <- remaining.snps-n.snps
         
-        cat(print(paste("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max1, "for", chi1, "or SNPs with Chi^2 >",chisq.max2, "for", chi2, paste0("(",n.snps," SNPs remain)"))),file=log.file,sep="\n",append=TRUE)
+        writeLines( strwrap( paste(
+          "Removed", removed.snps, "SNPs with Chi^2 >", chisq.max1, "for", chi1, "or Chi^2 >", chisq.max2, "for", chi2,
+          "(", n.snps, "SNPs remaining)"
+        ) ) )
         
         ## ADD INTERCEPT:
         merged$intercept <- 1
@@ -403,10 +419,12 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 #         I_pasympt.mat[j,k] <- I_pasympt.mat[k,j]
         
         mean.ZZ <- mean(merged$ZZ)
-        cat("Results for covariance between:",chi1,"and",chi2,"\n")
+        cat("Results for genetic covariance between",chi1,"and",chi2,"\n")
         cat("Mean Z*Z:",round(mean.ZZ,4),"\n")
-        cat("Cross trait Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n")
-        cat("cov_g:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
+        cat("Cross trait Intercept:",round(intercept,4),"(",round(intercept.se,4),")","\n")
+        cat("Total observed scale genetic covariance (cov_g):",round(reg.tot,4),"(",round(tot.se,4),")","\n")
+        cat("Total standardized genetic covariance:", format(reg.tot/tot.se,digits=3),"\n")
+        cat("Total genetic covariance P-value:", format(2*pnorm(abs(reg.tot/tot.se),lower.tail=FALSE),digits=5),"\n")
       
         ### Total count
         s <- s+1
@@ -477,15 +495,71 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     colnames(N.vec)<-colnames(V.mat)
   }
   
-  if(mean(liab.scale.conv.fact)!=1){
+  if(all(diag(S.mat) > 0)) {
+    ##calculate standardized results to print genetic correlations to log and screen
+    D<-sqrt(diag(diag(S.mat)))
+    S_Stand=solve(D)%*%S.mat%*%solve(D)
+    
+    #obtain diagonals of the original V matrix and take their sqrt to get SE's
+    Dvcov<-sqrt(diag(V.mat))
+    
+    #calculate the ratio of the rescaled and original S matrices
+    scaleO=as.vector(lowerTriangle((S_Stand/S.mat),diag=T))
+    
+    ## MAke sure that if ratio in NaN (devision by zero) we put the zero back in
+    scaleO[is.nan(scaleO)] <- 0
+    
+    #rescale the SEs by the same multiples that the S matrix was rescaled by
+    Dvcovl<-as.vector(Dvcov*t(scaleO))
+    
+    #obtain the sampling correlation matrix by standardizing the original V matrix
+    Vcor<-cov2cor(V.mat)
+    
+    #rescale the sampling correlation matrix by the appropriate diagonals
+    V_Stand<-diag(Dvcovl)%*%Vcor%*%diag(Dvcovl)
+    
+    #enter SEs from diagonal of standardized V
+    r<-nrow(S.mat)
+    SE_Stand<-matrix(0, r, r)
+    SE_Stand[lower.tri(SE_Stand,diag=TRUE)]<-sqrt(diag(V_Stand))
+    
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Genetic Correlation Results")),file=log.file,sep="\n",append=TRUE)
+    
+    for(j in 1:n.traits){
+      if(is.null(trait.names)){
+        chi1<-traits[j]
+      }else{chi1 <- trait.names[j]}
+      for(k in j:length(traits)){
+        if(j != k){
+          if(is.null(trait.names)){
+            chi2<-traits[k]
+          }else{chi2 <- trait.names[k]}
+          writeLines( strwrap( paste0(
+            "Genetic correlation between ", chi1, " and ", chi2, ": ", round(S_Stand[k,j],4),
+            " (", round(SE_Stand[k,j],4), ")\n"
+          ) ) )
+        }
+      }
+    }
+  } else {
+    warning("Your genetic covariance matrix includes traits estimated to have a negative heritability.")
+    cat("Your genetic covariance matrix includes traits estimated to have a negative heritability.\n")
+    cat("Genetic correlations could not be computed due to negative heritability estimates.\n")
+  }
+
+  if (mean(liab.scale.conv.fact)!=1) {
     r<-nrow(S.mat)
     SE<-matrix(0, r, r)
-    SE[lower.tri(SE,diag=TRUE)] <-sqrt(diag(V.mat))
+    SE[lower.tri(SE,diag=TRUE)]<-sqrt(diag(V.mat))
     
     cat("\n\nLiability scale results\n")
     
     for(j in 1:n.traits){
-      chi1 <- traits[j]
+      if(is.null(trait.names)){
+        chi1<-traits[j]
+      }else{chi1 <- trait.names[j]}
       for(k in j:length(traits)){
         if(j == k){
           cat("\n")
@@ -493,14 +567,15 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
           cat("Liability scale h2", ":", round(S.mat[j,j],4), "(", round(SE[j,j],4), ")\n")
         }
         if(j != k){
-          chi2 <- traits[k]
-          cat("Liability scale cov_g between", chi1, "and", chi2, ":", round(S.mat[k,j],4), "(", round(SE[k,j],4), ")\n")
+          if(is.null(trait.names)){
+            chi2<-traits[k]
+          }else{chi2 <- trait.names[k]}
+          cat("Liability scale genetic covariance between", chi1, "and", chi2, ":", round(S.mat[k,j],4), "(", round(SE[k,j],4), ")\n")
         }
       }
     }
-    cat("\n")
   }
-
+  
   end.time <- Sys.time()
   
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
@@ -508,10 +583,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   secs <- total.time-mins*60
   
   writeLines( strwrap( paste0( 
-    "Finished running at ", end.time, "."
+    "\nFinished running at ", end.time, "."
   ) ) )
   writeLines( strwrap( paste0( 
-    "Running ldsc for all files took ", mins," minutes and ", secs," seconds."
+    "Running ldsc for all files took ", mins," minutes and ", round(secs)," seconds."
   ) ) )
 
   return( list(

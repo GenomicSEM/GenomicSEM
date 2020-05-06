@@ -194,6 +194,7 @@
     "N_CAS",
     "N_CASE",
     "N_CASES",
+    "Nca",
     "Ncas",
     "Ncase",
     "Ncases",
@@ -217,6 +218,7 @@
     "N_CON",
     "N_CONTROL",
     "N_CONTROLS",
+    "Nco",
     "Ncon",
     "Ncontrol",
     "Ncontrols",
@@ -309,25 +311,25 @@
   if("N" %in% hold_names) cat( "Interpreting the N column as the N (sample size) column.\n" )
   hold_names[hold_names %in% ss.tags$n] <- "N"
   if(length(base::setdiff(names1,hold_names)) > 0)
-    cat( paste("Interpreting the ", setdiff(names1, hold_names), "column as the N (sample size) column.\n") )
+    cat( paste("Interpreting the", setdiff(names1, hold_names), "column as the N (sample size) column.\n") )
 
   names1<-hold_names
   if("N_CAS" %in% hold_names) cat( "Interpreting the N_CAS column as the N_CAS (sample size for cases) column.\n" )
   hold_names[hold_names %in% ss.tags$n.cases] <- "N_CAS"
   if(length(base::setdiff(names1,hold_names)) > 0)
-    cat( paste("Interpreting the ", setdiff(names1, hold_names), "column as the N_CAS (sample size for cases) column.\n") )
+    cat( paste("Interpreting the", setdiff(names1, hold_names), "column as the N_CAS (sample size for cases) column.\n") )
 
   names1<-hold_names
   if("N_CON" %in% hold_names) cat( "Interpreting the N_CON column as the N_CON (sample size for controls) column.\n" )
   hold_names[hold_names %in% ss.tags$n.controls] <- "N_CON"
   if(length(base::setdiff(names1,hold_names)) > 0)
-    cat( paste("Interpreting the ", setdiff(names1, hold_names), "column as the N_CON (sample size for controls) column.\n") )
+    cat( paste("Interpreting the", setdiff(names1, hold_names), "column as the N_CON (sample size for controls) column.\n") )
 
   names1<-hold_names
   if("MAF" %in% hold_names) cat( "Interpreting the MAF column as the MAF (minor allele frequency) column.\n" )
   hold_names[hold_names %in% ss.tags$maf] <- "MAF"
   if(length(setdiff(names1,hold_names)) > 0)
-    cat( paste("Interpreting the ", setdiff(names1, hold_names), "column as the MAF (minor allele frequency) column.\n") )
+    cat( paste("Interpreting the", setdiff(names1, hold_names), "column as the MAF (minor allele frequency) column.\n") )
   
   if ( maf.override ) {
     ##override MAF with reference [NOTE: this assumes the reference has a 'MAF' field]
