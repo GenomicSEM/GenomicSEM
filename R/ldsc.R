@@ -1,7 +1,7 @@
 
 
 
-ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22,n.blocks=200,ldsc.log=NULL){
+ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22,n.blocks=200,ldsc.log=NULL,stand=FALSE){
   time <- proc.time()
   
   begin.time <- Sys.time()
@@ -244,7 +244,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         cat(print(paste0("Ratio: ",round(ratio,4)," (",round(ratio.se,4),")")),file=log.file,sep="\n",append=TRUE)
         cat(print(paste0("Total Observed Scale h2: ",round(reg.tot,4)," (",round(tot.se,4),")")),file=log.file,sep="\n",append=TRUE)
         cat(print(paste0("h2 Z: ", format(reg.tot/tot.se),digits=3)),file=log.file,sep="\n",append=TRUE)
-
+        
         ### Total count
         s <- s+1
         
@@ -454,61 +454,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   }
   
   
-  if(all(diag(S) > 0)){
-  ##calculate standardized results to print genetic correlations to log and screen
-  D<-sqrt(diag(diag(S)))
-  S_Stand=solve(D)%*%S%*%solve(D)
-  
-  #obtain diagonals of the original V matrix and take their sqrt to get SE's
-  Dvcov<-sqrt(diag(V))
-  
-  #calculate the ratio of the rescaled and original S matrices
-  scaleO=as.vector(lowerTriangle((S_Stand/S),diag=T))
-  
-  ## MAke sure that if ratio in NaN (devision by zero) we put the zero back in
-  scaleO[is.nan(scaleO)] <- 0
-  
-  #rescale the SEs by the same multiples that the S matrix was rescaled by
-  Dvcovl<-as.vector(Dvcov*t(scaleO))
-  
-  #obtain the sampling correlation matrix by standardizing the original V matrix
-  Vcor<-cov2cor(V)
-  
-  #rescale the sampling correlation matrix by the appropriate diagonals
-  V_Stand<-diag(Dvcovl)%*%Vcor%*%diag(Dvcovl)
-  
-  #enter SEs from diagonal of standardized V
-  r<-nrow(S)
-  SE_Stand<-matrix(0, r, r)
-  SE_Stand[lower.tri(SE_Stand,diag=TRUE)] <-sqrt(diag(V_Stand))
-  
-  cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-  cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste("Genetic Correlation Results")),file=log.file,sep="\n",append=TRUE)
-  
-  for(j in 1:n.traits){
-    if(is.null(trait.names)){
-      chi1<-traits[j]
-    }else{chi1 <- trait.names[j]}
-    for(k in j:length(traits)){
-      if(j != k){
-        if(is.null(trait.names)){
-          chi2<-traits[k]
-        }else{chi2 <- trait.names[k]}
-        cat(print(paste0("Genetic Correlation between ", chi1, " and ",chi2, ": ", round(S_Stand[k,j],4)," (",round(SE_Stand[k,j],4),")")),file=log.file,sep="",append=TRUE)
-        cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-      }
-    }
-  }
-  }else{
-    warning("Your genetic covariance matrix includes traits estimated to have a negative heritability.")
-    cat(paste0("Your genetic covariance matrix includes traits estimated to have a negative heritability."),file=log.file,sep="",append=TRUE)
-    cat(print(paste0("Genetic correlation results could not be computed due to negative heritability estimates.")),file=log.file,sep="",append=TRUE)
-  }
-  
-  
 
-    
+  
   if(mean(Liab.S)!=1){
     r<-nrow(S)
     SE<-matrix(0, r, r)
@@ -540,6 +487,60 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     }
   }
   
+  
+  if(all(diag(S) > 0)){
+    ##calculate standardized results to print genetic correlations to log and screen
+    D<-sqrt(diag(diag(S)))
+    S_Stand=solve(D)%*%S%*%solve(D)
+    
+    #obtain diagonals of the original V matrix and take their sqrt to get SE's
+    Dvcov<-sqrt(diag(V))
+    
+    #calculate the ratio of the rescaled and original S matrices
+    scaleO=as.vector(lowerTriangle((S_Stand/S),diag=T))
+    
+    ## MAke sure that if ratio in NaN (devision by zero) we put the zero back in
+    scaleO[is.nan(scaleO)] <- 0
+    
+    #rescale the SEs by the same multiples that the S matrix was rescaled by
+    Dvcovl<-as.vector(Dvcov*t(scaleO))
+    
+    #obtain the sampling correlation matrix by standardizing the original V matrix
+    Vcor<-cov2cor(V)
+    
+    #rescale the sampling correlation matrix by the appropriate diagonals
+    V_Stand<-diag(Dvcovl)%*%Vcor%*%diag(Dvcovl)
+    
+    #enter SEs from diagonal of standardized V
+    r<-nrow(S)
+    SE_Stand<-matrix(0, r, r)
+    SE_Stand[lower.tri(SE_Stand,diag=TRUE)] <-sqrt(diag(V_Stand))
+ 
+    
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Genetic Correlation Results")),file=log.file,sep="\n",append=TRUE)
+    
+    for(j in 1:n.traits){
+      if(is.null(trait.names)){
+        chi1<-traits[j]
+      }else{chi1 <- trait.names[j]}
+      for(k in j:length(traits)){
+        if(j != k){
+          if(is.null(trait.names)){
+            chi2<-traits[k]
+          }else{chi2 <- trait.names[k]}
+          cat(print(paste0("Genetic Correlation between ", chi1, " and ",chi2, ": ", round(S_Stand[k,j],4)," (",round(SE_Stand[k,j],4),")")),file=log.file,sep="",append=TRUE)
+          cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+        }
+      }
+    }
+  }else{
+    warning("Your genetic covariance matrix includes traits estimated to have a negative heritability.")
+    cat(paste0("Your genetic covariance matrix includes traits estimated to have a negative heritability."),file=log.file,sep="",append=TRUE)
+    cat(print(paste0("Genetic correlation results could not be computed due to negative heritability estimates.")),file=log.file,sep="",append=TRUE)
+  }
+  
   end.time <- Sys.time()
   
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
@@ -551,7 +552,13 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   cat(print(paste0("Running LDSC for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
   cat(paste("     "),file=log.file,sep="\n",append=TRUE)
   
+  if(stand == FALSE){
   return(list(V=V,S=S,I=I,N=N.vec,m=m))
+  }
+  
+  if(stand == TRUE){
+    return(list(V=V,S=S,I=I,N=N.vec,m=m,V_Stand=V_Stand,S_Stand=S_Stand))
+  }
   
   
 }
