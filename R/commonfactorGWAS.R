@@ -1,20 +1,19 @@
+commonfactorGWAS <- function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,output=NULL) {
 
-
-commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL){ 
   time<-proc.time()
   
   print("Please note that an update was made to commonfactorGWAS on 11/21/19 so that it combines addSNPs and commonfactorGWAS.")
   
   if(class(SNPs) == "character"){
-    print("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to commonfactorGWAS. The current version of the function is faster and saves memory. It expects the 
+    print("You are likely listing arguments (e.g. output = ...) in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call output = ... to provide them to commonfactorGWAS. The current version of the function is faster and saves memory. It expects the 
           output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on proper usage.")
-    warning("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to commonfactorGWAS. The current version of the function is faster and saves memory. It expects the 
+    warning("You are likely listing arguments (e.g. output = ...) in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call output = ... to provide them to commonfactorGWAS. The current version of the function is faster and saves memory. It expects the 
             output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on proper usage.")
   }else{
     if(is.null(SNPs) | is.null(covstruc)){
-      print("You may be listing arguments in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to commonfactorGWAS; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
+      print("You may be listing arguments in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call output = ... to provide them to commonfactorGWAS; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
             output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on proper usage.")          
-      warning("You may be listing arguments in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to commonfactorGWAS; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
+      warning("You may be listing arguments in the order of a previous version of commonfactorGWAS. If you have yur results stored after running addSNPs you can still explicitly call output = ... to provide them to commonfactorGWAS; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
               output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?commonfactorGWAS for help on proper usage.")    
     }
     }
@@ -23,8 +22,8 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   Operating<-Sys.info()[['sysname']]
   
   
-  if(parallel==FALSE){
-    if(is.null(Output)){
+  if (!parallel) {
+    if (is.null(output)) {
       
       ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
       SNPs<-data.frame(SNPs)
@@ -65,9 +64,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       f=nrow(beta_SNP) 
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -596,10 +595,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       return(results2)
       
     }
-    if(!is.null(Output)){
-      ##pull the S and V matrices from Output list
-      V_Full<-(Output[[1]])
-      S_Full<-(Output[[2]])
+    if(!is.null(output)){
+      ##pull the S and V matrices from output list
+      V_Full<-(output[[1]])
+      S_Full<-(output[[2]])
       
       #enter in k for number of phenotypes 
       k<-ncol(S_Full[[1]])-1
@@ -608,12 +607,12 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
       
       ##number of models being run
-      f<-length(Output[[1]])
+      f<-length(output[[1]])
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -942,7 +941,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       time_all<-proc.time()-time
       print(time_all[3])
       results$se <- NULL
-      results2<-cbind(Output[[3]],results)
+      results2<-cbind(output[[3]],results)
       results2$Z_Estimate<-results2$est/results2$se_c
       results2$Pval_Estimate<-2*pnorm(abs(results2$Z_Estimate),lower.tail=FALSE)
       results2$Q_df<-ncol(S_Full[[1]])-2
@@ -952,7 +951,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
     }
   }
-  if(parallel == TRUE & Operating != "Windows"){
+  if (parallel == TRUE & Operating != "Windows") {
     
     if(is.null(cores)){
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
@@ -964,7 +963,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     ##specify the cores should have access the local environment
     makeCluster(int, type="FORK")
     
-    if(is.null(Output)){
+    if(is.null(output)){
       
       ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
       SNPs<-data.frame(SNPs)
@@ -1006,9 +1005,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -1526,10 +1525,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
     }
     
-    if(!is.null(Output)){
+    if(!is.null(output)){
       ##split the V and S matrices into as many (cores - 1) as are aviailable on the local computer
-      V_Full<-suppressWarnings(split(Output[[1]],1:int))
-      S_Full<-suppressWarnings(split(Output[[2]],1:int))
+      V_Full<-suppressWarnings(split(output[[1]],1:int))
+      S_Full<-suppressWarnings(split(output[[2]],1:int))
       
       check_names<-str_detect(colnames(S_Full[[1]][[1]]), "-")
       if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
@@ -1538,9 +1537,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       k<-ncol(S_Full[[1]][[1]])-1
       
       #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-      #'k' is the number of variables in the model
-      #'fit' is the fit function of the regression model
-      #'names' is a vector of variable names in the order you used
+      # 'k' is the number of variables in the model
+      # 'fit' is the fit function of the regression model
+      # 'names' is a vector of variable names in the order you used
       rearrange <- function (k, fit, names) {
         order1 <- names
         order2 <- rownames(inspect(fit)[[1]]) #order of variables
@@ -1868,7 +1867,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       results<- results[order(results$i, results$n),] 
       
       results$se <- NULL
-      results2<-cbind(Output[[3]],results)
+      results2<-cbind(output[[3]],results)
       results2$Z_Estimate<-results2$est/results2$se_c
       results2$Pval_Estimate<-2*pnorm(abs(results2$Z_Estimate),lower.tail=FALSE)
       results2$Q_df<-ncol(S_Full[[1]][[1]])-2
@@ -1882,7 +1881,8 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
     }
   }
-  if(parallel == TRUE & Operating == "Windows"){
+  if (parallel == TRUE && Operating == "Windows") {
     stop("Parallel processing is not currently available for Windows operating systems. Please set the parallel argument to FALSE, or switch to a Linux or Mac operating system.")
   }
-  }
+}
+
