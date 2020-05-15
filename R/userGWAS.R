@@ -1,4 +1,4 @@
-userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL){ 
+userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL,GC="standard",MPI=FALSE){ 
   time<-proc.time()
   
   ##determine if the model is likely being listed in quotes and print warning if so
@@ -529,6 +529,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           V_SNP<-diag(k)
           
           #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+          
+          #double GC correctiong using univariate LDSC intercepts
+          if(GC == "conserv"){
           for (p in 1:nrow(coords)) { 
             x<-coords[p,1]
             y<-coords[p,2]
@@ -538,6 +541,34 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
             }
           }
+          }
+          
+          #single GC correction using sqrt of univariate LDSC intercepts
+          if(GC == "standard"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*sqrt(I_LD[x,x])*varSNP[i])^2
+              }
+            }
+          }
+          
+          #no GC correction
+          if(GC == "none"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*varSNP[i])^2
+              }
+            }
+          }
+          
           
           ##create shell of full sampling covariance matrix
           V_Full<-diag(((k+1)*(k+2))/2)
@@ -621,8 +652,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
           
           if(resid_var2 > 0){
-            if(NA %in% Model_WLS$se){
-              SE<-rep("SE could not be computed", max(Model_WLS$free))}else{
+           
                 #pull the delta matrix (this doesn't depend on N)
                 S2.delt <- lavInspect(Model1_Results, "delta")
                 
@@ -639,7 +669,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
                 
                 #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))}
+                SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
@@ -928,13 +958,43 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           V_SNP<-diag(k)
           
           #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-          for (p in 1:nrow(coords)) { 
-            x<-coords[p,1]
-            y<-coords[p,2]
-            if (x != y) { 
-              V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-            if (x == y) {
-              V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+          
+          #double GC correctiong using univariate LDSC intercepts
+          if(GC == "conserv"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+              }
+            }
+          }
+          
+          #single GC correction using sqrt of univariate LDSC intercepts
+          if(GC == "standard"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*sqrt(I_LD[x,x])*varSNP[i])^2
+              }
+            }
+          }
+          
+          #no GC correction
+          if(GC == "none"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*varSNP[i])^2
+              }
             }
           }
           
@@ -1014,8 +1074,6 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
             Model_ML <- parTable(Model1_Results)
             
-            if(NA %in% Model_ML$se){
-              SE<-rep("SE could not be computed", max(Model_ML$free))}else{
                 #pull the delta matrix (this doesn't depend on N)
                 S2.delt <- lavInspect(Model1_Results, "delta")
                 
@@ -1032,7 +1090,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
                 
                 #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))}
+                SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
@@ -1623,8 +1681,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
           
           if(resid_var2 > 0){
-            if(NA %in% Model_WLS$se){
-              SE<-rep("SE could not be computed", max(Model_WLS$free))}else{
+          
                 #pull the delta matrix (this doesn't depend on N)
                 S2.delt <- lavInspect(Model1_Results, "delta")
                 
@@ -1641,7 +1698,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
                 
                 #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))}
+                SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
@@ -1937,12 +1994,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
           test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
           
-          
           if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
             Model_ML <- parTable(Model1_Results)
-            
-            if(NA %in% Model_ML$se){
-              SE<-rep("SE could not be computed", max(Model_ML$free))}else{
+
                 #pull the delta matrix (this doesn't depend on N)
                 S2.delt <- lavInspect(Model1_Results, "delta")
                 
@@ -1959,7 +2013,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
                 
                 #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))}
+                SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
@@ -2219,15 +2273,28 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
     
   }
   if(parallel == TRUE & Operating != "Windows"){
+    
     if(is.null(cores)){
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
       int <- detectCores() - 1
     }else{int<-cores}
     
+    if(MPI == FALSE){
+    
     registerDoParallel(int)
     
     ##specify the cores should have access to the local environment
     makeCluster(int, type="FORK")
+    }
+    
+    if(MPI == TRUE){
+      #register MPI
+      cluster <- getMPIcluster()
+      
+      #register cluster; no makecluster as ibrun already starts the MPI process. 
+      registerDoParallel(cluster)
+      
+    }
     
     if(is.null(Output)){
       
@@ -2710,7 +2777,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
         
         order <- rearrange(k = k2, fit = ReorderModel, names = rownames(S_Full))
-
+        
         suppressWarnings(df<-lavInspect(ReorderModel, "fit")["df"])
         suppressWarnings(npar<-lavInspect(ReorderModel, "fit")["npar"])
         
@@ -2723,18 +2790,19 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       beta_SNP<-suppressWarnings(split(beta_SNP,1:int))
       SE_SNP<-suppressWarnings(split(SE_SNP,1:int))
       varSNP<-suppressWarnings(split(varSNP,1:int))
-    
+      
       ##estimation for WLS
       if(estimation=="DWLS"){
-       
+        
         results<-foreach(n = icount(int), .combine = 'rbind') %:% 
           
           foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% { 
-  
+            
             #create empty shell of V_SNP matrix
             V_SNP<-diag(k)
             
             #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+            if(GC == "conserv"){
             for (p in 1:nrow(coords)) { 
               x<-coords[p,1]
               y<-coords[p,2]
@@ -2742,6 +2810,31 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
               if (x == y) {
                 V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
+              }
+            }
+            }
+            
+            if(GC == "standard"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*sqrt(I_LD[x,x])*varSNP[[n]][i])^2
+                }
+              }
+            }
+            
+            if(GC == "none"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*varSNP[[n]][i])^2
+                }
               }
             }
             
@@ -2825,10 +2918,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               resid_var1<-subset(Model_WLS, Model_WLS$op == "~~" & Model_WLS$free != 0 & Model_WLS$lhs == Model_WLS$rhs)
               
               resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
-          
+            
             if(resid_var2 > 0){
-              if(NA %in% Model_WLS$se){
-                SE<-rep("SE could not be computed", max(Model_WLS$free))}else{
+         
                   #pull the delta matrix (this doesn't depend on N)
                   S2.delt <- lavInspect(Model1_Results, "delta")
                   
@@ -2845,7 +2937,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                   Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
                   
                   #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                  SE <- as.matrix(sqrt(diag(Ohtt)))}
+                  SE <- as.matrix(sqrt(diag(Ohtt)))
               
               #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
               if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
@@ -3077,7 +3169,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
                 colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
               }
-             
+              
               if(modelchi == FALSE){
                 final<-data.frame(t(rep(NA, 9)))
                 if(printwarn == TRUE){
@@ -3093,10 +3185,10 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               }
               final2
             }
-        
+            
           }
       }
-
+      
       ##ML estimation
       if(estimation=="ML"){
         results<-foreach(n = icount(int), .combine = 'rbind') %:% 
@@ -3107,15 +3199,42 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             V_SNP<-diag(k)
             
             #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-            for (p in 1:nrow(coords)) { 
-              x<-coords[p,1]
-              y<-coords[p,2]
-              if (x != y) { 
-                V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
-              if (x == y) {
-                V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
+            if(GC == "conserv"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
+                }
               }
             }
+            
+            if(GC == "standard"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*sqrt(I_LD[x,x])*varSNP[[n]][i])^2
+                }
+              }
+            }
+            
+            if(GC == "none"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*varSNP[[n]][i])^2
+                }
+              }
+            }
+            
             
             ##create shell of full sampling covariance matrix
             V_Full<-diag(((k+1)*(k+2))/2)
@@ -3190,9 +3309,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
             
             Model_ML <- parTable(Model1_Results)
-            
-            if(NA %in% Model_ML$se){
-              SE<-rep("SE could not be computed", max(Model_ML$free))}else{
+
                 #pull the delta matrix (this doesn't depend on N)
                 S2.delt <- lavInspect(Model1_Results, "delta")
                 
@@ -3209,7 +3326,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
                 
                 #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))}
+                SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
@@ -3782,8 +3899,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
             
             if(resid_var2 > 0){
-              if(NA %in% Model_WLS$se){
-                SE<-rep("SE could not be computed", max(Model_WLS$free))}else{
+            
                   #pull the delta matrix (this doesn't depend on N)
                   S2.delt <- lavInspect(Model1_Results, "delta")
                   
@@ -3800,7 +3916,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                   Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
                   
                   #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                  SE <- as.matrix(sqrt(diag(Ohtt)))}
+                  SE <- as.matrix(sqrt(diag(Ohtt)))
               
               #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
               if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
@@ -4030,7 +4146,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 ##combine results with SNP, CHR, BP, A1, A2 for particular model
                 final2<-cbind(i,n,SNPs[[n]][i,],final,row.names=NULL)
                 colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-               }
+              }
               if(modelchi == FALSE){
                 final<-data.frame(t(rep(NA, 9)))
                 if(printwarn == TRUE){
@@ -4043,7 +4159,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 ##combine results with SNP, CHR, BP, A1, A2 for particular model
                 final2<-cbind(i,n,SNPs[[n]][i,],final,row.names=NULL)
                 colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","error","warning")
-            
+                
               }
               final2
             }
@@ -4073,9 +4189,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
             
             Model_ML <- parTable(Model1_Results)
-            
-            if(NA %in% Model_ML$se){
-              SE<-rep("SE could not be computed", max(Model_ML$free))}else{
+          
                 #pull the delta matrix (this doesn't depend on N)
                 S2.delt <- lavInspect(Model1_Results, "delta")
                 
@@ -4092,7 +4206,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
                 
                 #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))}
+                SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
@@ -4329,8 +4443,10 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       
     }
     
+
   }
   if(parallel == TRUE & Operating == "Windows"){
     stop("Parallel processing is not currently available for Windows operating systems. Please set the parallel argument to FALSE, or switch to a Linux or Mac operating system.")
   }
 }
+
