@@ -5,7 +5,7 @@
 Function to obtain model estimates for a user-specified model across SNPs. 
 }
 \usage{
-userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL, \dots)
+userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL,GC="standard",MPI=FALSE, \dots)
 
 }
 \arguments{
@@ -20,6 +20,8 @@ userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=FALSE,print
    \item{SNPSE}{Whether the user wants to provide a different standard error (SE) of the SNP variance than the package default. The default is to use .0005 to reflect the fact that the SNP SE is assumed to be population fixed.}
    \item{parallel}{Whether the function should run using parallel or serial processing. Default = TRUE}
    \item{Output}{Deprecated argument that takes output from the 'addSNPs' function. If output is provided for this then covstruc and SNPs should be set to NULL.}
+   \item{GC}{Level of Genomic Control (GC) you want the function to use. The default is 'standard' which adjusts the univariate GWAS standard errors by multiplying them by the square root of the univariate LDSC intercept. Additional options include 'conserv' which corrects standard errors using the univariate LDSC intercept, and 'none' which does not correct the standard errors.}
+   \item{MPI}{Whetehr the function should use multi-node processing (i.e., MPI). Please note that this should only be used on a computing cluster on which the R pacakge Rmpi is already installed.} 
 
 }
 
