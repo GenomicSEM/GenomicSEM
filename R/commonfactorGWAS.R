@@ -1,6 +1,5 @@
 
-
-commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL){ 
+commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,Output=NULL,GC="standard",MPI=FALSE){ 
   time<-proc.time()
   
   print("Please note that an update was made to commonfactorGWAS on 11/21/19 so that it combines addSNPs and commonfactorGWAS.")
@@ -48,7 +47,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       V_LD<-as.matrix(covstruc[[1]])
       S_LD<-as.matrix(covstruc[[2]])
       I_LD<-as.matrix(covstruc[[3]])
-    
+      
       check_names<-str_detect(colnames(S_LD), "-")
       if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
       
@@ -223,13 +222,43 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
           V_SNP<-diag(k)
           
           #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-          for (p in 1:nrow(coords)) { 
-            x<-coords[p,1]
-            y<-coords[p,2]
-            if (x != y) { 
-              V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-            if (x == y) {
-              V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+          
+          #double GC correctiong using univariate LDSC intercepts
+          if(GC == "conserv"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+              }
+            }
+          }
+          
+          #single GC correction using sqrt of univariate LDSC intercepts
+          if(GC == "standard"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*sqrt(I_LD[x,x])*varSNP[i])^2
+              }
+            }
+          }
+          
+          #no GC correction
+          if(GC == "none"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*varSNP[i])^2
+              }
             }
           }
           
@@ -408,13 +437,43 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
           V_SNP<-diag(k)
           
           #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-          for (p in 1:nrow(coords)) { 
-            x<-coords[p,1]
-            y<-coords[p,2]
-            if (x != y) { 
-              V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-            if (x == y) {
-              V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+          
+          #double GC correctiong using univariate LDSC intercepts
+          if(GC == "conserv"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+              }
+            }
+          }
+          
+          #single GC correction using sqrt of univariate LDSC intercepts
+          if(GC == "standard"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*sqrt(I_LD[x,x])*varSNP[i])^2
+              }
+            }
+          }
+          
+          #no GC correction
+          if(GC == "none"){
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*varSNP[i])^2
+              }
             }
           }
           
@@ -959,10 +1018,22 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       int <- detectCores() - 1
     }else{int<-cores}
     
-    registerDoParallel(int)
+    if(MPI == FALSE){
+      
+      registerDoParallel(int)
+      
+      ##specify the cores should have access to the local environment
+      makeCluster(int, type="FORK")
+    }
     
-    ##specify the cores should have access the local environment
-    makeCluster(int, type="FORK")
+    if(MPI == TRUE){
+      #register MPI
+      cluster <- getMPIcluster()
+      
+      #register cluster; no makecluster as ibrun already starts the MPI process. 
+      registerDoParallel(cluster)
+      
+    }
     
     if(is.null(Output)){
       
@@ -991,7 +1062,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       check_names<-str_detect(colnames(S_LD), "-")
       if(any(check_names==TRUE)){warning("Your trait names specified when running the ldsc function include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits.")}
-     
+      
       beta_SNP<-SNPs[,grep("beta.",fixed=TRUE,colnames(SNPs))] 
       SE_SNP<-SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))] 
       
@@ -1168,13 +1239,39 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             V_SNP<-diag(k)
             
             #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-            for (p in 1:nrow(coords)) { 
-              x<-coords[p,1]
-              y<-coords[p,2]
-              if (x != y) { 
-                V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
-              if (x == y) {
-                V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
+            if(GC == "conserv"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
+                }
+              }
+            }
+            
+            if(GC == "standard"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*sqrt(I_LD[x,x])*varSNP[[n]][i])^2
+                }
+              }
+            }
+            
+            if(GC == "none"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*varSNP[[n]][i])^2
+                }
               }
             }
             
@@ -1342,13 +1439,39 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             V_SNP<-diag(k)
             
             #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-            for (p in 1:nrow(coords)) { 
-              x<-coords[p,1]
-              y<-coords[p,2]
-              if (x != y) { 
-                V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
-              if (x == y) {
-                V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
+            if(GC == "conserv"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
+                }
+              }
+            }
+            
+            if(GC == "standard"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*sqrt(I_LD[x,x])*varSNP[[n]][i])^2
+                }
+              }
+            }
+            
+            if(GC == "none"){
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*varSNP[[n]][i])^2
+                }
               }
             }
             
@@ -1881,8 +2004,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       return(results2)
       
     }
+    
   }
   if(parallel == TRUE & Operating == "Windows"){
     stop("Parallel processing is not currently available for Windows operating systems. Please set the parallel argument to FALSE, or switch to a Linux or Mac operating system.")
   }
   }
+
