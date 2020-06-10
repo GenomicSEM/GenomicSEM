@@ -1377,7 +1377,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
               ModelQ$free <- c(rep(0, k+1), 1:(k*2), 0, 0) 
               
               #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
-              ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, optim.dx.tol = +Inf) 
+              testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, optim.dx.tol = +Inf)) 
               
               #pull the delta matrix for Q (this doesn't depend on N)
               S2.delt_Q <- lavInspect(ModelQ_Results, "delta")
@@ -1578,7 +1578,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
               ModelQ$free <- c(rep(0, k+1), 1:(k*2), 0, 0) 
               
               #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
-              ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf) 
+              testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf)) 
               
               #pull the delta matrix for Q (this doesn't depend on N)
               S2.delt_Q <- lavInspect(ModelQ_Results, "delta")
@@ -1828,7 +1828,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
               ModelQ$free <- c(rep(0, k+1), 1:(k*2), 0, 0) 
               
               #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
-              ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, optim.dx.tol = +Inf) 
+              testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, optim.dx.tol = +Inf)) 
               
               #pull the delta matrix for Q (this doesn't depend on N)
               S2.delt_Q <- lavInspect(ModelQ_Results, "delta")
@@ -1934,7 +1934,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
               ModelQ$free <- c(rep(0, k+1), 1:(k*2), 0, 0) 
               
               #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
-              ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf) 
+              testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf)) 
               
               #pull the delta matrix for Q (this doesn't depend on N)
               S2.delt_Q <- lavInspect(ModelQ_Results, "delta")
