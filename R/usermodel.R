@@ -1,5 +1,4 @@
-
-usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE){ 
+usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE,fix_resid=TRUE){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
   test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
@@ -128,15 +127,23 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   ks<-nrow(S_LD)
   S_LDb<-S_LD
   smooth1<-ifelse(eigen(S_LD)$values[ks] <= 0, S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat), S_LD<-S_LD)
-  diff<-(S_LD-S_LDb)
-  LD_sdiff<-max(diff)
-  
+  LD_sdiff<-max(abs(S_LD-S_LDb))
+
   kv<-nrow(V_LD)
   V_LDb<-V_LD
   smooth2<-ifelse(eigen(V_LD)$values[kv] <= 0, V_LD<-as.matrix((nearPD(V_LD, corr = FALSE))$mat), V_LD<-V_LD)
-  diff2<-(V_LD-V_LDb)
-  LD_sdiff2<-max(diff2)
+  LD_sdiff2<-max(abs(V_LD-V_LDb))
+
+  SE_pre<-matrix(0, k, k)
+  SE_pre[lower.tri(SE_pre,diag=TRUE)] <-sqrt(diag(V_LDb))
   
+  SE_post<-matrix(0, k, k)
+  SE_post[lower.tri(SE_post,diag=TRUE)] <-sqrt(diag(V_LD))
+  
+  Z_pre<-S_LDb/SE_pre
+  Z_post<-S_LD/SE_post
+  Z_diff<-max(abs(Z_pre-Z_post),na.rm=T)
+
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
@@ -406,6 +413,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
     
+    if(fix_resid == TRUE){
     if(class(empty4$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
       print("The model as initially specified failed to converge. A lower bound of 0 on residual variances has been automatically added to try and troubleshoot this.")
       
@@ -467,7 +475,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         #create unique combination of letters for residual variance parameter labels
         n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
-       
+        
         Model3<-""
         for (p in 1:k) {
           linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
@@ -507,6 +515,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
       }
     }
+    }
+    
     if(class(empty4$value)[1] == "simpleError"){
       print("The model failed to converge on a solution. Please try specifying an alternative model")}
     
@@ -535,7 +545,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
     bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt)) 
     
-    if(class(bread2$value) != "matrix"){
+    if(class(bread2$value)[1] != "matrix"){
       print("Error: The primary model did not converge! Additional warnings or errors are likely being printed by lavaan. 
             The model output is also printed below (without standard errors) in case this is helpful for troubleshooting. Please note
             that these results should not be interpreted.")
@@ -557,7 +567,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       print(results)  
     }
     
-    if(class(bread2$value) == "matrix"){
+    if(class(bread2$value)[1] == "matrix"){
       #create the "lettuce" part of the sandwich
       lettuce <- S2.W%*%S2.delt
       
@@ -620,8 +630,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         }
       
       if(t > 1 | t2 < -1  | t == "NaN"){
-        print("Error: The primary model produced correlations among your latent variables that are either greater than 1 or less than -1, or to have negative variances. 
-              Consquently, model fit estimates could not be computed and results should likely not be interpreted. Results are provided below 
+        print("Error: The primary model produced correlations among your latent variables that are either greater than 1 or less than -1, or the latent variables have negative variances. 
+              Consequently, model fit estimates could not be computed and results should likely not be interpreted. Results are provided below 
               to enable troubleshooting. A model constraint that constrains the latent correlations to be above -1, less than 1, or to have positive variances is suggested.")
         
         unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
@@ -1006,6 +1016,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
     
+    if(fix_resid == TRUE){
     if(class(empty4$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
       print("The model as initially specified failed to converge. A lower bound of 0 on residual variances has been automatically added to try and troubleshoot this.")
       
@@ -1065,9 +1076,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
           Model2<-paste(Model2, linestart2, " \n ", sep = "")}
         
-       #create unique combination of letters for residual variance parameter labels
+        #create unique combination of letters for residual variance parameter labels
         n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
-       
+        
         Model3<-""
         for (p in 1:k) {
           linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
@@ -1107,6 +1118,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf, std.lv=TRUE))
       }
     }
+    }
+    
     if(class(empty4$value)[1] == "simpleError"){
       print("The model failed to converge on a solution. Please try specifying an alternative model")}
     
@@ -1135,7 +1148,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
     bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt)) 
     
-    if(class(bread2$value) != "matrix"){
+    if(class(bread2$value)[1] != "matrix"){
       print("Error: The primary model did not converge! Additional warnings or errors are likely being printed by lavaan. 
             The model output is also printed below (without standard errors) in case this is helpful for troubleshooting. Please note
             that these results should not be interpreted.")
@@ -1157,7 +1170,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       print(results)  
     }
     
-    if(class(bread2$value) == "matrix"){
+    if(class(bread2$value)[1] == "matrix"){
       #create the "lettuce" part of the sandwich
       lettuce <- S2.W%*%S2.delt
       
@@ -1463,7 +1476,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     }
   }
   
-  if(class(bread2$value) == "matrix" & check == 2){  
+  if(class(bread2$value)[1] == "matrix" & check == 2){  
     ##name the columns of the results file
     colnames(results)=c("lhs","op","rhs","Unstand_Est","Unstand_SE","STD_Genotype","STD_Genotype_SE", "STD_All")
     
@@ -1511,18 +1524,23 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     
     if(LD_sdiff > 0){
-      print(paste("The S matrix was smoothed prior to model estimation due to a non-positive definite matrix. The largest
-                  difference in a cell between the smoothed and non-smoothed matrix was", LD_sdiff, sep = " "))
+      print(paste("The S matrix was smoothed prior to model estimation due to a non-positive definite matrix. The largest absolute difference in a cell between the smoothed and non-smoothed matrix was ", LD_sdiff, "As a result of the smoothing, the largest Z-statistic change for the genetic covariances was ", Z_diff, ". We recommend setting the smooth_check argument to true if you are going to run a multivariate GWAS.", sep = " "))
+    }
+    
+    if(LD_sdiff > .025){
+     warning("A difference greater than .025 was observed pre- and post-smoothing in the genetic covariance matrix. This reflects a large difference and results should be interpreted with caution!! This can often result from including low powered traits, and you might consider removing those traits from the model. If you are going to run a multivariate GWAS we strongly recommend setting the smooth_check argument to true to check smoothing for each SNP.")
+    }
+    
+    if(Z_diff > .025){
+      warning("A difference greater than .025 was observed pre- and post-smoothing for Z-statistics in the genetic covariance matrix. This reflects a large difference and results should be interpreted with caution!! This can often result from including low powered traits, and you might consider removing those traits from the model. If you are going to run a multivariate GWAS we strongly recommend setting the smooth_check argument to true to check smoothing for each SNP.")
     }
     
     if(LD_sdiff2 > 0){
-      print(paste("The V matrix was smoothed prior to model estimation due to a non-positive definite matrix. The largest
-                  difference in a cell between the smoothed and non-smoothed matrix was", LD_sdiff2, sep = " "))
+      print(paste("The V matrix was smoothed prior to model estimation due to a non-positive definite matrix. The largest absolute difference in a cell between the smoothed and non-smoothed matrix was ", LD_sdiff2, "As a result of the smoothing, the largest Z-statistic change for the genetic covariances was ", Z_diff,  ". We recommend setting the smooth_check argument to true if you are going to run a multivariate GWAS.", sep = " "))
     }
     
     if(any(constraints2 == TRUE)){
-      print("Please note that when equality constraints are used in the current version of Genomic SEM that
-            the standardized output will also impose the same constraint.")
+      print("Please note that when equality constraints are used in the current version of Genomic SEM that the standardized output will also impose the same constraint.")
     }
     results$p_value<-2*pnorm(abs(as.numeric(results$Unstand_Est)/as.numeric(results$Unstand_SE)),lower.tail=FALSE)
     results$p_value<-ifelse(results$p_value == 0, "< 5e-300", results$p_value)
