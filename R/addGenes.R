@@ -1,4 +1,4 @@
-addGenes <-function(covstruc, Genes){
+addGenes <- function(covstruc, Genes) {
   time<-proc.time()
   
   V_LD<-as.matrix(covstruc[[1]])
@@ -119,6 +119,6 @@ addGenes <-function(covstruc, Genes){
   ##save the rsnumbers, MAF, A1/A2, and BP
   Genes2<-Genes[,c(1,4)]
   
-  return(Output <- list(V_Full=V_Full_List,S_Full=S_Full_List,ID=Genes2))
+  return(Output <- list(V_Full=V_Full_List,S_Full=S_Full_List,ID=Genes2,n=covstruc$n))
   
 }
