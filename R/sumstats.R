@@ -59,7 +59,7 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
     cat( 'note: standard output is partially suppressed for parallel processing.\n' )
   } else {
     cores = 1  ## this defaults mclapply() to lapply()
-    split.log = TRUE  ## restore standard output if processing all sequentially
+    split.log = TRUE  ## preserve standard output if processing all sequentially
   }
 
 
