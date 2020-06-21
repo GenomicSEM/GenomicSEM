@@ -208,11 +208,12 @@ addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=FALSE,cores=NULL){
     }}
   
   ##save the rsnumbers, MAF, A1/A2, and BP
-  SNPs2<-SNPs[,1:6]
+  SNPs<-SNPs[,1:6]
   
   time_all<-proc.time()-time
   print(time_all[3])
   
-  return(Output <- list(V_Full=V_Full_List,S_Full=S_Full_List,RS=SNPs2))
+  return(output <- list(V_Full=V_Full_List,S_Full=S_Full_List,RS=SNPs,n=covstruc$n))
   
 }
+
