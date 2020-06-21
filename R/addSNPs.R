@@ -1,7 +1,7 @@
-addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=FALSE,cores=NULL){
+addSNPs <- function(covstruc, SNPs, SNPSE=FALSE, parallel=FALSE, cores=NULL, GC="standard") {
   
   print("Please note that an update was made on 11/21/19 that combine addSNPs and the multivariate GWAS functions into a single step. Therefore, addSNPs is no longer a necessary function.")    
-   warning("Please note that an update was made on 11/21/19 that combine addSNPs and the multivariate GWAS functions into a single step. Therefore, addSNPs is no longer a necessary function.")
+  warning("Please note that an update was made on 11/21/19 that combine addSNPs and the multivariate GWAS functions into a single step. Therefore, addSNPs is no longer a necessary function.")
   
   time<-proc.time()
   
@@ -40,87 +40,117 @@ addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=FALSE,cores=NULL){
       int <- parallel::detectCores() - 1
     }else{int<-cores}
     
-  print("Creating Sampling Covariance [V] matrices")
-  V_Full_List<-mclapply(X=1:f,FUN=function(X){
-    
-    i<-X
-    
-    #create empty shell of V_SNP matrix
-    V_SNP<-diag(k)
-    
-    ##pull the coordinates of the I_LD matrix to loop making the V_SNP matrix
-    coords<-which(I_LD != 'NA', arr.ind= T)
-    
-    #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-    for (p in 1:nrow(coords)) { 
-      x<-coords[p,1]
-      y<-coords[p,2]
-      if (x != y) { 
-        V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-      if (x == y) {
-        V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+    print("Creating Sampling Covariance [V] matrices")
+    V_Full_List<-mclapply(X=1:f,FUN=function(X){
+      
+      i<-X
+      
+      #create empty shell of V_SNP matrix
+      V_SNP<-diag(k)
+      
+      ##pull the coordinates of the I_LD matrix to loop making the V_SNP matrix
+      coords<-which(I_LD != 'NA', arr.ind= T)
+      
+      if(GC == "conserv"){
+      #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+        for (p in 1:nrow(coords)) { 
+          x<-coords[p,1]
+          y<-coords[p,2]
+          if (x != y) { 
+            V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
+          if (x == y) {
+            V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+          }
+        }
       }
-    }
+      
+      #single GC correction using sqrt of univariate LDSC intercepts
+      if(GC == "standard"){
+      #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+        for (p in 1:nrow(coords)) { 
+          x<-coords[p,1]
+          y<-coords[p,2]
+          if (x != y) { 
+            V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[i]^2)}
+          if (x == y) {
+            V_SNP[x,x]<-(SE_SNP[i,x]*sqrt(I_LD[x,x])*varSNP[i])^2
+          }
+        }
+      }
+      
+      #no GC correction
+      if(GC == "none"){
+      #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+        for (p in 1:nrow(coords)) { 
+          x<-coords[p,1]
+          y<-coords[p,2]
+          if (x != y) { 
+            V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*varSNP[i]^2)}
+          if (x == y) {
+            V_SNP[x,x]<-(SE_SNP[i,x]*varSNP[i])^2
+          }
+        }
+      }
+      
+      ##create shell of full sampling covariance matrix
+      V_Full<-diag(((k+1)*(k+2))/2)
+      
+      ##input the ld-score regression region of sampling covariance from ld-score regression SEs
+      V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
+      
+      ##add in SE of SNP variance as first observation in sampling covariance matrix
+      V_Full[1,1]<-varSNPSE2
+      
+      ##add in SNP region of sampling covariance matrix
+      V_Full[2:(k+1),2:(k+1)]<-V_SNP
+      
+      k2<-nrow(V_Full)
+      smooth2<-ifelse(eigen(V_Full)$values[k2] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
+      
+      ##store the full V to a list of V_full matrices
+      V_Full
+      
+    },mc.cores=int)
     
-    ##create shell of full sampling covariance matrix
-    V_Full<-diag(((k+1)*(k+2))/2)
-    
-    ##input the ld-score regression region of sampling covariance from ld-score regression SEs
-    V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
-    
-    ##add in SE of SNP variance as first observation in sampling covariance matrix
-    V_Full[1,1]<-varSNPSE2
-    
-    ##add in SNP region of sampling covariance matrix
-    V_Full[2:(k+1),2:(k+1)]<-V_SNP
-    
-    k2<-nrow(V_Full)
-    smooth2<-ifelse(eigen(V_Full)$values[k2] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
-    
-    ##store the full V to a list of V_full matrices
-    V_Full
-    
-  },mc.cores=int)
-  
-  print("Creating Genetic Covariance [S] matrices")
-  S_Full_List<-mclapply(X=1:f,FUN=function(X){
-    
-    i<-X
-    
-    #create empty vector for S_SNP
-    S_SNP<-vector(mode="numeric",length=k+1)
-    
-    #enter SNP variance from reference panel as first observation
-    S_SNP[1]<-varSNP[i]
-    
-    #enter SNP covariances (standardized beta * SNP variance from refference panel)
-    for (p in 1:k) {
-      S_SNP[p+1]<-varSNP[i]*beta_SNP[i,p]
-    }
-    
-    #create shell of the full S (observed covariance) matrix
-    S_Full<-diag(k+1)
-    
-    ##add the LD portion of the S matrix
-    S_Full[(2:(k+1)),(2:(k+1))]<-S_LD
-    
-    ##add in observed SNP variances as first row/column
-    S_Full[1:(k+1),1]<-S_SNP
-    S_Full[1,1:(k+1)]<-t(S_SNP)
-    
-    ##pull in variables names specified in LDSC function and name first column as SNP
-    colnames(S_Full)<-c("SNP", colnames(S_LD))
-    
-    ##name rows like columns
-    rownames(S_Full)<-colnames(S_Full)
-    
-    ##smooth to near positive definite if either V or S are non-positive definite
-    ks<-nrow(S_Full)
-    smooth1<-ifelse(eigen(S_Full)$values[ks] <= 0, S_Full<-as.matrix((nearPD(S_Full, corr = FALSE))$mat), S_Full<-S_Full)
-    
-    ##store the full S to a list of S_full matrices
-    S_Full
-  },mc.cores=int)}
+    print("Creating Genetic Covariance [S] matrices")
+    S_Full_List<-mclapply(X=1:f,FUN=function(X){
+      
+      i<-X
+      
+      #create empty vector for S_SNP
+      S_SNP<-vector(mode="numeric",length=k+1)
+      
+      #enter SNP variance from reference panel as first observation
+      S_SNP[1]<-varSNP[i]
+      
+      #enter SNP covariances (standardized beta * SNP variance from refference panel)
+      for (p in 1:k) {
+        S_SNP[p+1]<-varSNP[i]*beta_SNP[i,p]
+      }
+      
+      #create shell of the full S (observed covariance) matrix
+      S_Full<-diag(k+1)
+      
+      ##add the LD portion of the S matrix
+      S_Full[(2:(k+1)),(2:(k+1))]<-S_LD
+      
+      ##add in observed SNP variances as first row/column
+      S_Full[1:(k+1),1]<-S_SNP
+      S_Full[1,1:(k+1)]<-t(S_SNP)
+      
+      ##pull in variables names specified in LDSC function and name first column as SNP
+      colnames(S_Full)<-c("SNP", colnames(S_LD))
+      
+      ##name rows like columns
+      rownames(S_Full)<-colnames(S_Full)
+      
+      ##smooth to near positive definite if either V or S are non-positive definite
+      ks<-nrow(S_Full)
+      smooth1<-ifelse(eigen(S_Full)$values[ks] <= 0, S_Full<-as.matrix((nearPD(S_Full, corr = FALSE))$mat), S_Full<-S_Full)
+      
+      ##store the full S to a list of S_full matrices
+      S_Full
+    },mc.cores=int)}
   
   if(parallel == FALSE){
     #make empty matrices for S_full
@@ -170,14 +200,44 @@ addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=FALSE,cores=NULL){
       ##pull the coordinates of the I_LD matrix to loop making the V_SNP matrix
       coords<-which(I_LD != 'NA', arr.ind= T)
       
+      if(GC == "conserv"){
       #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-      for (p in 1:nrow(coords)) { 
-        x<-coords[p,1]
-        y<-coords[p,2]
-        if (x != y) { 
-          V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-        if (x == y) {
-          V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+        for (p in 1:nrow(coords)) { 
+          x<-coords[p,1]
+          y<-coords[p,2]
+          if (x != y) { 
+            V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
+          if (x == y) {
+            V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+          }
+        }
+      }
+      
+      #single GC correction using sqrt of univariate LDSC intercepts
+      if(GC == "standard"){
+      #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+        for (p in 1:nrow(coords)) { 
+          x<-coords[p,1]
+          y<-coords[p,2]
+          if (x != y) { 
+            V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[i]^2)}
+          if (x == y) {
+            V_SNP[x,x]<-(SE_SNP[i,x]*sqrt(I_LD[x,x])*varSNP[i])^2
+          }
+        }
+      }
+      
+      #no GC correction
+      if(GC == "none"){
+      #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+        for (p in 1:nrow(coords)) { 
+          x<-coords[p,1]
+          y<-coords[p,2]
+          if (x != y) { 
+            V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*varSNP[i]^2)}
+          if (x == y) {
+            V_SNP[x,x]<-(SE_SNP[i,x]*varSNP[i])^2
+          }
         }
       }
       
