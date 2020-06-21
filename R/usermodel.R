@@ -1,4 +1,4 @@
-usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE) {
+usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE, fix_resid=TRUE) { 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
   test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
@@ -31,8 +31,8 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   ##read in the LD portion of the S (covariance) matrix
   S_LD<-as.matrix(covstruc$S)
   
-  ##set the number of observations behind the covariance matrix
-  S_LD_nobs<-covstruc$m  #this causes pnchisq() non-convergence warnings -> __NOBS_OVERRIDE__
+  ##set the number of observations (typically LD-score bins) behind the covariance matrix
+  S_LD_nobs<-covstruc$n  # this is what it should be, but see -> __NOBS_OVERRIDE__
   
   ##k = number of phenotypes in dataset (i.e., number of columns in LD portion of S matrix)
   k<-ncol(S_LD)
@@ -78,6 +78,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   rownames(S_LD) <- S_names
   colnames(S_LD) <- S_names
   
+  cat( 'renaming V matrix entries..\n' )
   ##name columns of V to remove any variables not used in the current analysis
   y<-expand.grid(S_names,S_names)
   y<-y[!duplicated(apply(y,1,function(x) paste(sort(x),collapse=''))),]
@@ -127,62 +128,78 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   }
   Model1<-model
   
+  cat( 'smoothing V and S matrices..\n' )
   ##smooth to near positive definite if either V or S are non-positive definite
   ks<-nrow(S_LD)
   S_LDb<-S_LD
   smooth1<-ifelse(eigen(S_LD)$values[ks] <= 0, S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat), S_LD<-S_LD)
-  diff<-(S_LD-S_LDb)
-  LD_sdiff<-max(diff)
-  
+  LD_sdiff<-max(abs(S_LD-S_LDb))
+
   kv<-nrow(V_LD)
   V_LDb<-V_LD
   smooth2<-ifelse(eigen(V_LD)$values[kv] <= 0, V_LD<-as.matrix((nearPD(V_LD, corr = FALSE))$mat), V_LD<-V_LD)
-  diff2<-(V_LD-V_LDb)
-  LD_sdiff2<-max(diff2)
+  LD_sdiff2<-max(abs(V_LD-V_LDb))
+
+  SE_pre<-matrix(0, k, k)
+  SE_pre[lower.tri(SE_pre,diag=TRUE)] <-sqrt(diag(V_LDb))
   
+  SE_post<-matrix(0, k, k)
+  SE_post[lower.tri(SE_post,diag=TRUE)] <-sqrt(diag(V_LD))
+  
+  Z_pre<-S_LDb/SE_pre
+  Z_post<-S_LD/SE_post
+  Z_diff<-max(abs(Z_pre-Z_post),na.rm=T)
+
+  cat( 'initializing lavaan model factor structure..\n' )
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
   
+  ##modification of trycatch that allows the results of a failed run to still be saved
   tryCatch.W.E <- function(expr)
   {
-    W <- NULL
-    w.handler <- function(w){ # warning handler
-      W <<- w
+    .warning <- NULL
+    w.handler <- function(w) { # warning handler
+      .warning <<- c( .warning, w$message )
       invokeRestart("muffleWarning")
     }
     list(
-      value = withCallingHandlers(
-        tryCatch(expr, error = function(e) e),
-        warning = w.handler
+      value=withCallingHandlers(
+        tryCatch( expr, error=function(e) e ),
+        warning=w.handler
       ),
-      warning = W
+      warning=paste( .warning, collapse='\n' )
     )
   }
-  
+
   ##run the model
-  empty2<-tryCatch.W.E(
+  
+  empty2 <- tryCatch.W.E(
     ReorderModel1 <- sem(
       Model1,
       sample.cov = S_LD,
       estimator = "DWLS",  #should this not depend on the estimation method?
       WLS.V = W,           #should this?
-      sample.nobs = S_LD_nobs,
+      sample.nobs = 2,
       warn = FALSE,
       std.lv = std.lv,
       optim.dx.tol = +Inf,
       optim.force.converged = TRUE,
-      control=list(iter.max=1)
+      control = list(iter.max=1)
     )
   )
   
-  if(class(empty2$value) != "lavaan"){
-    latentcorr<-grepl("not defined:", empty2$value$message[1][1])
-    latentcorr2<-grepl("unknown", empty2$value$message[1][1])
-    if(latentcorr == TRUE | latentcorr2 == TRUE){
-      warning(paste("The function may have stopped either because a variable has been misnamed in the model or because you have tried to estimate a correlation between an observed and latent variable. In the latter case, one workaround
-                    is to define a latent variable solely by the observed variable."))
-    }}
+  if ( !( "lavaan" %in% class(empty2$value) ) ) {
+    latentcorr <- any( grepl("not defined:", empty2$value$message[1][1]) )
+    latentcorr2 <- any( grepl("unknown", empty2$value$message[1][1]) )
+    if ( latentcorr || latentcorr2 ) {
+      warning( paste(
+        "The function may have stopped either because a variable has been misnamed in the model or because you have",
+        "tried to estimate a correlation between an observed and latent variable. In the latter case, one workaround",
+        "is to define a latent variable solely by the observed variable.", sep='\n'
+      ) )
+    }
+  }
   
   ##determine number of latent variables from writing extended model
   r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
@@ -272,6 +289,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   
   Model1<-write.Model1(k)
   
+  cat( 'pruning lavaan model..\n' )
   ##code to remove duplicated elements between user/automatically specified Model Input
   while(class(tryCatch.W.E(lavParseModelString(Model1))$value$message) != 'NULL'){
     u<-tryCatch.W.E(lavParseModelString(Model1))$value$message
@@ -331,13 +349,13 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     modelCFI<-write.null(k)
     
     ##run CFI model so it knows the reordering for the independence model
-    empty<-tryCatch.W.E(
+    empty <- tryCatch.W.E(
       fitCFI <- sem(
         modelCFI,
         sample.cov = S_LD,
         estimator = "DWLS",  #should this not depend on the estimation method?
         WLS.V = W,           #should this?
-        sample.nobs = S_LD_nobs,
+        sample.nobs = 2,
         optim.dx.tol = +Inf
       )
     )
@@ -345,11 +363,10 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     orderCFI <- rearrange(k = k, fit = fitCFI, names = rownames(S_LD))
     
     ##reorder matrix for independence (i.e., null) model for CFI calculation
-    V_Reorder2<-V_LD[orderCFI,orderCFI]
+    V_Reorder2 <- V_LD[orderCFI,orderCFI]
     V_Reorder2b<-diag(z)
     diag(V_Reorder2b)<-diag(V_Reorder2)
     W_CFI<-solve(V_Reorder2b)
-
   }
   
   ##code to write saturated model to check there are no redundancies
@@ -393,22 +410,22 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   modeltest2 <- cSplit(modeltest, "write.test.k.", sep = "\n", direction = "long")
   modeltest2$write.test.k.<-as.character(modeltest2$write.test.k.)
   
-  empty3<-tryCatch.W.E(
+  empty3 <- tryCatch.W.E(
     ReorderModel <- sem(
       Model1,
       sample.cov = S_LD,
-      estimator = "DWLS",
-      WLS.V = W,
+      estimator = "DWLS",  #should this not depend on the estimation method?
+      WLS.V = W,           #should this?
       sample.nobs = 2,
       warn = FALSE,
       std.lv = std.lv,
       optim.dx.tol = +Inf,
       optim.force.converged = TRUE,
-      control=list(iter.max=1)
+      control = list(iter.max=1)
     )
   )
   
-  if( !( "lavaan" %in% class(empty3$value) ) ) {
+  if ( !( "lavaan" %in% class(empty3$value) ) ) {
     warning( paste(
         "The function has stopped due to convergence issues for your primary model.",
         "Please, contact us with your specific model and variables used or try specifying an",
@@ -420,156 +437,154 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   ##save the ordering
   order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
   
-  
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
-  V_Reorderb<-diag(z)
-  diag(V_Reorderb)<-diag(V_Reorder)
-  W_Reorder<-solve(V_Reorderb)
 
   ##set estimation-specific parameters
   S_LD_nobs = 200  # see __NOBS_OVERRIDE__
-  wls.v = NULL
+  W_Reorder = NULL
   letter.off = 1 # letter offset
   if ( estimation == "DWLS" ) {
     S_LD_nobs = 2  # see __NOBS_OVERRIDE__
-    wls.v = W_Reorder
+    V_Reorderb<-diag(z)
+    diag(V_Reorderb)<-diag(V_Reorder)
+    W_Reorder<-solve(V_Reorderb)
     letter.off = 2
   }
 
   cat("Running primary model..\n")
   ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error.
-  empty4<-tryCatch.W.E(
+  empty4 <- tryCatch.W.E(
     Model1_Results <- sem(
       Model1,
       sample.cov = S_LD,
       estimator = estimation,
-      WLS.V = wls.v,
+      WLS.V = W_Reorder,
       sample.nobs = S_LD_nobs,
       std.lv = std.lv,
       optim.dx.tol = +Inf
     )
   )
 
-  empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
+  if ( empty4$warning == '' ) empty4$warning = 0
   
-  if(class(empty4$value)[1] == "simpleError" || grepl("solution has NOT", as.character(empty4$warning))){
-    cat(
-      "The model as initially specified failed to converge. A lower bound of 0 on residual",
-      "variances has been automatically added to try and troubleshoot this.",
-      sep='\n'
-    )
-    
-    write.Model1 <- function(k, label = "V", label2 = "VF") {
-      
-      ModelsatF<-""
-      for (i in 1:(k-1)) {
-        linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
-        if (k-i >= 2) {
-          linemidc <- ""
-          for (j in (i+2):k) {
-            linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
-          }
-        } else {linemidc <- ""}
-        ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
-      }
-      
-      if(r > 0){
-        Model1b <- ""
-        for (t in 1:r) {
-          for (i in 1) {
-            linestartb <- paste(lat_labs[t], " =~ 0*",label2, i, sep = "")
-            if ((k-1)-i > 0 | k == 2) {
-              linemidb <- ""
-              for (j in (i+1):k) {
-                linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
-              }
-            } else {linemidb <- ""}
-            
-          }
-          Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
-        }
-      } else {Model1b <- ""}
-      
-      
-      if(r > 0){
-        Model1c <- ""
-        for (t in 1:r) {
-          for (i in 1) {
-            linestartc <- paste(lat_labs[t], " ~~ 0*",label2, i, sep = "")
-            if ((k-1)-i > 0 | k == 2) {
-              linemidc <- ""
-              for (j in (i+1):k) {
-                linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
-              }
-            } else {linemidc <- ""}
-            
-          }
-          Model1c <- paste(Model1c, linestartc, linemidc, " \n ", sep = "")
-        }
-      } else {Model1c <- ""}
-      
-      #create unique combination of letters for residual variance parameter labels
-      n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
-
-      Model2<-""
-      for (p in 1:k) {
-        linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
-        Model2<-paste(Model2, linestart2, " \n ", sep = "")}
-      
-      Model3<-""
-      for (p in 1:k) {
-        linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
-        linestart3b <- paste(paste(n[,p],collapse=""), " > .001", sep = "")
-        Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")
-      }
-      
-      Model4<-""
-      for (p in 1:k) {
-        linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
-        Model4<-paste(Model4, linestart4, " \n ", sep = "")}
-      
-      Modelsat<-""
-      for (i in 1:(k-1)) {
-        linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
-        if (k-i >= 2) {
-          linemidc <- ""
-          for (j in (i+2):k) {
-            linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
-            
-          }
-        } else {linemidc <- ""}
-        Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
-      }
-      
-      Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model2, Model3, Model4, Modelsat, sep = "")
-      
-      return(Model5)
-    }
-    
-    Model1<-write.Model1(k)
-    
-    empty4<-tryCatch.W.E(
-      Model1_Results <- sem(
-        Model1,
-        sample.cov = S_LD,
-        estimator = estimation,
-        WLS.V = wls.v,
-        sample.nobs = S_LD_nobs,
-        std.lv = std.lv,
-        optim.dx.tol = +Inf
+  if ( fix_resid ) {
+    if ( class(empty4$value)[1] == "simpleError" || any( grepl("solution has NOT", as.character(empty4$warning)) ) ) {
+      cat(
+        "The model as initially specified failed to converge. A lower bound of 0 on residual",
+        "variances has been automatically added to try and troubleshoot this.",
+        sep='\n'
       )
-    )
-  }
+      
+      write.Model1 <- function(k, label = "V", label2 = "VF") {
+        
+        ModelsatF<-""
+        for (i in 1:(k-1)) {
+          linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
+          if (k-i >= 2) {
+            linemidc <- ""
+            for (j in (i+2):k) {
+              linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
+            }
+          } else {linemidc <- ""}
+          ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+        }
+        
+        if(r > 0){
+          Model1b <- ""
+          for (t in 1:r) {
+            for (i in 1) {
+              linestartb <- paste(lat_labs[t], " =~ 0*",label2, i, sep = "")
+              if ((k-1)-i > 0 | k == 2) {
+                linemidb <- ""
+                for (j in (i+1):k) {
+                  linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+                }
+              } else {linemidb <- ""}
+              
+            }
+            Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
+          }
+        } else {Model1b <- ""}
+        
+        
+        if(r > 0){
+          Model1c <- ""
+          for (t in 1:r) {
+            for (i in 1) {
+              linestartc <- paste(lat_labs[t], " ~~ 0*",label2, i, sep = "")
+              if ((k-1)-i > 0 | k == 2) {
+                linemidc <- ""
+                for (j in (i+1):k) {
+                  linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+                }
+              } else {linemidc <- ""}
+              
+            }
+            Model1c <- paste(Model1c, linestartc, linemidc, " \n ", sep = "")
+          }
+        } else {Model1c <- ""}
+        
+        #create unique combination of letters for residual variance parameter labels
+        n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
 
-  if(class(empty4$value)[1] == "simpleError"){
+        Model2<-""
+        for (p in 1:k) {
+          linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
+          Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+        
+        Model3<-""
+        for (p in 1:k) {
+          linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
+          linestart3b <- paste(paste(n[,p],collapse=""), " > .001", sep = "")
+          Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")
+        }
+        
+        Model4<-""
+        for (p in 1:k) {
+          linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
+          Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+        
+        Modelsat<-""
+        for (i in 1:(k-1)) {
+          linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
+          if (k-i >= 2) {
+            linemidc <- ""
+            for (j in (i+2):k) {
+              linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
+              
+            }
+          } else {linemidc <- ""}
+          Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
+        }
+        
+        Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model2, Model3, Model4, Modelsat, sep = "")
+        
+        return(Model5)
+      }
+      
+      Model1<-write.Model1(k)
+      
+      empty4 <- tryCatch.W.E(
+        Model1_Results <- sem(
+          Model1,
+          sample.cov = S_LD,
+          estimator = estimation,
+          WLS.V = W_Reorder,
+          sample.nobs = S_LD_nobs,
+          std.lv = std.lv,
+          optim.dx.tol = +Inf
+        )
+      )
+    }
+  }
+  
+  if ( class(empty4$value)[1] == "simpleError" ) {
     print("The model failed to converge on a solution. Please try specifying an alternative model")
   }
   
-  if(!(is.null(empty4$warning))){
-    if(grepl("solution has NOT", as.character(empty4$warning)) == TRUE){
-      print("The model failed to converge on a solution. Please try specifying an alternative model.")
-    }
+  if ( any( grepl("solution has NOT", as.character(empty4$warning)) ) ) {
+    print("The model failed to converge on a solution. Please try specifying an alternative model.")
   }
   
   ##save model implied matrix and difference between observed and model implied S_LD matrix
@@ -587,14 +602,14 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   ##match up
   S2.delta <- lavInspect(Model1_Results, "delta")
   
-  ##weight matrix from stage 2. S2.W isn't reordered by including something like model constraints
+  ##weight matrix from stage 2. S2.W is not reordered by including something like model constraints
   S2.W <- lavInspect(Model1_Results, "WLS.V")
   
   #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that
   #would only be correct if the fit function were correctly specified
   bread2<-tryCatch.W.E(bread <- solve(t(S2.delta)%*%S2.W%*%S2.delta))
   
-  if(!( "matrix" %in% class(bread2$value) )){
+  if ( !( "matrix" %in% class(bread2$value) ) ) {
     print( "Error: The primary model did not converge!" )
     print( bread2$value )
     cat(
@@ -624,7 +639,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     ) )
   }
   
-  if( "matrix" %in% class(bread2$value) ){
+  if ( "matrix" %in% class(bread2$value) ) {
     #create the "lettuce" part of the sandwich
     lettuce <- S2.W%*%S2.delta
     
@@ -686,7 +701,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       }
     
       ##check whether the correlations among latent variables are positive definite
-      if(r > 1) {
+      if (r > 1) {
         empty<-tryCatch.W.E(corr.lowtri<-lowerTriangle(lavInspect(Model1_Results,"cor.lv")[1:r,1:r]))
         t<-max(corr.lowtri)
         t2<-min(corr.lowtri)
@@ -781,12 +796,12 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     
     print("Calculating model chi-square..")
 
-    testQ<-tryCatch.W.E(
+    testQ <- tryCatch.W.E(
       ModelQ_Results_table <- sem(
         model = ModelQ_table,
         sample.cov = S_LD,
         estimator = estimation,
-        WLS.V = wls.v,
+        WLS.V = W_Reorder,
         sample.nobs = S_LD_nobs,
         start = ModelQ_table$ustart,
         std.lv = std.lv,
@@ -794,18 +809,18 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       )
     )
     
-    testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
-    testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_table, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
+    if ( testQ$warning == '' ) testQ$warning = "Safe"
+    testQ$warning <- ifelse( is.na(inspect(ModelQ_Results_table, "se")$theta[1,2]), "lavaan WARNING: model has NOT converged!", testQ$warning )
     
-    if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
+    if ( any( grepl("lavaan WARNING: model has NOT converged!", as.character(testQ$warning)) ) ) {
       
       ModelQ_table$ustart<-ifelse(ModelQ_table$free > 0, .01, ModelQ_table$ustart)
-      testQ2<-tryCatch.W.E(
+      testQ2 <- tryCatch.W.E(
         ModelQ_Results_table <- sem(
           model = ModelQ_table,
           sample.cov = S_LD,
           estimator = estimation,
-          WLS.V = wls.v,
+          WLS.V = W_Reorder,
           sample.nobs = S_LD_nobs,
           start = ModelQ_table$ustart, # this was 'start = ModelQ$ustart' for DWLS
           std.lv = std.lv,
@@ -815,18 +830,18 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
 
     } else {testQ2<-testQ}
     
-    testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
-    testQ2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_table, "se")$theta[1,2]) == TRUE, testQ2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ2$warning$message[1])
+    if ( testQ2$warning == '' ) testQ2$warning = "Safe"
+    testQ2$warning <- ifelse( is.na(inspect(ModelQ_Results_table, "se")$theta[1,2]), "lavaan WARNING: model has NOT converged!", testQ2$warning )
     
-    if(as.character(testQ2$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
+    if ( any( grepl("lavaan WARNING: model has NOT converged!", as.character(testQ2$warning)) ) ) {
       
       ModelQ_table$ustart<-ifelse(ModelQ_table$free > 0, .1, ModelQ_table$ustart)
-      testQ3<-tryCatch.W.E(
+      testQ3 <- tryCatch.W.E(
         ModelQ_Results_table <- sem(
           model = ModelQ_table,
           sample.cov = S_LD,
           estimator = estimation,
-          WLS.V = wls.v,
+          WLS.V = W_Reorder,
           sample.nobs = S_LD_nobs,
           start = ModelQ_table$ustart, # this was 'start = ModelQ$ustart' for DWLS
           std.lv = std.lv,
@@ -836,10 +851,10 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
 
     } else {testQ3<-testQ2}
     
-    testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
-    testQ3$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_table, "se")$theta[1,2]) == TRUE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ3$warning$message[1])
+    if ( testQ3$warning == '' ) testQ3$warning = "Safe"
+    testQ3$warning <- ifelse( is.na(inspect(ModelQ_Results_table, "se")$theta[1,2]), "lavaan WARNING: model has NOT converged!", testQ3$warning )
     
-    if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+    if ( !any( grepl("lavaan WARNING: model has NOT converged!", as.character(testQ3$warning)) ) ) {
       
       #pull the delta matrix (this doesn't depend on N)
       S2.delta_Q <- lavInspect(ModelQ_Results_table, "delta")
@@ -881,22 +896,35 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
 
       print("Calculating CFI..")
 
+      ##set estimation-specific parameters
+      S_LD_nobs = 200  # see __NOBS_OVERRIDE__
+      W_CFI = NULL
+      letter.off = 1 # letter offset
+      if ( estimation == "DWLS" ) {
+        S_LD_nobs = 2  # see __NOBS_OVERRIDE__
+        V_Reorder2b<-diag(z)
+        diag(V_Reorder2b)<-diag(V_Reorder2)
+        W_CFI<-solve(V_Reorder2b)
+        letter.off = 2
+      }
+
       ##now CFI
       ##run independence model
-      testCFI<-tryCatch.W.E(
+      testCFI <- tryCatch.W.E(
         fitCFI <- sem(
           modelCFI,
           sample.cov = S_LD,
           estimator = estimation,
-          WLS.V = wls.v,
+          WLS.V = W_CFI,
           sample.nobs = S_LD_nobs,
           optim.dx.tol = +Inf
         )
       )
-      testCFI$warning$message[1]<-ifelse(is.null(testCFI$warning$message), testCFI$warning$message[1]<-"Safe", testCFI$warning$message[1])
-      testCFI$warning$message[1]<-ifelse(is.na(inspect(fitCFI, "se")$theta[1,2]) == TRUE, testCFI$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI$warning$message[1])
+
+      if ( testCFI$warning == '' ) testCFI$warning = "Safe"
+      testCFI$warning <- ifelse( is.na(inspect(fitCFI, "se")$theta[1,2]), "lavaan WARNING: model has NOT converged!", testCFI$warning )
       
-      if(as.character(testCFI$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+      if ( !any( grepl("lavaan WARNING: model has NOT converged!", as.character(testCFI$warning)) ) ) {
         
         ##code to estimate chi-square of independence model#
         #First pull the estimates from Step 2
@@ -907,20 +935,21 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
         ModelQ_table_CFI$free <- c(rep(0, p2), 1:z)
         ModelQ_table_CFI$ustart <- ModelQ_table_CFI$est
         
-        testCFI2<-tryCatch.W.E(
+        testCFI2 <- tryCatch.W.E(
           ModelQ_Results_CFI_table <- sem(
             model = ModelQ_table_CFI,
             sample.cov = S_LD,
             estimator = estimation,
-            WLS.V = wls.v,
+            WLS.V = W_CFI,
             sample.nobs = S_LD_nobs,
             optim.dx.tol = +Inf
           )
         )
-        testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
-        testCFI2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_CFI_table , "se")$theta[1,2]) == TRUE, testCFI2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI2$warning$message[1])
+
+        if ( testCFI2$warning == '' ) testCFI2$warning = "Safe"
+        testCFI2$warning <- ifelse( is.na(inspect(ModelQ_Results_CFI_table, "se")$theta[1,2]), "lavaan WARNING: model has NOT converged!", testCFI2$warning )
         
-        if(as.character(testCFI2$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
+        if ( !any( grepl("lavaan WARNING: model has NOT converged!", as.character(testCFI2$warning)) ) ) {
           
           #pull the delta matrix (this doesn't depend on N)
           S2.delta_Q_CFI <- lavInspect(ModelQ_Results_CFI_table, "delta")
@@ -999,19 +1028,26 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     
     #rescale the sampling correlation matrix by the appropriate diagonals
     V_stand<-diag(Dvcovl)%*%Vcor%*%diag(Dvcovl)
-    V_stand2<-diag(z)
-    diag(V_stand2)<-diag(V_stand)
     
-    ### make sure no value on the diagonal of V is 0 ### TEMP STUPID MICHEL FIX
-    diag(V_stand2)[diag(V_stand2) == 0] <- 2e-9
-    
-    W_stand<-solve(V_stand2[order,order])
-    
+    ##set estimation-specific parameters
+    S_LD_nobs = 200  # see __NOBS_OVERRIDE__
+    W_stand = NULL
+    letter.off = 1 # letter offset
+    if ( estimation == "DWLS" ) {
+      S_LD_nobs = 2  # see __NOBS_OVERRIDE__
+      V_stand2<-diag(z)
+      diag(V_stand2)<-diag(V_stand)
+      ### make sure no value on the diagonal of V is 0 ### TEMP STUPID MICHEL FIX
+      diag(V_stand2)[diag(V_stand2) == 0] <- 2e-9
+      W_stand<-solve(V_stand2[order,order])
+      letter.off = 2
+    }
+
     sem.fit_stand <- sem(
       Model1,
       sample.cov = S_stand,
       estimator = estimation,
-      WLS.V = wls.v,
+      WLS.V = W_stand,
       sample.nobs = S_LD_nobs,
       std.lv = std.lv,
       optim.dx.tol = +Inf
@@ -1134,7 +1170,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     results$order<-NULL
   }
   
-  if( "matrix" %in% class(bread2$value) ){
+  if ( "matrix" %in% class(bread2$value) ) {
     ##name the columns of the results file
     colnames(results)=c("lhs","op","rhs","Unstand_Est","Unstand_SE","STD_Genotype","STD_Genotype_SE", "STD_All")
     
@@ -1166,7 +1202,11 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
         modelfit<-modelfit[,order]
         if(!(is.factor(modelfit$CFI))){
           if(modelfit$CFI < 0){
-            warning(paste("CFI estimates below 0 should not be trusted, and indicate that the other model fit estimates should be interpreted with caution. A negative CFI estimates typically appears due to negative residual variances."))
+            warning( paste(
+              "CFI estimates below 0 should not be trusted, and indicate that the other model fit estimates should be",
+              "interpreted with caution. Negative CFI estimates typically appear due to negative residual variances.",
+              sep='\n'
+            ) )
           }
         }
         modelfit$CFI<-ifelse(modelfit$df == 0, modelfit$CFI == NA, modelfit$CFI)
@@ -1180,23 +1220,57 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     print(time_all[3])
     
     if(modelfit$df == 0){
-      print("Model fit statistics are all printed as NA as you have specified a fully saturated model (i.e., df = 0)")
+      cat( "Model fit statistics are all printed as NA since you specified a fully saturated model (i.e., df = 0).\n" )
     }
     
     if(LD_sdiff > 0){
-      print(paste("The S matrix was smoothed prior to model estimation due to a non-positive definite matrix. The largest
-                  difference in a cell between the smoothed and non-smoothed matrix was", LD_sdiff, sep = " "))
+      cat( paste0(
+        "The S matrix was smoothed prior to model estimation since it was not positive definite. The largest\n",
+        "absolute difference in a cell between the smoothed and non-smoothed matrices was ", LD_sdiff, ". As a\n",
+        "result of the smoothing, the largest Z-statistic change for the genetic covariances was ", Z_diff, ".\n",
+        "We recommend setting the smooth_check argument to true if you are going to run a multivariate GWAS.\n",
+      ) )
+    }
+    
+    if(LD_sdiff > .025){
+      warning( paste(
+        "A difference greater than .025 was observed pre- and post-smoothing in the genetic covariance matrix. This",
+        "reflects a large difference and results should be interpreted with caution!! Such differences can often",
+        "result from including low-powered GWASes. You might consider removing those from the model. If you are going",
+        "to run a multivariate GWAS, we strongly recommend setting the smooth_check argument to true to check",
+        "smoothing for each SNP.",
+        sep='\n'
+      ) )
+    }
+    
+    if(Z_diff > .025){
+      warning( paste(
+        "A difference greater than .025 was observed pre- and post-smoothing in the standardized genetic covariance",
+        "matrix. This, reflects a large difference and results should be interpreted with caution!! Such differences",
+        "can often result from including low-powered GWASes. You might consider removing those from the model. If you",
+        "are going to run a multivariate GWAS, we strongly recommend setting the smooth_check argument to true to",
+        "check smoothing for each SNP.",
+        sep='\n'
+      ) )
     }
     
     if(LD_sdiff2 > 0){
-      print(paste("The V matrix was smoothed prior to model estimation due to a non-positive definite matrix. The largest
-                  difference in a cell between the smoothed and non-smoothed matrix was", LD_sdiff2, sep = " "))
+      cat( paste0(
+        "The V matrix was smoothed prior to model estimation due to a non-positive definite matrix. The largest\n",
+        "absolute difference in a cell between the smoothed and non-smoothed matrices was ", LD_sdiff2, ". As a\n",
+        "result of the smoothing, the largest Z-statistic change for the genetic covariances was ", Z_diff,  ".\n",
+        "We recommend setting the smooth_check argument to true if you are going to run a multivariate GWAS.\n"
+      ) )
     }
     
     if(any(constraints2 == TRUE)){
-      print("Please note that when equality constraints are used in the current version of Genomic SEM that
-            the standardized output will also impose the same constraint.")
+      cat( paste(
+        "Please note that when equality constraints are used in the current version of Genomic SEM, the standardized",
+        "output will also impose the same constraints.",
+        sep='\n'
+      ) )
     }
+
     results$p_value<-2*pnorm(abs(as.numeric(results$Unstand_Est)/as.numeric(results$Unstand_SE)),lower.tail=FALSE)
     results$p_value<-ifelse(results$p_value == 0, "<5e-300", results$p_value)
     

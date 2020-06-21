@@ -495,6 +495,33 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     colnames(N.vec)<-colnames(V.mat)
   }
   
+  if (mean(liab.scale.conv.fact)!=1) {
+    r<-nrow(S.mat)
+    SE<-matrix(0, r, r)
+    SE[lower.tri(SE,diag=TRUE)]<-sqrt(diag(V.mat))
+    
+    cat("\n\nLiability scale results\n")
+    
+    for(j in 1:n.traits){
+      if(is.null(trait.names)){
+        chi1<-traits[j]
+      }else{chi1 <- trait.names[j]}
+      for(k in j:length(traits)){
+        if(j == k){
+          cat("\n")
+          cat("Liability scale results for", chi1, "\n")
+          cat("Liability scale h2", ":", round(S.mat[j,j],4), "(", round(SE[j,j],4), ")\n")
+        }
+        if(j != k){
+          if(is.null(trait.names)){
+            chi2<-traits[k]
+          }else{chi2 <- trait.names[k]}
+          cat("Liability scale genetic covariance between", chi1, "and", chi2, ":", round(S.mat[k,j],4), "(", round(SE[k,j],4), ")\n")
+        }
+      }
+    }
+  }
+  
   if(all(diag(S.mat) > 0)) {
     ##calculate standardized results to print genetic correlations to log and screen
     D<-sqrt(diag(diag(S.mat)))
@@ -548,33 +575,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     cat("Your genetic covariance matrix includes traits estimated to have a negative heritability.\n")
     cat("Genetic correlations could not be computed due to negative heritability estimates.\n")
   }
-
-  if (mean(liab.scale.conv.fact)!=1) {
-    r<-nrow(S.mat)
-    SE<-matrix(0, r, r)
-    SE[lower.tri(SE,diag=TRUE)]<-sqrt(diag(V.mat))
-    
-    cat("\n\nLiability scale results\n")
-    
-    for(j in 1:n.traits){
-      if(is.null(trait.names)){
-        chi1<-traits[j]
-      }else{chi1 <- trait.names[j]}
-      for(k in j:length(traits)){
-        if(j == k){
-          cat("\n")
-          cat("Liability scale results for", chi1, "\n")
-          cat("Liability scale h2", ":", round(S.mat[j,j],4), "(", round(SE[j,j],4), ")\n")
-        }
-        if(j != k){
-          if(is.null(trait.names)){
-            chi2<-traits[k]
-          }else{chi2 <- trait.names[k]}
-          cat("Liability scale genetic covariance between", chi1, "and", chi2, ":", round(S.mat[k,j],4), "(", round(SE[k,j],4), ")\n")
-        }
-      }
-    }
-  }
   
   end.time <- Sys.time()
   
@@ -593,12 +593,15 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     V=V.mat,
     S=S.mat,
     I=I.mat,
+    N=N.vec,
+    m=m,
+    V_stand=V_Stand,
+    S_stand=S_Stand,
     pS=Gcov_p.mat,
     pI=I_p.mat,
   #     pSalt=Gcov_pasympt.mat,
   #     pIalt=I_pasympt.mat,
-    N=N.vec,
-    m=m
+    n=n.blocks
   ) )
   
 }

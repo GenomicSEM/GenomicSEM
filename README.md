@@ -3,11 +3,7 @@
 R-package which allows the user to fit structural equation models 
 based on the summary statistics obtained from genome wide association studies (GWAS). Until explicitly stated otherwise the code on this github is an alpha version (now on version **0.0.2**) and under active development. The code may thus produce undesired results on certain operating systems or when run concurrently with specific packages or R versions. Feel free to raise issues if (or when...) the package produces undesired results, we will attempt to swiftly deal with known issues. Please  **[visit the wiki](https://github.com/MichelNivard/GenomicSEM/wiki)** to get started, or **[check out the paper](https://www.nature.com/articles/s41562-019-0566-x)**. If you are having issues and not finding the answers anywhere on the wiki or FAQs page, we encourage you to post your question on the **[google group](https://groups.google.com/forum/#!forum/genomic-sem-users)**.
 
-**Code Update**: On December 4th, 2019 we combined the addSNPs and multivariate GWAS functions and their parallel counterparts into a single function to reduce memory load and the number of steps in the analytic pipeline. Previous pipelines using addSNPs output can still be used, but the user will need to be sure to specify the correct arguments for the GWAS functions in the subsequent step. 
-
-**CODE UPDATE 2** On January 8th, 2020 we corrected a bug in `sumstats`, which prepares summary statistics for GWAS, Prior to this fix, a small proportion of SNPs were omitted erroneously. In some GWAS of rigourously cleaned SNPs we found no SNPs affected at all, but from all SNP (i.e. analyses that retain low MAF and low INFO SNPs) more SNPs are affected (1-5%). Specifically the code removed SNPs with duplicate basepair positions, but did not consider chromosome when doing so. This bug did not affect Genomic SEM models without SNPs, and did not affect estimates for SNPs that were included in GWAS. The bug simply resulted in a small proportion of SNPs being arbitrarily removed from consideration.
-
-**CODE UPDATE 3** On March 9th, 2020 we discovered and corrected a bug that was introduced to the usermodel function on August 20th, 2019. For some model specifications, the bug had the potential to cause slight changes in point estimates and standard errors due to the sampling covariance (V) matrix not being correctly ordered. This bug did not affect the commonfactor, commonfactorGWAS, or userGWAS functions. All examples on the github wiki, and all examples that we have personally worked with, were not affected by this bug. In most cases, your results are likely to be unchanged. We recommend reinstalling to the most recent update of GenomicSEM, particularly if it was installed or updated between August 20th, 2019 and March 9, 2020.
+**Code Update**: The most recent code update is dated May 15, 2020. We recommend reinstalling to the most recent update of GenomicSEM. However, please note that changes in Genomic SEM defaults are likely to produce slight changes in results relative to previous versions. For further details, see [version history](https://github.com/MichelNivard/GenomicSEM/wiki/8.-Version-History)
 
 **PGC worldwide lab meeting on genomicSEM**
 
@@ -21,11 +17,11 @@ Learn how to [install](https://github.com/MichelNivard/GenomicSEM/wiki/1.-Instal
 
 Consider some of the [nuances of summary data, and know where to find summary data.](https://github.com/MichelNivard/GenomicSEM/wiki/2.-Important-resources-and-key-information)
 
-Fit SEM models to GWAS summary data [without a SNP](https://github.com/MichelNivard/GenomicSEM/wiki/3.-Models-without-Individual-SNP-effects).
+Fit SEM models to GWAS summary data [without a SNP](https://github.com/MichelNivard/GenomicSEM/wiki/3.-Models-without-Individual-SNP-effects)
 
 Run a GWAS where the [SNP is included](https://github.com/MichelNivard/GenomicSEM/wiki/4.-Common-Factor-GWAS) in the structural equation model.
 
-Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/6.-GenomicSEM-and-OpenMx).
+Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/6.-GenomicSEM-and-OpenMx)
 
 **Installation:**
 
