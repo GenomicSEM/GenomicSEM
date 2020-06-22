@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 \name{ldsc}
 \alias{ldsc}
 \title{build a covariance structure using LD score regression in R}
@@ -7,7 +8,7 @@ series of traits based on genome wide summary statistics obtained from GWAS. The
 necessary and sufficient to fit structural equation models (or other multivariate models).
 }
 \usage{
-ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights=FALSE,chr=22,n.blocks=200 \dots)
+ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights=FALSE,chr=22,n.blocks=200,log.file='ldsc.log' \dots)
 
 }
 \arguments{
@@ -58,18 +59,27 @@ ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights=FALS
     matrix containing the "inflation" intercepts due to GWAS sample substructures (diagonal terms) or cross-GWAS samples
     overlaps (in terms of subjects, off-diagonal)
   }
-  \item{pS}{
-    estimated genetic covariance matrix
-  }
-  \item{pI}{
-    matrix containing T-test p-values for "inflation" intercepts different from 1 (diagonal) and 1 (off-diagonal)
-  }
   \item{N}{
     a vector containing the sample size (for the genetic variances) and the geometric mean sample sizes (sqrt(N1,N2))
     between two samples for the covariances
   }
   \item{m}{
     number of SNPs used to compute the LD scores with.
+  }
+  \item{V_stand}{
+    correlation matrix of the parameter estimates in S
+  }
+  \item{S_stand}{
+    estimated genetic correlation matrix
+  }
+  \item{pS}{
+    LD-score regression coefficients p-values
+  }
+  \item{pI}{
+    matrix containing T-test p-values for "inflation" intercepts different from 1 (diagonal) and 1 (off-diagonal)
+  }
+  \item{n}{
+    number of blocks used in the jackknife procedure
   }
 }
 

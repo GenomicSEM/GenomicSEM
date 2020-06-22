@@ -44,7 +44,7 @@ commonfactorGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALS
     correct the standard errors
   }
   \item{MPI}{
-    Whetehr the function should use multi-node processing (i.e., MPI). Please note that this should only be used on a
+    Whether the function should use multi-node processing (i.e., MPI). Please note that this should only be used on a
     computing cluster on which the R pacakge Rmpi is already installed
   } 
 }
