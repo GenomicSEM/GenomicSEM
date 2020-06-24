@@ -215,11 +215,18 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   ##save the ordering
   order <-(1:nrow(V_LD))
 
+  ##reorder the weight (inverted V_LD) matrix
+  V_Reorder<-V_LD[order,order]
+
   ##run CFI model so it knows the reordering
   #empty2<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = solve(V_LD),sample.nobs=2, optim.dx.tol = +Inf))
   #orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
   
+  ##save the ordering
   orderCFI<-(1:nrow(V_LD))
+
+  ##reorder matrix for independence (i.e., null) model for CFI calculation
+  V_Reorder2<-V_LD[orderCFI,orderCFI]
   
   ##set estimation-specific parameters
   S_LD_nobs = 200  # see __NOBS_OVERRIDE__
@@ -227,15 +234,9 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   W_CFI = NULL
   if ( estimation == "DWLS" ) {
     S_LD_nobs = 2  # see __NOBS_OVERRIDE__
-
-    ##reorder the weight (inverted V_LD) matrix
-    V_Reorder<-V_LD[order,order]
     V_Reorderb<-diag(z)
     diag(V_Reorderb)<-diag(V_Reorder)
     W_Reorder<-solve(V_Reorderb)
-  
-    ##reorder matrix for independence (i.e., null) model for CFI calculation
-    V_Reorder2<-V_LD[orderCFI,orderCFI]
     V_Reorder2b<-diag(z)
     diag(V_Reorder2b)<-diag(V_Reorder2)
     W_CFI<-solve(V_Reorder2b)

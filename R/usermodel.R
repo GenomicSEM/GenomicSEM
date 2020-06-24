@@ -297,8 +297,10 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     Model1<-str_replace(Model1, fixed(t), "")
   }
   
-  if(CFIcalc==TRUE){
-    
+  if (CFIcalc==TRUE) {
+
+    print("Calculating CFI..")
+
     ##code to write null model for calculation of CFI
     write.null<-function(k, label = "V", label2 = "VF") {
       Model3<-""
@@ -367,6 +369,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     V_Reorder2b<-diag(z)
     diag(V_Reorder2b)<-diag(V_Reorder2)
     W_CFI<-solve(V_Reorder2b)
+
   }
   
   ##code to write saturated model to check there are no redundancies
@@ -588,7 +591,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
   }
   
   ##save model implied matrix and difference between observed and model implied S_LD matrix
-  if(imp_cov == TRUE){
+  if (imp_cov) {
     implied<-as.matrix(fitted(Model1_Results))[1]
     implied_order<-colnames(S_LD)
     implied[[1]]<-implied[[1]][implied_order,implied_order]
@@ -892,7 +895,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       Q<-"The follow-up chi-square model did not converge"
     }
     
-    if(CFIcalc == TRUE){
+    if (CFIcalc == TRUE) {
 
       print("Calculating CFI..")
 
@@ -1274,11 +1277,7 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
     results$p_value<-2*pnorm(abs(as.numeric(results$Unstand_Est)/as.numeric(results$Unstand_SE)),lower.tail=FALSE)
     results$p_value<-ifelse(results$p_value == 0, "<5e-300", results$p_value)
     
-    if(imp_cov == FALSE){
-      return(list(modelfit=modelfit,results=results,lavaan.out=empty4))
-    }
-    
-    if(imp_cov == TRUE){
+    if (imp_cov) {
       ##replace general form of V1-VX with trait names in model implied and residual covariance matrix
       colnames(implied[[1]])<-traits
       rownames(implied[[1]])<-traits
@@ -1289,7 +1288,10 @@ usermodel <- function(covstruc, estimation="DWLS", model = "", CFIcalc=TRUE, std
       resid_cov[[2]]<-implied2
       names(resid_cov) <- c("Model Implied Covariance Matrix", "Residual Covariance Matrix: Calculated as Observed Cov - Model Implied Cov")
       return(list(modelfit=modelfit,results=results,resid_cov=resid_cov,lavaan.out=empty4))
+    } else {
+      return(list(modelfit=modelfit,results=results,lavaan.out=empty4))
     }
+    
   }
   
 }
