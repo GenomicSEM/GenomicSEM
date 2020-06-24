@@ -296,7 +296,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         merged <- merged[with(merged,order(CHR,BP)),]
         remaining.snps <- nrow(merged)
         
-        cat(print(paste(remaining.snps,"SNPs remaining after merging the files with LD-score files")),file=log.file,sep="\n",append=TRUE)
+        writeLines( strwrap( paste( remaining.snps, "SNPs remaining after merging the files with LD-score files." ) ) )
         
         ## REMOVE SNPS with excess chi-square:
         chisq.max1 <- max(0.001*max(merged$N.x),80)
@@ -501,6 +501,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     SE[lower.tri(SE,diag=TRUE)]<-sqrt(diag(V.mat))
     
     cat("\n\nLiability scale results\n")
+    cat( rep( '-', nchar("Liability scale results") ), sep='' )
     
     for(j in 1:n.traits){
       if(is.null(trait.names)){
@@ -550,9 +551,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     SE_Stand<-matrix(0, r, r)
     SE_Stand[lower.tri(SE_Stand,diag=TRUE)]<-sqrt(diag(V_Stand))
     
-    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste("Genetic Correlation Results")),file=log.file,sep="\n",append=TRUE)
+    cat( "\n\n\nGenetic correlation results\n" )
     
     for(j in 1:n.traits){
       if(is.null(trait.names)){
@@ -588,6 +587,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   writeLines( strwrap( paste0( 
     "Running ldsc for all files took ", mins," minutes and ", round(secs)," seconds."
   ) ) )
+
+  sink()
 
   return( list(
     V=V.mat,

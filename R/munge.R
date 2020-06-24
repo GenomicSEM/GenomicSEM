@@ -9,22 +9,21 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
   
   begin.time <- Sys.time()
   
-  cat(print(paste0("The munging of ", length(trait.names), " summary statistics started at ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
+  cat( paste0( "The munging of ", length(trait.names), " summary statistics started at ", begin.time ) )
   
-  cat(print(paste("Reading summary statistics for", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.")),file=log.file,sep="\n",append=TRUE)
+  cat( paste0( "Reading summary statistics for ", paste(files,collapse=" "), ".\n",
+    "Please note that this step usually takes a few minutes due to the size of summary statistic files."
+  ) )
   
   ##note that fread is not used here due to formatting differences across summary statistic files
   files = lapply(files, read.table,header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
-  cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
+  cat("Reading in reference file\n")
   ref <- fread(reference,header=T,data.table=F)
-  cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
+  cat("All files loaded into R!\n")
  
   for(i in 1:length) {
     
-    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-    
-    cat(print(paste("Munging file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
+    cat(paste("\n\nMunging file:", filenames[i]))
 
     names(files[[i]]) <- GenomicSEM:::.sumstats.parse.header( files[[i]] )
 
@@ -53,7 +52,10 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
     # Compute N is N cases and N control is reported:
     if("N_CAS" %in% colnames(files[[i]])) {
       files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
-      cat(print(paste("As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the total sample size")),file=log.file,sep="\n",append=TRUE)
+      writeLines( strwrap( paste0(
+        "As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the",
+        "total sample size"
+      ) ) )
     }
     
     ##make sure all alleles are upper case for matching to reference file
@@ -61,25 +63,34 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
     files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
     
     ##merge with ref file
-    cat(print(paste("Merging file:", filenames[i], "with the reference file:", reference)),file=log.file,sep="\n",append=TRUE)
+    cat( "Merging file:", filenames[i], "with the reference file:", reference, "\n" )
     b<-nrow(files[[i]])
-    cat(print(paste(b, "rows present in the full", filenames[i], "summary statistics file.")),file=log.file,sep="\n",append=TRUE)
+    cat( b, "rows present in the full", filenames[i], "summary statistics file.\n" )
     files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
-    cat(print(paste((b-nrow(files[[i]])), "rows were removed from the", filenames[i], "summary statistics file as the rs-ids for these rows were not present in the reference file.")),file=log.file,sep="\n",append=TRUE)
+    writeLines( strwrap( paste0(
+      b-nrow(files[[i]]), " rows were removed from the ", filenames[i], " summary statistics file as the rs-ids for",
+      "these rows were not present in the reference file."
+    ) ) )
     
     ##remove any rows with missing p-values
     b<-nrow(files[[i]])
     if("P" %in% colnames(files[[i]])) {
       files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
     }
-    if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the P-value column")),file=log.file,sep="\n",append=TRUE)
+    if(b-nrow(files[[i]]) > 0) writeLines( strwrap( paste0(
+      b-nrow(files[[i]]), " rows were removed from the ", filenames[i], " summary statistics file due to missing",
+      "values in the P-value column."
+    ) ) )
     
     ##remove any rows with missing effects
     b<-nrow(files[[i]])
     if("EFFECT" %in% colnames(files[[i]])) {
       files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$EFFECT)))
     }
-    if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the effect column")),file=log.file,sep="\n",append=TRUE)
+    if(b-nrow(files[[i]]) > 0) writeLines( strwrap( paste0(
+      b-nrow(files[[i]]), " rows were removed from the ", filenames[i], " summary statistics file due to missing",
+      "values in the effect column."
+    ) ) )
     
     ##determine whether it is OR or logistic/continuous effect based on median effect size
     EFFECT.untransf<-files[[i]]$EFFECT[[1]]
@@ -89,11 +100,10 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
       files[[i]]$EFFECT
     )
     EFFECT.transf<-files[[i]]$EFFECT[[1]]
-    if(EFFECT.untransf != EFFECT.transf) cat(
-      paste("Values in the effect column identified as odds ratios (ORs) for the", filenames[i] ),
-      "summary statistics file. Please ensure that this is correct.",
-      file=log.file, sep="\n", append=TRUE
-    )
+    if(EFFECT.untransf != EFFECT.transf) writeLines( strwrap( paste0(
+      "Values in the effect column identified as odds ratios (ORs) for the ", filenames[i], " summary statistics",
+      "file. Please ensure that this is correct.",
+    ) ) )
     
     # Flip effect to match ordering in ref file
     files[[i]]$EFFECT<-ifelse(
@@ -166,7 +176,7 @@ munge <- function(files,reference,trait.names=NULL,N,info.filter=.9,maf.filter=0
   cat( paste( "Munging of all files took", mins, "minutes and", secs, "seconds"), sep="\n" )
   cat(
     paste( "Please check the log file", munge.log, "to ensure that all columns were interpreted" ),
-    "correctly and no warnings were issued for any of the summary statistics files",
+    "correctly and no warnings were issued for any of the summary statistics files.",
     sep="\n"
   )
   
