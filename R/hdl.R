@@ -423,7 +423,7 @@ cat("\n")
 }
 
 V <- cov(V.hold)*(num.pieces-1)  
-  
+col.names(S) <- trait.names  
 return(list(V = V,S = S,I = I))
 }
 
