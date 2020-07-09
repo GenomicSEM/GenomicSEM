@@ -1,4 +1,4 @@
-#### GEnomicSEM multivariable HDL function, based on the amazing work by NIg, Pawitan and Shen, Nature Genetics (2020)
+#### GEnomicSEM multivariable HDL function, based on the amazing work by Ning, Pawitan and Shen, Nature Genetics (2020)
 
 hdl <- function(traits,trait.names,LD.path,Nref = 335265,output.file = ""){
 
