@@ -1,6 +1,6 @@
-#### GEnomicSEM multivariable HDL function, based on the amazing work by Ning, Pawitan and Shen, Nature Genetics (2020)
+#### GenomicSEM multivariable HDL function, based on the amazing work by Ning, Pawitan and Shen, Nature Genetics (2020)
 
-hdl <- function(traits,trait.names,LD.path,Nref = 335265,output.file = ""){
+hdl <- function(traits,sample.prev=NA,population.prev=NA,trait.names,LD.path,Nref = 335265,output.file = ""){
 
   ### Do some data wrangling for the LD files:
   
@@ -382,8 +382,46 @@ cat("\n")
   }
 }
 
+Liab.S <- matrix(1,nrow=1,ncol=n.traits)
+
+for(z in 1:n.traits){
+  pop.prev <- population.prev[z]
+  samp.prev <- sample.prev[z]
+  
+if(is.na(pop.prev)==F & is.na(samp.prev)==F){
+  conversion.factor <- (pop.prev^2*(1-pop.prev)^2)/(samp.prev*(1-samp.prev)* dnorm(qnorm(1-pop.prev))^2)
+  Liab.S[,z] <- conversion.factor
+}}
+  
+
+
+
 V <- cov(V.hold)*(num.pieces-1)  
+
+
+S2 <- S
+
+
+### Scale S and V to liability:
+S <- diag(as.vector(sqrt(Liab.S))) %*% S %*% diag(as.vector(sqrt(Liab.S)))
+
+#calculate the ratio of the rescaled and original S matrices
+scaleO=as.vector(lowerTriangle((S/S2),diag=T))
+
+#obtain diagonals of the original V matrix and take their sqrt to get SE's
+Dvcov<-sqrt(diag(V))
+
+#rescale the SEs by the same multiples that the S matrix was rescaled by
+Dvcovl<-as.vector(Dvcov*t(scaleO))
+
+#obtain the sampling correlation matrix by standardizing the original V matrix
+vcor<-cov2cor(V)
+
+#rescale the sampling correlation matrix by the appropriate diagonals
+V<-diag(Dvcovl)%*%vcor%*%diag(Dvcovl)
+
 colnames(S) <- trait.names  
+
 return(list(V = V,S = S,I = I))
 }
 
