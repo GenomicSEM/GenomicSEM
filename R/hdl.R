@@ -45,8 +45,6 @@ hdl <- function(traits,trait.names,LD.path,Nref = 335265,output.file = ""){
   N.vec <- matrix(NA,nrow=1,ncol=n.V)
   Liab.S <- matrix(1,nrow=1,ncol=n.traits)
   I <- matrix(NA,nrow=n.traits,ncol=n.traits)
-  
-
 
 # Start with general utility functions needed for hdl and standard errors
 
@@ -54,8 +52,7 @@ hdl <- function(traits,trait.names,LD.path,Nref = 335265,output.file = ""){
 #### Define the liklihood funcrion to be optimized for h2:
 
 
-llfun <-
-  function(param, N, M,Nref=1000, lam, bstar, lim=exp(-10)){
+llfun <-  function(param, N, M,Nref=1000, lam, bstar, lim=exp(-10)){
     h2 = param[1]
     int= param[2]
     lamh2 = h2/M*lam^2 - h2*lam/Nref + int*lam/N
@@ -66,8 +63,7 @@ llfun <-
 
 #### Define the liklihood funcrion to be optimized for genetic covariance:
 
-llfun.gcov.part.2 = function(param,h11,h22,rho12, M, N1, N2, N0, Nref,
-                             lam0, lam1, lam2, bstar1, bstar2, lim=exp(-10)){
+llfun.gcov.part.2 = function(param,h11,h22,rho12, M, N1, N2, N0, Nref, lam0, lam1, lam2, bstar1, bstar2, lim=exp(-10)){
   h12 = param[1]
   int = param[2]
   ## sample fractions
@@ -137,58 +133,52 @@ cat("\n")
     N <- N1
     bstar1.v <- lam.v <- list()
     HDL11.df <- names.row <- NULL
+    logL.df <- NULL
     counter <- 0
     message <- ""
     num.pieces <- length(unlist(nsnps.list))
     for (chr in 1:22) {
       k <- length(nsnps.list[[chr]])
       for (piece in 1:k) {
-        LD_rda_file <- LD.files[grep(x = LD.files, pattern = paste0("chr", 
-                                                                    chr, ".", piece, ".*rda"))]
-        LD_bim_file <- LD.files[grep(x = LD.files, pattern = paste0("chr", 
-                                                                    chr, ".", piece, ".*bim"))]
+        LD_rda_file <- LD.files[grep(x = LD.files, pattern = paste0("chr", chr, ".", piece, ".*rda"))]
+        LD_bim_file <- LD.files[grep(x = LD.files, pattern = paste0("chr", chr, ".", piece, ".*bim"))]
         load(file = paste(LD.path, LD_rda_file, sep = "/"))
         snps.ref.df <- read.table(paste(LD.path, LD_bim_file, 
                                         sep = "/"))
-        colnames(snps.ref.df) <- c("chr", "id", "non", "pos", 
-                                   "A1", "A2")
+        colnames(snps.ref.df) <- c("chr", "id", "non", "pos", "A1", "A2")
         snps.ref <- snps.ref.df$id
         A2.ref <- snps.ref.df$A2
         names(A2.ref) <- snps.ref
         gwas.df.subset <- gwas.df %>% filter(SNP %in% snps.ref)
-        bhat1.raw <- gwas.df.subset[, "Z"]/sqrt(gwas.df.subset[, 
-                                                               "N"])
+        bhat1.raw <- gwas.df.subset[, "Z"]/sqrt(gwas.df.subset[, "N"])
         A2.gwas1 <- gwas.df.subset[, "A2"]
         names(bhat1.raw) <- names(A2.gwas1) <- gwas.df.subset$SNP
         idx.sign1 <- A2.gwas1 == A2.ref[names(A2.gwas1)]
-        bhat1.raw <- bhat1.raw * (2 * as.numeric(idx.sign1) - 
-                                    1)
+        bhat1.raw <- bhat1.raw * (2 * as.numeric(idx.sign1) -  1)
         M <- length(LDsc)
         bhat1 <- numeric(M)
         names(bhat1) <- snps.ref
         bhat1[names(bhat1.raw)] <- bhat1.raw
         a11 <- bhat1^2
         reg = lm(a11 ~ LDsc)
-        h11.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N1, 
-                                                     M))
+        h11.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N1,  M))
         h11v = (h11.ols[2] * LDsc/M + 1/N1)^2
         reg = lm(a11 ~ LDsc, weight = 1/h11v)
-        h11.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N1, 
-                                                     M))
+        h11.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N1,  M))
         bstar1 = crossprod(V, bhat1)
         opt = optim(c(h11.wls[2], 1), llfun, N = N1, Nref = Nref, 
                     lam = lam, bstar = bstar1, M = M, lim = exp(-18), 
-                    method = "L-BFGS-B", lower = c(0, 0), upper = c(1, 
-                                                                    10))
+                    method = "L-BFGS-B", lower = c(0, 0), upper = c(1,10))
         h11.hdl = opt$par
+        logL <- opt$value
+        
         HDL11.df <- rbind(HDL11.df, h11.hdl)
         bstar1.v <- c(bstar1.v, list(bstar1))
         lam.v <- c(lam.v, list(lam))
         counter <- counter + 1
         value <- round(counter/num.pieces * 100)
         backspaces <- paste(rep("\b", nchar(message)), collapse = "")
-        message <- paste("Estimation for cell: ",s," out of: ",n.V," cells is ongoing ... ", value, 
-                         "%", sep = "", collapse = "")
+        message <- paste("Estimation for cell: ",s," out of: ",n.V," cells is ongoing ... ", value,  "%", sep = "", collapse = "")
         cat(backspaces, message, sep = "")
       }
     }
@@ -199,7 +189,7 @@ cat("\n")
     
     S[j,j] <- h1_2
     I[j,j] <- mean(HDL11.df[,2])
-    
+
     for(i in 1:num.pieces){
     V.hold[i,s] <- (num.pieces/(num.pieces-1))*sum(HDL11.df[-i,1])
     }
@@ -250,21 +240,13 @@ cat("\n")
   gwas2.df <- gwas2.df %>% filter(!is.na(Z))
   k1 <- nrow(gwas1.df)
   k2 <- nrow(gwas2.df)
-  k1.percent <- paste("(", round(100 * k1/length(snps.name.list), 
-                                 2), "%)", sep = "")
-  k2.percent <- paste("(", round(100 * k2/length(snps.name.list), 
-                                 2), "%)", sep = "")
-  cat(k1, "out of", length(snps.name.list), k1.percent, "SNPs in reference panel are available in GWAS 1.", 
-      " \n")
-  cat(k2, "out of", length(snps.name.list), k2.percent, "SNPs in reference panel are available in GWAS 2.", 
-      " \n")
+  k1.percent <- paste("(", round(100 * k1/length(snps.name.list), 2), "%)", sep = "")
+  k2.percent <- paste("(", round(100 * k2/length(snps.name.list), 2), "%)", sep = "")
+  cat(k1, "out of", length(snps.name.list), k1.percent, "SNPs in reference panel are available in GWAS 1.",  " \n")
+  cat(k2, "out of", length(snps.name.list), k2.percent, "SNPs in reference panel are available in GWAS 2.", " \n")
   if (output.file != "") {
-    cat(k1, "out of", length(snps.name.list), k1.percent, 
-        "SNPs in reference panel are available in GWAS 1.", 
-        " \n", file = output.file, append = T)
-    cat(k2, "out of", length(snps.name.list), k2.percent, 
-        "SNPs in reference panel are available in GWAS 2.", 
-        " \n", file = output.file, append = T)
+    cat(k1, "out of", length(snps.name.list), k1.percent,  "SNPs in reference panel are available in GWAS 1.",  " \n", file = output.file, append = T)
+    cat(k2, "out of", length(snps.name.list), k2.percent,  "SNPs in reference panel are available in GWAS 2.",  " \n", file = output.file, append = T)
   }
   if (k1 < length(snps.name.list) * 0.99) {
     error.message <- "Warning: More than 1% SNPs in reference panel are missed in GWAS 1. This may generate bias in estimation. Please make sure that you are using correct reference panel.  \n"
@@ -285,9 +267,7 @@ cat("\n")
   N <- sqrt(N1) * sqrt(N2)
   p1 <- N0/N1
   p2 <- N0/N2
-  rho12 <- suppressWarnings(inner_join(gwas1.df %>% select(SNP, 
-                                                           Z), gwas2.df %>% select(SNP, Z), by = "SNP") %>% summarise(x = cor(Z.x, 
-                                                                                                                              Z.y, use = "complete.obs")) %>% unlist)
+  rho12 <- suppressWarnings(inner_join(gwas1.df %>% select(SNP,  Z), gwas2.df %>% select(SNP, Z), by = "SNP") %>% summarise(x = cor(Z.x, Z.y, use = "complete.obs")) %>% unlist)
   bstar1.v <- bstar2.v <- lam.v <- list()
   HDL11.df <- HDL12.df <- HDL22.df <- names.row <- NULL
   counter <- 0
@@ -297,36 +277,27 @@ cat("\n")
   for (chr in 1:22) {
     k <- length(nsnps.list[[chr]])
     for (piece in 1:k) {
-      LD_rda_file <- LD.files[grep(x = LD.files, pattern = paste0("chr", 
-                                                                  chr, ".", piece, ".*rda"))]
-      LD_bim_file <- LD.files[grep(x = LD.files, pattern = paste0("chr", 
-                                                                  chr, ".", piece, ".*bim"))]
+      LD_rda_file <- LD.files[grep(x = LD.files, pattern = paste0("chr", chr, ".", piece, ".*rda"))]
+      LD_bim_file <- LD.files[grep(x = LD.files, pattern = paste0("chr", chr, ".", piece, ".*bim"))]
       load(file = paste(LD.path, LD_rda_file, sep = "/"))
-      snps.ref.df <- read.table(paste(LD.path, LD_bim_file, 
-                                      sep = "/"))
-      colnames(snps.ref.df) <- c("chr", "id", "non", "pos", 
-                                 "A1", "A2")
+      snps.ref.df <- read.table(paste(LD.path, LD_bim_file, sep = "/"))
+      colnames(snps.ref.df) <- c("chr", "id", "non", "pos", "A1", "A2")
       snps.ref <- snps.ref.df$id
       A2.ref <- snps.ref.df$A2
       names(A2.ref) <- snps.ref
-      gwas1.df.subset <- gwas1.df %>% filter(SNP %in% 
-                                               snps.ref)
-      bhat1.raw <- gwas1.df.subset[, "Z"]/sqrt(gwas1.df.subset[, 
-                                                               "N"])
+      gwas1.df.subset <- gwas1.df %>% filter(SNP %in%  snps.ref)
+      bhat1.raw <- gwas1.df.subset[, "Z"]/sqrt(gwas1.df.subset[, "N"])
       A2.gwas1 <- gwas1.df.subset[, "A2"]
       names(bhat1.raw) <- names(A2.gwas1) <- gwas1.df.subset$SNP
       idx.sign1 <- A2.gwas1 == A2.ref[names(A2.gwas1)]
-      bhat1.raw <- bhat1.raw * (2 * as.numeric(idx.sign1) - 
-                                  1)
+      bhat1.raw <- bhat1.raw * (2 * as.numeric(idx.sign1) -  1)
       gwas2.df.subset <- gwas2.df %>% filter(SNP %in% 
                                                snps.ref)
-      bhat2.raw <- gwas2.df.subset[, "Z"]/sqrt(gwas2.df.subset[, 
-                                                               "N"])
+      bhat2.raw <- gwas2.df.subset[, "Z"]/sqrt(gwas2.df.subset[, "N"])
       A2.gwas2 <- gwas2.df.subset[, "A2"]
       names(bhat2.raw) <- names(A2.gwas2) <- gwas2.df.subset$SNP
       idx.sign2 <- A2.gwas2 == A2.ref[names(A2.gwas2)]
-      bhat2.raw <- bhat2.raw * (2 * as.numeric(idx.sign2) - 
-                                  1)
+      bhat2.raw <- bhat2.raw * (2 * as.numeric(idx.sign2) -  1)
       M <- length(LDsc)
       bhat1 <- bhat2 <- numeric(M)
       names(bhat1) <- names(bhat2) <- snps.ref
@@ -336,49 +307,38 @@ cat("\n")
       a22 <- bhat2^2
       a12 <- bhat1 * bhat2
       reg = lm(a11 ~ LDsc)
-      h11.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N1, 
-                                                   M))
+      h11.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N1,M))
       reg = lm(a22 ~ LDsc)
-      h22.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N2, 
-                                                   M))
+      h22.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N2,   M))
       reg = lm(a12 ~ LDsc)
       if (N0 > 0) 
-        h12.ols = c(summary(reg)$coef[1:2, 1:2] * c((N0/p1/p2), 
-                                                    M))
+        h12.ols = c(summary(reg)$coef[1:2, 1:2] * c((N0/p1/p2),  M))
       if (N0 == 0) 
-        h12.ols = c(summary(reg)$coef[1:2, 1:2] * c(N, 
-                                                    M))
+        h12.ols = c(summary(reg)$coef[1:2, 1:2] * c(N, M))
       h11v = (h11.ols[2] * LDsc/M + 1/N1)^2
       h22v = (h22.ols[2] * LDsc/M + 1/N2)^2
       reg = lm(a11 ~ LDsc, weight = 1/h11v)
-      h11.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N1, 
-                                                   M))
+      h11.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N1, M))
       reg = lm(a22 ~ LDsc, weight = 1/h22v)
-      h22.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N2, 
-                                                   M))
+      h22.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N2,M))
       if (N0 > 0) 
-        h12v = sqrt(h11v * h22v) + (h12.ols[2] * LDsc/M + 
-                                      p1 * p2 * rho12/N0)^2
+        h12v = sqrt(h11v * h22v) + (h12.ols[2] * LDsc/M + p1 * p2 * rho12/N0)^2
       if (N0 == 0) 
         h12v = sqrt(h11v * h22v) + (h12.ols[2] * LDsc/M)^2
       reg = lm(a12 ~ LDsc, weight = 1/h12v)
       if (N0 > 0) 
-        h12.wls = c(summary(reg)$coef[1:2, 1:2] * c((N0/p1/p2), 
-                                                    M))
+        h12.wls = c(summary(reg)$coef[1:2, 1:2] * c((N0/p1/p2),M))
       if (N0 == 0) 
-        h12.wls = c(summary(reg)$coef[1:2, 1:2] * c(N, 
-                                                    M))
+        h12.wls = c(summary(reg)$coef[1:2, 1:2] * c(N,  M))
       bstar1 = crossprod(V, bhat1)
       bstar2 = crossprod(V, bhat2)
       opt = optim(c(h11.wls[2], 1), llfun, N = N1, Nref = Nref, 
                   lam = lam, bstar = bstar1, M = M, lim = exp(-18), 
-                  method = "L-BFGS-B", lower = c(0, 0), upper = c(1, 
-                                                                  10))
+                  method = "L-BFGS-B", lower = c(0, 0), upper = c(1, 10))
       h11.hdl = opt$par
       opt = optim(c(h22.wls[2], 1), llfun, N = N2, Nref = Nref, 
                   lam = lam, bstar = bstar2, M = M, lim = exp(-18), 
-                  method = "L-BFGS-B", lower = c(0, 0), upper = c(1, 
-                                                                  10))
+                  method = "L-BFGS-B", lower = c(0, 0), upper = c(1, 10))
       h22.hdl = opt$par
       opt = optim(c(h12.wls[2], rho12), llfun.gcov.part.2, 
                   h11 = h11.hdl, h22 = h22.hdl, rho12 = rho12, 
