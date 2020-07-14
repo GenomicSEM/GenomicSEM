@@ -1,6 +1,6 @@
 \name{hdl}
 \alias{hdl}
-\title{build a convariance structure using High defenition Likelihood estimation in R}
+\title{estimate a convariance matrix using High Definition Likelihood (HDL) estimation in R}
 \description{
 Function to run HDL  (\link{https://github.com/zhenin/HDL}) to compute the genetic covariance between a series of traits based on genome wide summary statistics obtained from GWAS. The results generate by this function are necessary and sufficient to facilitate the fit of structural equation models (or other multivariate models) to the genetic covariance matrix. HDL is more powerfull than LDSC but if the LD structure in the reference file mismatches the GWAS LD structure, LDSC seems to perfrom better, expescially for estiamtes of heritability. For medium samples (N > 50.000) with moderate SNP-h2 (snp h2 > 0.07) where the LD structure isnt similar we would recomend ldsc, especially for GWAS. If you have small GWAS ( N < 25.000) the extra power HDL provides is worth the downward bias in snp h2 estimates relative to ldsc. 
 }
