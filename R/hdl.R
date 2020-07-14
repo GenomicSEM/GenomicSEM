@@ -1,6 +1,6 @@
 #### GenomicSEM multivariable HDL function, based on the amazing work by Ning, Pawitan and Shen, Nature Genetics (2020)
 
-hdl <- function(traits,sample.prev=NA,population.prev=NA,trait.names,LD.path,Nref = 335265,output.file = ""){
+hdl <- function(traits,sample.prev=NA,population.prev=NA,trait.names,LD.path,Nref = 335265,output.file = "",method="piecewise"){
 
   ### Do some data wrangling for the LD files:
   
@@ -182,7 +182,52 @@ cat("\n")
         cat(backspaces, message, sep = "")
       }
     }
+   
+    
+     # This runs the optimisation at once for the entire genome, and computes the V via jackknive. Its HDL defaiult behaviour, but not GenomicSEM defaiult behaviour.
+    
+    if(method=="jackknife"){ 
+      
+      M.ref <- sum(unlist(nsnps.list))
+      
+      opt = optim(c(sum(HDL11.df[, 1]),1), llfun, N=N1, Nref=Nref, lam=unlist(lam.v), bstar=unlist(bstar1.v), M=M.ref,
+                  lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+      h11.hdl = opt$par
+     
+      cat("Continuing computing standard error with jackknife \n")
+      if(output.file != ""){
+        cat("Continuing computing standard error with jackknife \n", file = output.file, append = T)
+      }
+      counter <- 0
+      message <- ""
+       h11.jackknife <- numeric(length(lam.v))
+      for(i in 1:length(lam.v)){
+        opt = optim(h11.hdl, llfun, N=N1, Nref=Nref, lam=unlist(lam.v[-i]), bstar=unlist(bstar1.v[-i]), M=M.ref,
+                    lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+        h11.hdl.jackknife = opt$par
+        
 
+      
+          V.hold[i,s] <- h11.hdl.jackknife[1]
+        
+        ## Report progress ##
+        
+        counter <- counter + 1
+        value <- round(counter/length(lam.v)*100)
+        backspaces <- paste(rep("\b", nchar(message)), collapse = "")
+        message <- paste("Progress... ", value, "%", sep = "", 
+                         collapse = "")
+        cat(backspaces, message, sep = "")
+      }
+      
+      
+      I[j,d] <- I[d,j] <- h11.hdl[2]
+      S[j,d] <- S[d,j] <- h11.hdl[1]
+      
+    }
+
+    if(method=="piecewise"){
+    
     rownames(HDL11.df) <- names.row
     h1_2 <- sum(HDL11.df[, 1])
   
@@ -193,6 +238,8 @@ cat("\n")
     for(i in 1:num.pieces){
     V.hold[i,s] <- (num.pieces/(num.pieces-1))*sum(HDL11.df[-i,1])
     }
+    }
+    
     s <- s+1
   }  
     
@@ -364,16 +411,106 @@ cat("\n")
     
   }
   
+  if(method=="jackknife"){ # This runs the optimisation at once for the entire genome, and computes the V via jackknive. Its HDL defaiult behaviour, but not GenomicSEM defaiult behaviour.
+    
+    
+  M.ref <- sum(unlist(nsnps.list))
+    
+  opt = optim(c(sum(HDL11.df[, 1]),1), llfun, N=N1, Nref=Nref, lam=unlist(lam.v), bstar=unlist(bstar1.v), M=M.ref,
+              lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+  h11.hdl = opt$par
+  opt = optim(c(sum(HDL22.df[, 1]),1), llfun, N=N2, Nref=Nref, lam=unlist(lam.v), bstar=unlist(bstar2.v), M=M.ref,
+              lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+  h22.hdl = opt$par
+  
+  
+ 
+  opt=  optim(c(sum(HDL12.df[, 1]),rho12), llfun.gcov.part.2, h11=h11.hdl, h22=h22.hdl,
+              rho12=rho12, M=M.ref, N1=N1, N2=N2, N0=N0, Nref=Nref,
+              lam0=unlist(lam.v), lam1=unlist(lam.v), lam2=unlist(lam.v),
+              bstar1=unlist(bstar1.v), bstar2=unlist(bstar2.v),
+              lim=exp(-18), method ='L-BFGS-B', lower=c(-1,-10), upper=c(1,10))
+  if(opt$convergence != 0){
+    starting.value.v <- c(0,-sqrt(h11*h22)*0.5, sqrt(h11*h22)*0.5)
+    k <- 1
+    while(opt$convergence != 0){
+      starting.value <- starting.value.v[k]
+      opt=  optim(c(starting.value,rho12), llfun.gcov.part.2, h11=h11.hdl, h22=h22.hdl,
+                  rho12=rho12, M=M.ref, N1=N1, N2=N2, N0=N0, Nref=Nref,
+                  lam0=unlist(lam.v), lam1=unlist(lam.v), lam2=unlist(lam.v),
+                  bstar1=unlist(bstar1.v), bstar2=unlist(bstar2.v),
+                  lim=exp(-18), method ='L-BFGS-B', lower=c(-1,-10), upper=c(1,10))
+      k <- k + 1
+      if(k > length(starting.value.v)){
+        error.message <- "Algorithm failed to converge after trying different initial values. \n"
+        if(output.file != ""){
+          cat(error.message, file = output.file, append = T)
+        }
+        stop(error.message)
+      }
+    }}
+  h12.hdl = opt$par
+  
+  
+  cat("Continuing computing standard error with jackknife \n")
+  if(output.file != ""){
+    cat("Continuing computing standard error with jackknife \n", file = output.file, append = T)
+  }
+  counter <- 0
+  message <- ""
+  rg.jackknife <- h11.jackknife <- h12.jackknife <- h22.jackknife <- numeric(length(lam.v))
+  for(i in 1:length(lam.v)){
+    opt = optim(h11.hdl, llfun, N=N1, Nref=Nref, lam=unlist(lam.v[-i]), bstar=unlist(bstar1.v[-i]), M=M.ref,
+                lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+    h11.hdl.jackknife = opt$par
+    
+    
+    opt = optim(h22.hdl, llfun, N=N2, Nref=Nref, lam=unlist(lam.v[-i]), bstar=unlist(bstar2.v[-i]), M=M.ref,
+                lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+    h22.hdl.jackknife = opt$par
+    
+    opt=  optim(h12.hdl, llfun.gcov.part.2, h11=h11.hdl, h22=h22.hdl,
+                rho12=rho12, M=M.ref, N1=N1, N2=N2, N0=N0, Nref=Nref,
+                lam0=unlist(lam.v[-i]), lam1=unlist(lam.v[-i]), lam2=unlist(lam.v[-i]),
+                bstar1=unlist(bstar1.v[-i]), bstar2=unlist(bstar2.v[-i]),
+                lim=exp(-18), method ='L-BFGS-B', lower=c(-1,-10), upper=c(1,10))
+    h12.hdl.jackknife = opt$par
+    
+    
+    
+    V.hold[i,s] <- h12.hdl.jackknife[1]
+    
+    
+    ## Report progress ##
+    
+    counter <- counter + 1
+    value <- round(counter/length(lam.v)*100)
+    backspaces <- paste(rep("\b", nchar(message)), collapse = "")
+    message <- paste("Progress... ", value, "%", sep = "", 
+                     collapse = "")
+    cat(backspaces, message, sep = "")
+  }
+  
+ 
+  I[j,d] <- I[d,j] <- h12.hdl[2]
+  S[j,d] <- S[d,j] <- h12.hdl[1]
+  
+  }
+  
+  if(method=="piecewise"){
+  
   rownames(HDL11.df) <- rownames(HDL22.df) <- rownames(HDL12.df) <- names.row
   h1_2 <- sum(HDL11.df[, 1])
   h2_2 <- sum(HDL22.df[, 1])
   gen.cov <- sum(HDL12.df[, 1])
 
-  
+    
   I[j,d] <- I[d,j] <- mean(HDL12.df[,2])
   S[j,d] <- S[d,j] <- gen.cov
   for(i in 1:num.pieces){
     V.hold[i,s] <- (num.pieces/(num.pieces-1))*sum(HDL12.df[-i,1])
+  }
+  
   }
   
   s <- s+ 1
