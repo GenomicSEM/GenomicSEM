@@ -26,8 +26,8 @@ ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = F
 
 }
 \references{
-\item{Ning et al.}{Ning Z, Pawitan Y, Shen X (2020). High-definition likelihood inference of genetic correlations across human complex traits. \emph{Nature Genetics}.}  
-}   
+Ning, Z., Pawitan, Y. & Shen, X. High-definition likelihood inference of genetic correlations across human complex traits. Nat Genet (2020).
+}
 
 
 \examples{
