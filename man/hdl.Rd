@@ -15,7 +15,7 @@ ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = F
    \item{LD.path}{String which contains the path to the folder in which the LD matrices used in the analysis are located. Expects LD matirices formated as required by the original HDL software. }
    \item{Nref}{Sample size of the reference file, default is 335265}
    \item{trait.names}{A character vector specifying how the traits should be named in the genetic covariance (S) matrix. These variable names can subsequently be used in later steps for model specification. If no value is provided, the function will automatically name the variables using the generic from of V1-VX.}
-   \item{method}{sting, either "piecewise" whcih estimates the heritability or genetic covariance locally in chunks acros the genome and then sums these, or "jackknife"}
+   \item{method}{sting, either "piecewise" which estimates the heritability or genetic covariance locally in chunks across the genome and then sums these estimates, or "jackknife" which uses a genoem wide estiamte and uses a jackknife estimator for the variance of the parameter. defaults to "piecewise" the original HDL implementation is equal to "jackknife"}
 }
 
 \value{
@@ -25,7 +25,9 @@ ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = F
    \item{I}{matrix containing the "cross trait intercepts", or the error covariance between traits induced by overlap, in terms of subjects, between the GWASes on which the analyses are based}
 
 }
-
+\references{
+\item{Ning et al.}{Ning Z, Pawitan Y, Shen X (2020). High-definition likelihood inference of genetic correlations across human complex traits. \emph{Nature Genetics}.}  
+}   
 
 
 \examples{
