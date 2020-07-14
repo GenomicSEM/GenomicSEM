@@ -13,7 +13,7 @@ ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = F
    \item{sample.prev}{A vector of sample prevalences for dichotomous traits and \code{NA} for continous traits}
    \item{population.prev}{A vector of population prevalences for dichotomous traits and \code{NA} for continous traits}
    \item{LD.path}{String which contains the path to the folder in which the LD matrices used in the analysis are located. Expects LD matirices formated as required by the original HDL software. }
-   \item{Nref]{Sample size of the reference file, default is 335265}
+   \item{Nref}{Sample size of the reference file, default is 335265}
    \item{trait.names}{A character vector specifying how the traits should be named in the genetic covariance (S) matrix. These variable names can subsequently be used in later steps for model specification. If no value is provided, the function will automatically name the variables using the generic from of V1-VX.}
    \item{method}{sting, either "piecewise" whcih estimates the heritability or genetic covariance locally in chunks acros the genome and then sums these, or "jackknife"}
 }
