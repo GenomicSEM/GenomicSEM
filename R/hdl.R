@@ -4,6 +4,9 @@ hdl <- function(traits,sample.prev=NA,population.prev=NA,trait.names,LD.path,Nre
 
   ### Do some data wrangling for the LD files:
   
+  cat("GenomicSEM multivariable HDL function, based on the original implmentation of HDL please cite: Ning, Pawitan & Shen, Nature Genetics (2020)")
+  
+  
   LD.files <- list.files(LD.path)
   
   if(any(grepl(x = LD.files, pattern = "UKB_snp_counter.*"))){
@@ -114,13 +117,9 @@ cat("\n")
     k1 <- nrow(gwas.df)
     k1.percent <- paste("(", round(100 * k1/length(snps.name.list), 
                                    2), "%)", sep = "")
-    cat(k1, "out of", length(snps.name.list), k1.percent, "SNPs in reference panel are available in the GWAS.", 
+    cat(k1, "out of", length(snps.name.list), k1.percent, "SNPs in reference panel are available in the GWAS of ",trait.names[j] , 
         " \n")
-    if (output.file != "") {
-      cat(k1, "out of", length(snps.name.list), k1.percent, 
-          "SNPs in reference panel are available in the GWAS.", 
-          " \n", file = output.file, append = T)
-    }
+  
     if (k1 < length(snps.name.list) * 0.99) {
       error.message <- "Warning: More than 1% SNPs in reference panel are missed in the GWAS. This may generate bias in estimation. Please make sure that you are using correct reference panel.  \n"
       if (output.file != "") {
@@ -285,30 +284,7 @@ cat("\n")
   }
   gwas1.df <- gwas1.df %>% filter(!is.na(Z))
   gwas2.df <- gwas2.df %>% filter(!is.na(Z))
-  k1 <- nrow(gwas1.df)
-  k2 <- nrow(gwas2.df)
-  k1.percent <- paste("(", round(100 * k1/length(snps.name.list), 2), "%)", sep = "")
-  k2.percent <- paste("(", round(100 * k2/length(snps.name.list), 2), "%)", sep = "")
-  cat(k1, "out of", length(snps.name.list), k1.percent, "SNPs in reference panel are available in GWAS 1.",  " \n")
-  cat(k2, "out of", length(snps.name.list), k2.percent, "SNPs in reference panel are available in GWAS 2.", " \n")
-  if (output.file != "") {
-    cat(k1, "out of", length(snps.name.list), k1.percent,  "SNPs in reference panel are available in GWAS 1.",  " \n", file = output.file, append = T)
-    cat(k2, "out of", length(snps.name.list), k2.percent,  "SNPs in reference panel are available in GWAS 2.",  " \n", file = output.file, append = T)
-  }
-  if (k1 < length(snps.name.list) * 0.99) {
-    error.message <- "Warning: More than 1% SNPs in reference panel are missed in GWAS 1. This may generate bias in estimation. Please make sure that you are using correct reference panel.  \n"
-    if (output.file != "") {
-      cat(error.message, file = output.file, append = T)
-    }
-    cat(error.message)
-  }
-  if (k2 < length(snps.name.list) * 0.99) {
-    error.message <- "Warning: More than 1% SNPs in reference panel are missed in GWAS 2. This may generate bias in estimation. Please make sure that you are using correct reference panel.  \n"
-    if (output.file != "") {
-      cat(error.message, file = output.file, append = T)
-    }
-    cat(error.message)
-  }
+
   N1 <- median(gwas1.df[, "N"])
   N2 <- median(gwas2.df[, "N"])
   N <- sqrt(N1) * sqrt(N2)
