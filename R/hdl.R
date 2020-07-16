@@ -1,10 +1,15 @@
 #### GenomicSEM multivariable HDL function, based on the amazing work by Ning, Pawitan and Shen, Nature Genetics (2020)
 
-hdl <- function(traits,sample.prev=NA,population.prev=NA,trait.names,LD.path,Nref = 335265,output.file = "",method="piecewise"){
+hdl <- function(traits,sample.prev=NA,population.prev=NA,trait.names=NULL,LD.path,Nref = 335265,method="piecewise"){
 
   ### Do some data wrangling for the LD files:
   
   cat("GenomicSEM multivariable HDL function, based on the original implmentation of HDL please cite: Ning, Pawitan & Shen, Nature Genetics (2020)")
+  
+  if(is.null(trait.names)){
+    traits2 <- paste0("V",1:length(traits))
+    trat.names<-(traits2)
+  }
   
   
   LD.files <- list.files(LD.path)
@@ -20,9 +25,6 @@ hdl <- function(traits,sample.prev=NA,population.prev=NA,trait.names,LD.path,Nre
     }
   } else{
     error.message <- "It seems this directory does not contain all files needed for HDL. Please check your LD.path again. The version of HDL implementerd in GenomicSEM only support pre-computed LD reference panels."
-    if(output.file != ""){
-      cat(error.message, file = output.file, append = T)
-    }
     stop(error.message)
   }
   
@@ -48,7 +50,7 @@ hdl <- function(traits,sample.prev=NA,population.prev=NA,trait.names,LD.path,Nre
   N.vec <- matrix(NA,nrow=1,ncol=n.V)
   Liab.S <- matrix(1,nrow=1,ncol=n.traits)
   I <- matrix(NA,nrow=n.traits,ncol=n.traits)
-
+  complete <- matrix(1,nrow=1,ncol=n.traits)
 # Start with general utility functions needed for hdl and standard errors
 
 
@@ -107,9 +109,7 @@ cat("\n")
       }
       else {
         error.message <- "Z is not available, meanwhile either b or se is missing. Please check."
-        if (output.file != "") {
-          cat(error.message, file = output.file, append = T)
-        }
+
         stop(error.message)
       }
     }
@@ -117,16 +117,14 @@ cat("\n")
     k1 <- nrow(gwas.df)
     k1.percent <- paste("(", round(100 * k1/length(snps.name.list), 
                                    2), "%)", sep = "")
-    cat(k1, "out of", length(snps.name.list), k1.percent, "SNPs in reference panel are available in the GWAS of ",trait.names[j] , 
+    cat(k1, "out of", length(snps.name.list), k1.percent, "SNPs in reference panel are available in the GWAS of",trait.names[j] , 
         " \n")
   
     if (k1 < length(snps.name.list) * 0.99) {
       error.message <- "Warning: More than 1% SNPs in reference panel are missed in the GWAS. This may generate bias in estimation. Please make sure that you are using correct reference panel.  \n"
-      if (output.file != "") {
-        cat(error.message, file = output.file, append = T)
-      }
       cat(error.message)
     }
+    complete[j] <- k1.percent
     
     N1 <- median(gwas.df[, "N"])
     N <- N1
@@ -194,9 +192,7 @@ cat("\n")
       h11.hdl = opt$par
      
       cat("Continuing computing standard error with jackknife \n")
-      if(output.file != ""){
-        cat("Continuing computing standard error with jackknife \n", file = output.file, append = T)
-      }
+
       counter <- 0
       message <- ""
        h11.jackknife <- numeric(length(lam.v))
@@ -264,9 +260,6 @@ cat("\n")
     }
     else {
       error.message <- "Z is not available, meanwhile either b or se is missing. Please check."
-      if (output.file != "") {
-        cat(error.message, file = output.file, append = T)
-      }
       stop(error.message)
     }
   }
@@ -276,9 +269,6 @@ cat("\n")
     }
     else {
       error.message <- "Z is not available, meanwhile either b or se is missing. Please check."
-      if (output.file != "") {
-        cat(error.message, file = output.file, append = T)
-      }
       stop(error.message)
     }
   }
@@ -419,9 +409,6 @@ cat("\n")
       k <- k + 1
       if(k > length(starting.value.v)){
         error.message <- "Algorithm failed to converge after trying different initial values. \n"
-        if(output.file != ""){
-          cat(error.message, file = output.file, append = T)
-        }
         stop(error.message)
       }
     }}
@@ -429,9 +416,6 @@ cat("\n")
   
   
   cat("Continuing computing standard error with jackknife \n")
-  if(output.file != ""){
-    cat("Continuing computing standard error with jackknife \n", file = output.file, append = T)
-  }
   counter <- 0
   message <- ""
   rg.jackknife <- h11.jackknife <- h12.jackknife <- h22.jackknife <- numeric(length(lam.v))
@@ -535,6 +519,6 @@ V<-diag(Dvcovl)%*%vcor%*%diag(Dvcovl)
 
 colnames(S) <- trait.names  
 
-return(list(V = V,S = S,I = I))
+return(list(V = V,S = S,I = I,complete=complete))
 }
 
