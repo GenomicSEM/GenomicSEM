@@ -314,7 +314,7 @@ cat("\n")
   N <- sqrt(N1) * sqrt(N2)
   p1 <- N0/N1
   p2 <- N0/N2
-  rho12 <- suppressWarnings(inner_join(gwas1.df %>% select(SNP,  Z), gwas2.df %>% select(SNP, Z), by = "SNP") %>% summarise(x = cor(Z.x, Z.y, use = "complete.obs")) %>% unlist)
+  rho12 <- suppressWarnings(inner_join(gwas1.df , gwas2.df , by = "SNP") %>% summarise(x = cor(Z.x, Z.y, use = "complete.obs")) %>% unlist)
   bstar1.v <- bstar2.v <- lam.v <- list()
   HDL11.df <- HDL12.df <- HDL22.df <- names.row <- NULL
   counter <- 0
