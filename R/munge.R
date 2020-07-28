@@ -191,6 +191,9 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     colnames(output) <- c("SNP","N","Z","A1","A2")
     cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC.")),file=log.file,sep="\n",append=TRUE)
     
+    #remove spaces in trait.names file to avoid errors with fread functionality used for s_ldsc
+    trait.names[i]<-str_replace_all(trait.names[i], fixed(" "), "") 
+    
     write.table(x = output,file = paste0(trait.names[i],".sumstats"),sep="\t", quote = FALSE, row.names = F)
     gzip(paste0(trait.names[i],".sumstats"))
     cat(print(paste("I am done munging file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
