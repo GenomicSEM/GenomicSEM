@@ -6,8 +6,9 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   
   begin.time <- Sys.time()
   
-  if(is.null(ldsc.log)){
-    log2<-paste(traits,collapse="_")
+    if(is.null(ldsc.log)){
+    logtraits<-gsub(".*/","",traits)
+    log2<-paste(logtraits,collapse="_")
     if(object.size(log2) > 200){
       log2<-substr(log2,1,100)
     }
