@@ -553,6 +553,9 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   cat(print(paste0("Running LDSC for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
   cat(paste("     "),file=log.file,sep="\n",append=TRUE)
   
+  flush(log.file)
+  close(log.file)
+
   if(stand == FALSE){
   return(list(V=V,S=S,I=I,N=N.vec,m=m))
   }
