@@ -638,7 +638,7 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   }
   
   if(!is.na( modelfit$CFI ) && modelfit$CFI < 0){
-    warning(paste("CFI estimates below 0 should not be trusted, and indicate that the other model fit estimates should be interpreted with caution. A negative CFI estimates typically appears due to negative residual variances."))
+    warning(paste("CFI estimates below 0 should not be trusted, and indicate that the other model fit estimates should be interpreted with caution. A negative CFI estimate typically appears due to negative residual variances."))
   }
          
   results$p_value<-2*pnorm(abs(as.numeric(results$Unstandardized_Estimate)/as.numeric(results$Unstandardized_SE)),lower.tail=FALSE)
