@@ -641,6 +641,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = "")
     print(paste0("Please check the log files to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files."))
   }
+
+  flush(log.file)
+  close(log.file)
   
   data.frame.out
   
