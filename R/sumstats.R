@@ -407,6 +407,9 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
     "interpreted correctly and no warnings were issued for any of the summary statistics files."
   ) ) )
 
+  flush(log.file)
+  close(log.file)
+
   data.frame.out
 
 }

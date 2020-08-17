@@ -263,7 +263,7 @@
 
   ss.tags <- .sumstats.tags()
 
-  hold_names <- names(tmpfile)
+  hold_names <- toupper(names(tmpfile))
 
   names1<-hold_names
   if("SNP" %in% hold_names) cat( "Interpreting the SNP column as the SNP column.\n" )

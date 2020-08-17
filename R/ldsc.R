@@ -38,35 +38,25 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   V.hold <- matrix(NA,nrow=n.blocks,ncol=n.V)
   liab.scale.conv.fact <- matrix(1,nrow=1,ncol=n.traits)
 
-  # Current working directory
-  curwd = getwd()
-  
-  
-  
+
   #########  READ LD SCORES:
 
   cat("Reading in LD scores.\n")
   
-  setwd(ld)
-  
-  x <- suppressMessages(read_delim("1.l2.ldscore.gz", "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
+  x <- suppressMessages(read_delim(file.path(ld, "1.l2.ldscore.gz"), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
   for(i in 2:chr){
-    x <- rbind(x,suppressMessages(read_delim(paste0(i,".l2.ldscore.gz"), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F)))
+    x <- rbind(x,suppressMessages(read_delim(file.path(ld, paste0(i,".l2.ldscore.gz")), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F)))
   }
   
   x$CM <- NULL
   x$MAF <- NULL
   
-  setwd(curwd)
-  
   ######### READ weights:
   
-  setwd(wld)
-  
   if(sep_weights==T){
-    w <- suppressMessages(read_delim("1.l2.ldscore.gz", "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
+    w <- suppressMessages(read_delim(file.path(wld, "1.l2.ldscore.gz"), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
     for(i in 2:chr){
-      w <- rbind(w,suppressMessages(read_delim(paste0(i,".l2.ldscore.gz"), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F)))
+      w <- rbind(w,suppressMessages(read_delim(file.path(wld, paste0(i,".l2.ldscore.gz")), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F)))
     }   }
   
   w <- x
@@ -74,18 +64,14 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   w$CM <- NULL
   w$MAF <- NULL
   
-  setwd(curwd)
-  
   colnames(w)[ncol(w)] <- "wLD"
   
   ### READ M
 
-  setwd(ld)
-  m <- suppressMessages(read_csv("1.l2.M_5_50", col_names = FALSE))
+  m  <- suppressMessages(read_csv(file.path(ld, "1.l2.M_5_50"),  col_names = FALSE))
   for(i in 2:chr){
-    m <- rbind(m, suppressMessages(read_csv(paste0(i,".l2.M_5_50"), col_names = FALSE)))
+    m <- rbind(m,suppressMessages(read_csv(file.path(ld, paste0(i,".l2.M_5_50")),  col_names = FALSE)))
   }
-  setwd(curwd)
   M.tot <- sum(m)
   m <- M.tot  #is this right? in a couple of occasions below, 'm' is treated as an array
   
@@ -587,6 +573,9 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   writeLines( strwrap( paste0( 
     "Running ldsc for all files took ", mins," minutes and ", round(secs)," seconds."
   ) ) )
+
+  flush(log.file)
+  close(log.file)
 
   sink()
 
