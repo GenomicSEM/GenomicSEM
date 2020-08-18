@@ -1,5 +1,4 @@
 
-
 ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_weights = FALSE,chr=22,n.blocks=200,ldsc.log=NULL,stand=FALSE){
   time <- proc.time()
 
@@ -42,10 +41,11 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   cat(print("Reading in LD scores"),file=log.file,sep="\n",append=TRUE)
 
 
-  x <- suppressMessages(read_delim(file.path(ld, "1.l2.ldscore.gz"), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
-  for(i in 2:chr){
-    x <- rbind(x,suppressMessages(read_delim(file.path(ld, paste0(i,".l2.ldscore.gz")), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F)))
-  }
+  x <- do.call("rbind", lapply(1:chr, function(i) {
+    suppressMessages(read_delim(
+      file.path(ld, paste0(i, ".l2.ldscore.gz")),
+      delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE))
+  }))
 
   x$CM <- NULL
   x$MAF <- NULL
@@ -54,13 +54,15 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   ######### READ weights:
 
 
-  if(sep_weights==T){
-    w <- suppressMessages(read_delim(file.path(wld, "1.l2.ldscore.gz"), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
-    for(i in 2:chr){
-      w <- rbind(w,suppressMessages(read_delim(file.path(wld, paste0(i,".l2.ldscore.gz")), "\t", escape_double = FALSE, trim_ws = TRUE,progress = F)))
-    }   }
+  if(sep_weights){
+    w <- do.call("rbind", lapply(1:chr, function(i) {
+      suppressMessages(read_delim(
+        file.path(wld, paste0(i, ".l2.ldscore.gz")),
+        delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE))
+    }))
+  }
 
-  w <- x
+  w <- x  # need else clause around this?
 
   w$CM <- NULL
   w$MAF <- NULL
@@ -69,10 +71,9 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
   ### READ M
 
-  m  <- suppressMessages(read_csv(file.path(ld, "1.l2.M_5_50"),  col_names = FALSE))
-  for(i in 2:chr){
-    m <- rbind(m,suppressMessages(read_csv(file.path(ld, paste0(i,".l2.M_5_50")),  col_names = FALSE)))
-  }
+  m <- do.call("rbind", lapply(1:chr, function(i) {
+    suppressMessages(read_csv(file.path(ld, paste0(i, ".l2.M_5_50")), col_names = FALSE))
+  }))
 
   M.tot <- sum(m)
   m <- M.tot
