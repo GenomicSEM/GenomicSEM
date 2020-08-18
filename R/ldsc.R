@@ -110,9 +110,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
         ######## Merge files
 
-        merged <- merge(x=y1[,c("SNP","chi1","N")],y=w[,c("SNP","wLD")],by="SNP")
-        merged <- merge(x=merged,y=x,by="SNP")
-        merged <- merged[with(merged,order(CHR,BP)),]
+        merged <- merge(y1[, c("SNP", "chi1", "N")], w[, c("SNP", "wLD")],
+                        by = "SNP", sort = FALSE)
+        merged <- merge(merged, x, by = "SNP", sort = FALSE)
+        merged <- merged[with(merged, order(CHR, BP)), ]
         remaining.snps <- nrow(merged)
 
         cat(print(paste(remaining.snps, "SNPs remaining after merging file with LD-score files")),file=log.file,sep="\n",append=TRUE)
@@ -263,7 +264,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         cat(print(paste("Read in summary statistics for",nrow(y2),"SNPs")),file=log.file,sep="\n",append=TRUE)
 
 
-        y <- merge(y1,y2,by="SNP")
+        y <- merge(y1, y2, by = "SNP", sort = FALSE)
 
         y[y$A1.y == y$A1.x,]$Z.x <- y[y$A1.y == y$A1.x,]$Z.x
         y[y$A1.y != y$A1.x,]$Z.x <-  -1* y[y$A1.y != y$A1.x,]$Z.x
@@ -276,9 +277,10 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
         ######## Merge files
 
-        merged <- merge(x=y[,c("SNP","chi1","chi2","N.x","N.y","ZZ")],y=w[,c("SNP","wLD")],by="SNP")
-        merged <- merge(x=merged,y=x,by="SNP")
-        merged <- merged[with(merged,order(CHR,BP)),]
+        merged <- merge(y[, c("SNP", "chi1", "chi2", "N.x", "N.y", "ZZ")],
+                        w[, c("SNP", "wLD")], by = "SNP", sort = FALSE)
+        merged <- merge(merged, x, by = "SNP", sort = FALSE)
+        merged <- merged[with(merged, order(CHR, BP)), ]
         remaining.snps <- nrow(merged)
 
         cat(print(paste(remaining.snps,"SNPs remaining after merging the files with LD-score files")),file=log.file,sep="\n",append=TRUE)
