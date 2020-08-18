@@ -31,3 +31,5 @@ vignettes/*.pdf
 .Rproj.user
 ^.*\.Rproj$
 ^\.Rproj\.user$
+tmp-data
+GenomicSEM.Rproj
