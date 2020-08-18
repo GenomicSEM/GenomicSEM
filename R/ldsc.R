@@ -53,7 +53,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
   ######### READ weights:
 
-
   if(sep_weights){
     w <- do.call("rbind", lapply(1:chr, function(i) {
       suppressMessages(read_delim(
@@ -78,26 +77,49 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
   M.tot <- sum(m)
   m <- M.tot
 
+  ### READ ALL CHI2 + MERGE WITH LDSC FILES
+
+  all_y <- lapply(traits, function(chi1) {
+
+    ## READ chi2
+    y1 <- suppressMessages(na.omit(read_delim(
+      chi1, delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE)))
+
+    cat(print(paste("Read in summary statistics from:", chi1)),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Read in summary statistics for", nrow(y1), "SNPs")),file=log.file,sep="\n",append=TRUE)
+
+    ## Merge files
+    merged <- merge(y1[, c("SNP", "N", "Z", "A1")], w[, c("SNP", "wLD")], by = "SNP", sort = FALSE)
+    merged <- merge(merged, x, by = "SNP", sort = FALSE)
+    merged <- merged[with(merged, order(CHR, BP)), ]
+
+    cat(print(paste(nrow(merged), "SNPs remaining after merging file with LD-score files")),file=log.file,sep="\n",append=TRUE)
+
+    ## REMOVE SNPS with excess chi-square:
+    chisq.max <- max(0.001 * max(merged$N), 80)
+    rm <- (merged$Z^2 > chisq.max)
+    merged <- merged[!rm, ]
+
+    cat(print(paste("Removed",sum(rm),"SNPs with Chi^2 >",chisq.max)),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste(nrow(merged), "SNPs remain")),file=log.file,sep="\n",append=TRUE)
+
+    merged
+  })
+
   # count the total nummer of runs, both loops
   s <- 1
 
   for(j in 1:n.traits){
 
     chi1 <- traits[j]
-    ######### READ chi2
 
     cat(paste("     "),file=log.file,sep="\n",append=TRUE)
     cat(paste("     "),file=log.file,sep="\n",append=TRUE)
 
     cat(print(paste("Estimating heritability for:", traits[j])),file=log.file,sep="\n",append=TRUE)
 
-    y1 <- suppressMessages(read_delim(chi1, "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
-
-    y1 <- na.omit(y1)
+    y1 <- all_y[[j]]
     y1$chi1 <- y1$Z^2
-
-    cat(print(paste("Read in summary statistics from:", chi1)),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste("Read in summary statistics for", nrow(y1), "SNPs")),file=log.file,sep="\n",append=TRUE)
 
     for(k in j:length(traits)){
 
@@ -108,25 +130,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         samp.prev <- sample.prev[j]
         pop.prev <- population.prev[j]
 
-        ######## Merge files
-
-        merged <- merge(y1[, c("SNP", "chi1", "N")], w[, c("SNP", "wLD")],
-                        by = "SNP", sort = FALSE)
-        merged <- merge(merged, x, by = "SNP", sort = FALSE)
-        merged <- merged[with(merged, order(CHR, BP)), ]
-        remaining.snps <- nrow(merged)
-
-        cat(print(paste(remaining.snps, "SNPs remaining after merging file with LD-score files")),file=log.file,sep="\n",append=TRUE)
-
-
-        ## REMOVE SNPS with excess chi-square:
-        chisq.max <- max(0.001*max(merged$N),80)
-        merged <- merged[merged$chi1 < chisq.max,]
+        merged <- y1
         n.snps <- nrow(merged)
-        removed.snps <- remaining.snps-n.snps
-
-        cat(print(paste("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max)),file=log.file,sep="\n",append=TRUE)
-        cat(print(paste(n.snps, "SNPs remain")),file=log.file,sep="\n",append=TRUE)
 
         ## ADD INTERCEPT:
         merged$intercept <- 1
@@ -246,53 +251,24 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
       ##### GENETIC COVARIANCE code
 
-      if(j != k)
-      {cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+      if(j != k){
 
+        cat(paste("     "),file=log.file,sep="\n",append=TRUE)
 
         chi2 <- traits[k]
-        ######### READ chi2
         cat(print(paste("Calculating genetic covariance for traits:",chi1, "and", chi2)),file=log.file,sep="\n",append=TRUE)
 
         # Reuse the data read in for heritability
-        y2 <- suppressMessages(read_delim(chi2, "\t", escape_double = FALSE, trim_ws = TRUE,progress = F))
-
-        y2 <- na.omit(y2)
-        y2$chi2 <- y2$Z^2
-
-        cat(print(paste("Read in summary statistics from",chi2)),file=log.file,sep="\n",append=TRUE)
-        cat(print(paste("Read in summary statistics for",nrow(y2),"SNPs")),file=log.file,sep="\n",append=TRUE)
-
-
-        y <- merge(y1, y2, by = "SNP", sort = FALSE)
+        y2 <- all_y[[k]]
+        y <- merge(y1, y2[, c("SNP", "N", "Z", "A1")], by = "SNP", sort = FALSE)
 
         y$Z.x <- ifelse(y$A1.y == y$A1.x, y$Z.x, -y$Z.x)
         y$ZZ <- y$Z.y * y$Z.x
-        y <- na.omit(y)
-
-        cat(print(paste("After merging",chi1,"and",chi2,"summary statistics for",nrow(y),"SNPs remain")),file=log.file,sep="\n",append=TRUE)
-
-        ######## Merge files
-
-        merged <- merge(y[, c("SNP", "chi1", "chi2", "N.x", "N.y", "ZZ")],
-                        w[, c("SNP", "wLD")], by = "SNP", sort = FALSE)
-        merged <- merge(merged, x, by = "SNP", sort = FALSE)
-        merged <- merged[with(merged, order(CHR, BP)), ]
-        remaining.snps <- nrow(merged)
-
-        cat(print(paste(remaining.snps,"SNPs remaining after merging the files with LD-score files")),file=log.file,sep="\n",append=TRUE)
-
-        ## REMOVE SNPS with excess chi-square:
-        chisq.max1 <- max(0.001*max(merged$N.x),80)
-        merged <- merged[merged$chi1 < chisq.max1,]
-
-        chisq.max2 <- max(0.001*max(merged$N.y),80)
-        merged <- merged[merged$chi2 < chisq.max2,]
-
+        y$chi2 <- y$Z.y^2
+        merged <- na.omit(y)
         n.snps <- nrow(merged)
-        removed.snps <- remaining.snps-n.snps
 
-        cat(print(paste("Removed",removed.snps,"SNPs with Chi^2 >",chisq.max1, "for", chi1, "or SNPs with Chi^2 >",chisq.max2, "for", chi2, paste0("(",n.snps," SNPs remain)"))),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste("After merging",chi1,"and",chi2,"summary statistics for",n.snps,"SNPs remain")),file=log.file,sep="\n",append=TRUE)
 
         ## ADD INTERCEPT:
         merged$intercept <- 1
