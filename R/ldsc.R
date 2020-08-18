@@ -139,8 +139,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         tot.agg <- (M.tot*(mean(merged$chi1)-1))/mean(merged$L2*merged$N)
         tot.agg <- max(tot.agg,0)
         tot.agg <- min(tot.agg,1)
-        merged$ld <- as.numeric(lapply(X=merged$L2,function(x){max(x,1)}))
-        merged$w.ld <- as.numeric(lapply(X=merged$wLD,function(x){max(x,1)}))
+        merged$ld <- pmax(merged$L2, 1)
+        merged$w.ld <- pmax(merged$wLD, 1)
         merged$c <- tot.agg*merged$N/M.tot
         merged$het.w <- 1/(2*(1+(merged$c*merged$ld))^2)
         merged$oc.w <- 1/merged$w.ld
@@ -266,10 +266,7 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
 
         y <- merge(y1, y2, by = "SNP", sort = FALSE)
 
-        y[y$A1.y == y$A1.x,]$Z.x <- y[y$A1.y == y$A1.x,]$Z.x
-        y[y$A1.y != y$A1.x,]$Z.x <-  -1* y[y$A1.y != y$A1.x,]$Z.x
-
-
+        y$Z.x <- ifelse(y$A1.y == y$A1.x, y$Z.x, -y$Z.x)
         y$ZZ <- y$Z.y * y$Z.x
         y <- na.omit(y)
 
@@ -308,8 +305,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         tot.agg <- (M.tot*(mean(merged$chi1)-1))/mean(merged$L2*merged$N.x)
         tot.agg <- max(tot.agg,0)
         tot.agg <- min(tot.agg,1)
-        merged$ld <- as.numeric(lapply(X=merged$L2,function(x){max(x,1)}))
-        merged$w.ld <- as.numeric(lapply(X=merged$wLD,function(x){max(x,1)}))
+        merged$ld <- pmax(merged$L2, 1)
+        merged$w.ld <- pmax(merged$wLD, 1)
         merged$c <- tot.agg*merged$N.x/M.tot
         merged$het.w <- 1/(2*(1+(merged$c*merged$ld))^2)
         merged$oc.w <- 1/merged$w.ld
@@ -319,8 +316,8 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
         tot.agg2 <- (M.tot*(mean(merged$chi2)-1))/mean(merged$L2*merged$N.y)
         tot.agg2 <- max(tot.agg2,0)
         tot.agg2 <- min(tot.agg2,1)
-        merged$ld2 <- as.numeric(lapply(X=merged$L2,function(x){max(x,1)}))
-        merged$w.ld2 <- as.numeric(lapply(X=merged$wLD,function(x){max(x,1)}))
+        merged$ld2 <- pmax(merged$L2, 1)
+        merged$w.ld2 <- pmax(merged$wLD, 1)
         merged$c2 <- tot.agg2*merged$N.y/M.tot
         merged$het.w2 <- 1/(2*(1+(merged$c2*merged$ld))^2)
         merged$oc.w2 <- 1/merged$w.ld2
