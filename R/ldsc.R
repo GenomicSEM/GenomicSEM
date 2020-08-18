@@ -28,7 +28,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
 
   # Dimensions
   n.traits <- length(traits)
-  n.V <- (n.traits^2 / 2) + .5*n.traits
+  n.V <- n.traits * (n.traits + 1) / 2
 
   if(!(is.null(trait.names))){
     check_names<-str_detect(trait.names, "-")
@@ -88,6 +88,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   m <- M.tot
 
   ### READ ALL CHI2 + MERGE WITH LDSC FILES
+  s <- 0
 
   all_y <- lapply(traits, function(chi1) {
 
@@ -95,7 +96,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
     y1 <- suppressMessages(na.omit(read_delim(
       chi1, delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE)))
 
-    LOG("Read in summary statistics from: ", chi1)
+    LOG("Read in summary statistics [", s <<- s + 1, "/", n.traits, "] from: ", chi1)
 
     ## Merge files
     merged <- merge(y1[, c("SNP", "N", "Z", "A1")], w[, c("SNP", "wLD")], by = "SNP", sort = FALSE)
@@ -131,7 +132,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
       if(j == k){
 
         LOG("     ", "     ", print = FALSE)
-        LOG("Estimating heritability for: ", chi1)
+        LOG("Estimating heritability [", s, "/", n.V, "] for: ", chi1)
 
         samp.prev <- sample.prev[j]
         pop.prev <- population.prev[j]
@@ -246,10 +247,6 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         LOG("Ratio: ", round(ratio, 4), " (", round(ratio.se, 4), ")")
         LOG("Total Observed Scale h2: ", round(reg.tot, 4), " (", round(tot.se, 4), ")")
         LOG("h2 Z: ", format(reg.tot / tot.se), digits = 3)
-
-        ### Total count
-        s <- s+1
-
       }
 
 
@@ -260,7 +257,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         LOG("     ", print = FALSE)
 
         chi2 <- traits[k]
-        LOG("Calculating genetic covariance for traits: ", chi1, " and ", chi2)
+        LOG("Calculating genetic covariance [", s, "/", n.V, "] for traits: ", chi1, " and ", chi2)
 
         # Reuse the data read in for heritability
         y2 <- all_y[[k]]
@@ -382,13 +379,10 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         LOG("Total Observed Scale Genetic Covariance (g_cov): ", round(reg.tot, 4), " (", round(tot.se, 4), ")")
         LOG("g_cov Z: ", format(reg.tot / tot.se), digits = 3)
         LOG("g_cov P-value: ", format(2 * pnorm(abs(reg.tot / tot.se), lower.tail = FALSE), digits = 5))
-
-
-        ### Total count
-        s <- s+1
-
       }
 
+      ### Total count
+      s <- s + 1
     }
   }
 
