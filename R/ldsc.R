@@ -13,7 +13,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
 
   begin.time <- Sys.time()
 
-    if(is.null(ldsc.log)){
+  if(is.null(ldsc.log)){
     logtraits<-gsub(".*/","",traits)
     log2<-paste(logtraits,collapse="_")
     if(object.size(log2) > 200){
@@ -44,7 +44,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   cov <- matrix(NA,nrow=n.traits,ncol=n.traits)
   V.hold <- matrix(NA,nrow=n.blocks,ncol=n.V)
   N.vec <- matrix(NA,nrow=1,ncol=n.V)
-  Liab.S <- matrix(1,nrow=1,ncol=n.traits)
+  Liab.S <- rep(1, n.traits)
   I <- matrix(NA,nrow=n.traits,ncol=n.traits)
 
 
@@ -191,7 +191,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         colnames(xtx)<- colnames(weighted.LD)
         for(i in 1:nrow(xtx)){xtx[i,] <- t(colSums(xtx.block.values[seq(from=i,to=nrow(xtx.block.values),by=ncol(weighted.LD)),]))}
 
-        reg <- solve(xtx)%*% xty
+        reg <- solve(xtx, xty)
         intercept <- reg[2]
         coefs <- reg[1]/N.bar
         reg.tot <- coefs*m
@@ -203,7 +203,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         for(i in 1:n.blocks){
           xty.delete <- xty-xty.block.values[i,]
           xtx.delete <- xtx-xtx.block.values[delete.from[i]:delete.to[i],]
-          delete.values[i,] <- solve(xtx.delete)%*% xty.delete
+          delete.values[i,] <- solve(xtx.delete, xty.delete)
         }
 
         tot.delete.values <- delete.values[,1:n.annot]
@@ -225,7 +225,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
 
         if(is.na(pop.prev)==F & is.na(samp.prev)==F){
           conversion.factor <- (pop.prev^2*(1-pop.prev)^2)/(samp.prev*(1-samp.prev)* dnorm(qnorm(1-pop.prev))^2)
-          Liab.S[,j] <- conversion.factor
+          Liab.S[j] <- conversion.factor
           LOG("     ", print = FALSE)
           LOG("Please note that the results initially printed to the screen and log file reflect the NON-liability h2 and cov_g. However, a liability conversion is being used for trait ",
               chi1, " when creating the genetic covariance matrix used as input for Genomic SEM and liability scale results are printed at the end of the log file.")
@@ -334,7 +334,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         colnames(xtx)<- colnames(weighted.LD)
         for(i in 1:nrow(xtx)){xtx[i,] <- t(colSums(xtx.block.values[seq(from=i,to=nrow(xtx.block.values),by=ncol(weighted.LD)),]))}
 
-        reg <- solve(xtx)%*% xty
+        reg <- solve(xtx, xty)
         intercept <- reg[2]
         coefs <- reg[1]/N.bar
         reg.tot <- coefs*m
@@ -346,7 +346,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         for(i in 1:n.blocks){
           xty.delete <- xty-xty.block.values[i,]
           xtx.delete <- xtx-xtx.block.values[delete.from[i]:delete.to[i],]
-          delete.values[i,] <- solve(xtx.delete)%*% xty.delete
+          delete.values[i,] <- solve(xtx.delete, xty.delete)
         }
 
         tot.delete.values <- delete.values[,1:n.annot]
@@ -362,19 +362,14 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         tot.cov <- sum(cat.cov)
         tot.se <- sqrt(tot.cov)
 
-        V.hold[,s] <- (pseudo.values[,1])
-        N.vec[1,s] <- N.bar
+        V.hold[, s] <- pseudo.values[, 1]
+        N.vec[1, s] <- N.bar
 
-        cov[k,j] <- reg.tot
-        cov[j,k] <- reg.tot
-        I[k,j] <- intercept
-        I[j,k] <- intercept
-
-        mean.ZZ <- mean(merged$ZZ)
-
+        cov[k, j] <- cov[j, k] <- reg.tot
+        I[k, j] <- I[j, k] <- intercept
 
         LOG("Results for genetic covariance between: ", chi1, " and ", chi2)
-        LOG("Mean Z*Z: ", round(mean.ZZ, 4))
+        LOG("Mean Z*Z: ", round(mean(merged$ZZ), 4))
         LOG("Cross trait Intercept: ", round(intercept, 4), " (", round(intercept.se, 4), ")")
         LOG("Total Observed Scale Genetic Covariance (g_cov): ", round(reg.tot, 4), " (", round(tot.se, 4), ")")
         LOG("g_cov Z: ", format(reg.tot / tot.se), digits = 3)
@@ -388,38 +383,23 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
 
 
   ## Scale V to N per study (assume m constant)
-  v.out <- ((cov(V.hold)/n.blocks) /t(N.vec) %*% N.vec) * m^2
+  # /!\ crossprod instead of tcrossprod because N.vec is a one-row matrix
+  v.out <- cov(V.hold) / crossprod(N.vec * (sqrt(n.blocks) / m))
 
   ### Scale S and V to liability:
-  S <- diag(as.vector(sqrt(Liab.S))) %*% cov %*% diag(as.vector(sqrt(Liab.S)))
+  ratio <- tcrossprod(sqrt(Liab.S))
+  S <- cov * ratio
 
   #calculate the ratio of the rescaled and original S matrices
-  scaleO=as.vector(lowerTriangle((S/cov),diag=T))
-
-  #obtain diagonals of the original V matrix and take their sqrt to get SE's
-  Dvcov<-sqrt(diag(v.out))
-
-  #rescale the SEs by the same multiples that the S matrix was rescaled by
-  Dvcovl<-as.vector(Dvcov*t(scaleO))
-
-  #obtain the sampling correlation matrix by standardizing the original V matrix
-  vcor<-cov2cor(v.out)
+  scaleO <- gdata::lowerTriangle(ratio, diag = TRUE)
 
   #rescale the sampling correlation matrix by the appropriate diagonals
-  V<-diag(Dvcovl)%*%vcor%*%diag(Dvcovl)
+  V <- v.out * tcrossprod(scaleO)
 
 
   #name traits according to trait.names argument
   #use general format of V1-VX if no names provided
-  if(is.null(trait.names)){
-    traits2 <- paste0("V",1:ncol(S))
-    colnames(S)<-(traits2)
-  }else{
-    colnames(S)<-(trait.names)
-  }
-
-
-
+  colnames(S) <- if (is.null(trait.names)) paste0("V", 1:ncol(S)) else trait.names
 
   if(mean(Liab.S)!=1){
     r<-nrow(S)
@@ -454,27 +434,20 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
 
 
   if(all(diag(S) > 0)){
-    ##calculate standardized results to print genetic correlations to log and screen
-    D<-sqrt(diag(diag(S)))
-    S_Stand=solve(D)%*%S%*%solve(D)
 
-    #obtain diagonals of the original V matrix and take their sqrt to get SE's
-    Dvcov<-sqrt(diag(V))
+    ##calculate standardized results to print genetic correlations to log and screen
+    ratio <- tcrossprod(1 / sqrt(diag(S)))
+    S_Stand <- S * ratio
 
     #calculate the ratio of the rescaled and original S matrices
-    scaleO=as.vector(lowerTriangle((S_Stand/S),diag=T))
+    scaleO <- gdata::lowerTriangle(ratio, diag = TRUE)
 
     ## MAke sure that if ratio in NaN (devision by zero) we put the zero back in
-    scaleO[is.nan(scaleO)] <- 0
-
-    #rescale the SEs by the same multiples that the S matrix was rescaled by
-    Dvcovl<-as.vector(Dvcov*t(scaleO))
-
-    #obtain the sampling correlation matrix by standardizing the original V matrix
-    Vcor<-cov2cor(V)
+    # -> not possible because of 'all(diag(S) > 0)'
+    # scaleO[is.nan(scaleO)] <- 0
 
     #rescale the sampling correlation matrix by the appropriate diagonals
-    V_Stand<-diag(Dvcovl)%*%Vcor%*%diag(Dvcovl)
+    V_Stand <- V * tcrossprod(scaleO)
 
     #enter SEs from diagonal of standardized V
     r<-nrow(S)
@@ -520,13 +493,9 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   flush(log.file)
   close(log.file)
 
-  if(stand == FALSE){
-  return(list(V=V,S=S,I=I,N=N.vec,m=m))
+  if(stand){
+    list(V=V,S=S,I=I,N=N.vec,m=m,V_Stand=V_Stand,S_Stand=S_Stand)
+  } else {
+    list(V=V,S=S,I=I,N=N.vec,m=m)
   }
-
-  if(stand == TRUE){
-    return(list(V=V,S=S,I=I,N=N.vec,m=m,V_Stand=V_Stand,S_Stand=S_Stand))
-  }
-
-
 }
