@@ -13,7 +13,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
 
   begin.time <- Sys.time()
 
-    if(is.null(ldsc.log)){
+  if(is.null(ldsc.log)){
     logtraits<-gsub(".*/","",traits)
     log2<-paste(logtraits,collapse="_")
     if(object.size(log2) > 200){
@@ -387,33 +387,19 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   v.out <- cov(V.hold) / crossprod(N.vec * (sqrt(n.blocks) / m))
 
   ### Scale S and V to liability:
-  S <- cov * tcrossprod(sqrt(Liab.S))
+  ratio <- tcrossprod(sqrt(Liab.S))
+  S <- cov * ratio
 
   #calculate the ratio of the rescaled and original S matrices
-  scaleO=as.vector(lowerTriangle((S/cov),diag=T))
-
-  #obtain diagonals of the original V matrix and take their sqrt to get SE's
-  #rescale the SEs by the same multiples that the S matrix was rescaled by
-  Dvcovl.diag <- sqrt(diag(v.out)) * scaleO
-
-  #obtain the sampling correlation matrix by standardizing the original V matrix
-  vcor <- cov2cor(v.out)
+  scaleO <- gdata::lowerTriangle(ratio, diag = TRUE)
 
   #rescale the sampling correlation matrix by the appropriate diagonals
-  V <- vcor * tcrossprod(Dvcovl.diag)
+  V <- v.out * tcrossprod(scaleO)
 
 
   #name traits according to trait.names argument
   #use general format of V1-VX if no names provided
-  if(is.null(trait.names)){
-    traits2 <- paste0("V",1:ncol(S))
-    colnames(S)<-(traits2)
-  }else{
-    colnames(S)<-(trait.names)
-  }
-
-
-
+  colnames(S) <- if (is.null(trait.names)) paste0("V", 1:ncol(S)) else trait.names
 
   if(mean(Liab.S)!=1){
     r<-nrow(S)
@@ -450,23 +436,18 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   if(all(diag(S) > 0)){
 
     ##calculate standardized results to print genetic correlations to log and screen
-    S_Stand <- S / tcrossprod(sqrt(diag(S)))
+    ratio <- tcrossprod(1 / sqrt(diag(S)))
+    S_Stand <- S * ratio
 
     #calculate the ratio of the rescaled and original S matrices
-    scaleO=as.vector(lowerTriangle((S_Stand/S),diag=T))
+    scaleO <- gdata::lowerTriangle(ratio, diag = TRUE)
 
     ## MAke sure that if ratio in NaN (devision by zero) we put the zero back in
-    scaleO[is.nan(scaleO)] <- 0
-
-    #obtain diagonals of the original V matrix and take their sqrt to get SE's
-    #rescale the SEs by the same multiples that the S matrix was rescaled by
-    Dvcovl.diag <- sqrt(diag(V)) * scaleO
-
-    #obtain the sampling correlation matrix by standardizing the original V matrix
-    Vcor <- cov2cor(V)
+    # -> not possible because of 'all(diag(S) > 0)'
+    # scaleO[is.nan(scaleO)] <- 0
 
     #rescale the sampling correlation matrix by the appropriate diagonals
-    V_Stand <- Vcor * tcrossprod(Dvcovl.diag)
+    V_Stand <- V * tcrossprod(scaleO)
 
     #enter SEs from diagonal of standardized V
     r<-nrow(S)
@@ -512,13 +493,9 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   flush(log.file)
   close(log.file)
 
-  if(stand == FALSE){
-  return(list(V=V,S=S,I=I,N=N.vec,m=m))
+  if(stand){
+    list(V=V,S=S,I=I,N=N.vec,m=m,V_Stand=V_Stand,S_Stand=S_Stand)
+  } else {
+    list(V=V,S=S,I=I,N=N.vec,m=m)
   }
-
-  if(stand == TRUE){
-    return(list(V=V,S=S,I=I,N=N.vec,m=m,V_Stand=V_Stand,S_Stand=S_Stand))
-  }
-
-
 }
