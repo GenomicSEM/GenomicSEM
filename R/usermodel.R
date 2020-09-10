@@ -1,3 +1,4 @@
+
 usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE,fix_resid=TRUE){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
@@ -128,12 +129,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   S_LDb<-S_LD
   smooth1<-ifelse(eigen(S_LD)$values[ks] <= 0, S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat), S_LD<-S_LD)
   LD_sdiff<-max(abs(S_LD-S_LDb))
-
+  
   kv<-nrow(V_LD)
   V_LDb<-V_LD
   smooth2<-ifelse(eigen(V_LD)$values[kv] <= 0, V_LD<-as.matrix((nearPD(V_LD, corr = FALSE))$mat), V_LD<-V_LD)
   LD_sdiff2<-max(abs(V_LD-V_LDb))
-
+  
   SE_pre<-matrix(0, k, k)
   SE_pre[lower.tri(SE_pre,diag=TRUE)] <-sqrt(diag(V_LDb))
   
@@ -143,7 +144,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   Z_pre<-S_LDb/SE_pre
   Z_post<-S_LD/SE_post
   Z_diff<-max(abs(Z_pre-Z_post),na.rm=T)
-
+  
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
@@ -337,7 +338,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   }
   
   ##code to write saturated model to check there are no redundancies
-  ##with user provided model in later part of script
+  ##with user provided model and follow-up saturated, "residual" model in later part of script
   write.test<-function(k, label = "V", label2 = "VF") {
     
     Modelsat<-"" 
@@ -413,117 +414,119 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
     
-    if(fix_resid == TRUE){
-    if(class(empty4$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
-      print("The model as initially specified failed to converge. A lower bound of 0 on residual variances has been automatically added to try and troubleshoot this.")
-      
-      write.Model1 <- function(k, label = "V", label2 = "VF") {  
+  if(fix_resid == TRUE){
+      if(class(empty4$value)[1] == "simpleError" | lavInspect(Model1_Results,"converged") == FALSE){
         
-        ModelsatF<-""
-        for (i in 1:(k-1)) {
-          linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
-          if (k-i >= 2) {
-            linemidc <- ""
-            for (j in (i+2):k) {
-              linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
+        write.Model2 <- function(k, label = "V", label2 = "VF") {  
+          
+          ModelsatF<-""
+          for (i in 1:(k-1)) {
+            linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
+            if (k-i >= 2) {
+              linemidc <- ""
+              for (j in (i+2):k) {
+                linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
+              }
+            } else {linemidc <- ""}
+            ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+          } 
+          
+          if(r > 0){
+            Model1b <- ""
+            for (t in 1:r) {
+              for (i in 1) {
+                linestartb <- paste(lat_labs[t], " =~ 0*",label2, i, sep = "")  
+                if ((k-1)-i > 0 | k ==2) {
+                  linemidb <- ""
+                  for (j in (i+1):k) {
+                    linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+                  }
+                } else {linemidb <- ""}
+                
+              }
+              Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
             }
-          } else {linemidc <- ""}
-          ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+          }
+          else {Model1b <- ""}
+          
+          
+          if(r > 0){
+            Model1c <- ""
+            for (t in 1:r) {
+              for (i in 1) {
+                linestartc <- paste(lat_labs[t], " ~~ 0*",label2, i, sep = "")  
+                if ((k-1)-i > 0 | k == 2) {
+                  linemidc <- ""
+                  for (j in (i+1):k) {
+                    linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+                  }
+                } else {linemidc <- ""}
+                
+              }
+              Model1c <- paste(Model1c, linestartc, linemidc, " \n ", sep = "")
+            }
+          }
+          else {Model1c <- ""}
+          
+          Model2<-""
+          for (p in 1:k) {
+            linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
+            Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+          
+          #create unique combination of letters for residual variance parameter labels
+          n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
+          
+          Model3<-""
+          for (p in 1:k) {
+            linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
+            linestart3b <- paste(paste(n[,p],collapse=""), " > .001", sep = "")
+            Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
+          
+          Model4<-""
+          for (p in 1:k) {
+            linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
+            Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+          
+          Modelsat<-""
+          for (i in 1:(k-1)) {
+            linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
+            if (k-i >= 2) {
+              linemidc <- ""
+              for (j in (i+2):k) {
+                linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
+                
+              }
+            } else {linemidc <- ""}
+            Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
+          } 
+          
+          Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model2, Model3, Model4, Modelsat, sep = "")
+          
+          return(Model5)
         } 
         
-        if(r > 0){
-          Model1b <- ""
-          for (t in 1:r) {
-            for (i in 1) {
-              linestartb <- paste(lat_labs[t], " =~ 0*",label2, i, sep = "")  
-              if ((k-1)-i > 0 | k ==2) {
-                linemidb <- ""
-                for (j in (i+1):k) {
-                  linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
-                }
-              } else {linemidb <- ""}
-              
-            }
-            Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
-          }
+        Model1<-write.Model2(k)
+        
+      
+        if(std.lv == FALSE){
+          empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
         }
-        else {Model1b <- ""}
         
-        
-        if(r > 0){
-          Model1c <- ""
-          for (t in 1:r) {
-            for (i in 1) {
-              linestartc <- paste(lat_labs[t], " ~~ 0*",label2, i, sep = "")  
-              if ((k-1)-i > 0 | k == 2) {
-                linemidc <- ""
-                for (j in (i+1):k) {
-                  linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
-                }
-              } else {linemidc <- ""}
-              
-            }
-            Model1c <- paste(Model1c, linestartc, linemidc, " \n ", sep = "")
-          }
+        if(std.lv == TRUE){
+          empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf,remove.duplicated=TRUE))
         }
-        else {Model1c <- ""}
         
-        Model2<-""
-        for (p in 1:k) {
-          linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
-          Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+        #if adding in residuals fixed above 0 is duplicating user provided arguments then revert to original model
+        if(grepl("duplicate", as.character(empty4$value)[1]) == TRUE){
+          Model1<-write.Model1(k)
+        }else{print("The model as initially specified failed to converge. A lower bound of 0 on residual variances was automatically added to try and troubleshoot this. This behavior can be toggled off by setting the fix_resid argument to FALSE.")
+        }
         
-        #create unique combination of letters for residual variance parameter labels
-        n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
-        
-        Model3<-""
-        for (p in 1:k) {
-          linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
-          linestart3b <- paste(paste(n[,p],collapse=""), " > .001", sep = "")
-          Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
-        
-        Model4<-""
-        for (p in 1:k) {
-          linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
-          Model4<-paste(Model4, linestart4, " \n ", sep = "")}
-        
-        Modelsat<-""
-        for (i in 1:(k-1)) {
-          linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
-          if (k-i >= 2) {
-            linemidc <- ""
-            for (j in (i+2):k) {
-              linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
-              
-            }
-          } else {linemidc <- ""}
-          Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
-        } 
-        
-        Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model2, Model3, Model4, Modelsat, sep = "")
-        
-        return(Model5)
-      } 
-      
-      Model1<-write.Model1(k)
-      
-      if(std.lv == FALSE){
-        empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
-      }
-      
-      if(std.lv == TRUE){
-        empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
-      }
-    }
+        }
     }
     
     if(class(empty4$value)[1] == "simpleError"){
-      print("The model failed to converge on a solution. Please try specifying an alternative model")}
-    
-    if(!(is.null(empty4$warning))){
-      if(grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
-        print("The model failed to converge on a solution. Please try specifying an alternative model.")
-      }}
+      warning("The model failed to converge on a solution. Please try specifying an alternative model")}
     
     ##save model implied matrix and difference between observed and model implied S_LD matrix
     if(imp_cov == TRUE){
@@ -545,8 +548,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
     bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt)) 
     
+    if(!(is.null(empty4$warning))){
+      if(lavInspect(Model1_Results,"converged") == FALSE){
+        warning("The model failed to converge on a solution. Please try specifying an alternative model.")
+      }}
+    
     if(class(bread2$value)[1] != "matrix"){
-      print("Error: The primary model did not converge! Additional warnings or errors are likely being printed by lavaan. 
+      warning("Error: The primary model did not converge! Additional warnings or errors are likely being printed by lavaan. 
             The model output is also printed below (without standard errors) in case this is helpful for troubleshooting. Please note
             that these results should not be interpreted.")
       check<-1
@@ -702,7 +710,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         ModelQ_WLS$ustart <- ModelQ_WLS$est
         ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .05, ModelQ_WLS$ustart)
-        
+     
         print("Calculating model chi-square")
         
         if(std.lv == FALSE){
@@ -712,7 +720,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         if(std.lv == TRUE){
           testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart,std.lv=TRUE, optim.dx.tol = +Inf))
         }
-        
+     
         testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
         testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
         
@@ -1017,115 +1025,120 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
     
     if(fix_resid == TRUE){
-    if(class(empty4$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
-      print("The model as initially specified failed to converge. A lower bound of 0 on residual variances has been automatically added to try and troubleshoot this.")
-      
-      write.Model1 <- function(k, label = "V", label2 = "VF") {  
+      if(class(empty4$value)[1] == "simpleError" | lavInspect(Model1_Results,"converged") == FALSE){
         
-        ModelsatF<-""
-        for (i in 1:(k-1)) {
-          linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
-          if (k-i >= 2) {
-            linemidc <- ""
-            for (j in (i+2):k) {
-              linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
+        write.Model2 <- function(k, label = "V", label2 = "VF") {  
+          
+          ModelsatF<-""
+          for (i in 1:(k-1)) {
+            linestartc <- paste(" ", label2, i, "~~0*", label2, i+1,  sep = "")
+            if (k-i >= 2) {
+              linemidc <- ""
+              for (j in (i+2):k) {
+                linemidc <- paste(linemidc, "+0*", label2, j, sep = "")
+              }
+            } else {linemidc <- ""}
+            ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+          } 
+          
+          if(r > 0){
+            Model1b <- ""
+            for (t in 1:r) {
+              for (i in 1) {
+                linestartb <- paste(lat_labs[t], " =~ 0*",label2, i, sep = "")  
+                if ((k-1)-i > 0 | k ==2) {
+                  linemidb <- ""
+                  for (j in (i+1):k) {
+                    linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
+                  }
+                } else {linemidb <- ""}
+                
+              }
+              Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
             }
-          } else {linemidc <- ""}
-          ModelsatF <- paste(ModelsatF, linestartc, linemidc, " \n ", sep = "")
+          }
+          else {Model1b <- ""}
+          
+          
+          if(r > 0){
+            Model1c <- ""
+            for (t in 1:r) {
+              for (i in 1) {
+                linestartc <- paste(lat_labs[t], " ~~ 0*",label2, i, sep = "")  
+                if ((k-1)-i > 0 | k == 2) {
+                  linemidc <- ""
+                  for (j in (i+1):k) {
+                    linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
+                  }
+                } else {linemidc <- ""}
+                
+              }
+              Model1c <- paste(Model1c, linestartc, linemidc, " \n ", sep = "")
+            }
+          }
+          else {Model1c <- ""}
+          
+          Model2<-""
+          for (p in 1:k) {
+            linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
+            Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+          
+          #create unique combination of letters for residual variance parameter labels
+          n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
+          
+          Model3<-""
+          for (p in 1:k) {
+            linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
+            linestart3b <- paste(paste(n[,p],collapse=""), " > .001", sep = "")
+            Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
+          
+          Model4<-""
+          for (p in 1:k) {
+            linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
+            Model4<-paste(Model4, linestart4, " \n ", sep = "")}
+          
+          Modelsat<-""
+          for (i in 1:(k-1)) {
+            linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
+            if (k-i >= 2) {
+              linemidc <- ""
+              for (j in (i+2):k) {
+                linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
+                
+              }
+            } else {linemidc <- ""}
+            Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
+          } 
+          
+          Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model2, Model3, Model4, Modelsat, sep = "")
+          
+          return(Model5)
         } 
         
-        if(r > 0){
-          Model1b <- ""
-          for (t in 1:r) {
-            for (i in 1) {
-              linestartb <- paste(lat_labs[t], " =~ 0*",label2, i, sep = "")  
-              if ((k-1)-i > 0 | k ==2) {
-                linemidb <- ""
-                for (j in (i+1):k) {
-                  linemidb <- paste(linemidb, " + 0*", label2, j, sep = "")
-                }
-              } else {linemidb <- ""}
-              
-            }
-            Model1b <- paste(Model1b, linestartb, linemidb, " \n ", sep = "")
-          }
+        Model1<-write.Model2(k)
+        
+        if(std.lv == FALSE){
+          empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
         }
-        else {Model1b <- ""}
         
-        
-        if(r > 0){
-          Model1c <- ""
-          for (t in 1:r) {
-            for (i in 1) {
-              linestartc <- paste(lat_labs[t], " ~~ 0*",label2, i, sep = "")  
-              if ((k-1)-i > 0 | k == 2) {
-                linemidc <- ""
-                for (j in (i+1):k) {
-                  linemidc <- paste(linemidc, " + 0*", label2, j, sep = "")
-                }
-              } else {linemidc <- ""}
-              
-            }
-            Model1c <- paste(Model1c, linestartc, linemidc, " \n ", sep = "")
-          }
+        if(std.lv == TRUE){
+          empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf, std.lv=TRUE))
         }
-        else {Model1c <- ""}
         
-        Model2<-""
-        for (p in 1:k) {
-          linestart2 <- paste(label2, p, " =~ 1*", label, p, sep = "")
-          Model2<-paste(Model2, linestart2, " \n ", sep = "")}
+        if(grepl("duplicate", as.character(empty4$value)[1]) == TRUE){
+          Model1<-write.Model1(k)
+        }else{print("The model as initially specified failed to converge. A lower bound of 0 on residual variances was automatically added to try and troubleshoot this. This behavior can be toggled off by setting the fix_resid argument to FALSE.")
+        }
         
-        #create unique combination of letters for residual variance parameter labels
-        n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
-        
-        Model3<-""
-        for (p in 1:k) {
-          linestart3a <- paste(label, p, " ~~ ",  paste(n[,p],collapse=""), "*", label, p, sep = "")
-          linestart3b <- paste(paste(n[,p],collapse=""), " > .001", sep = "")
-          Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
-        
-        Model4<-""
-        for (p in 1:k) {
-          linestart4 <- paste(label2, p, "~~0*", label2, p, sep = "")
-          Model4<-paste(Model4, linestart4, " \n ", sep = "")}
-        
-        Modelsat<-""
-        for (i in 1:(k-1)) {
-          linestartc <- paste("", label, i, "~~0*", label, i+1, sep = "")
-          if (k-i >= 2) {
-            linemidc <- ""
-            for (j in (i+2):k) {
-              linemidc <- paste("", linemidc, label, i, "~~0*", label, j, " \n ", sep="")
-              
-            }
-          } else {linemidc <- ""}
-          Modelsat <- paste(Modelsat, linestartc, " \n ", linemidc, sep = "")
-        } 
-        
-        Model5<-paste(model, " \n ", ModelsatF, Model1b, Model1c, Model2, Model3, Model4, Modelsat, sep = "")
-        
-        return(Model5)
-      } 
-      
-      Model1<-write.Model1(k)
-      
-      if(std.lv == FALSE){
-        empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
       }
-      
-      if(std.lv == TRUE){
-        empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf, std.lv=TRUE))
-      }
-    }
     }
     
     if(class(empty4$value)[1] == "simpleError"){
-      print("The model failed to converge on a solution. Please try specifying an alternative model")}
+      warning("The model failed to converge on a solution. Please try specifying an alternative model")}
     
     if(!(is.null(empty4$warning))){
-      if(grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
-        print("The model failed to converge on a solution. Please try specifying an alternative model.")
+      if(lavInspect(Model1_Results,"converged") == FALSE){
+        warning("The model failed to converge on a solution. Please try specifying an alternative model.")
       }}
     
     
@@ -1528,7 +1541,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     }
     
     if(LD_sdiff > .025){
-     warning("A difference greater than .025 was observed pre- and post-smoothing in the genetic covariance matrix. This reflects a large difference and results should be interpreted with caution!! This can often result from including low powered traits, and you might consider removing those traits from the model. If you are going to run a multivariate GWAS we strongly recommend setting the smooth_check argument to true to check smoothing for each SNP.")
+      warning("A difference greater than .025 was observed pre- and post-smoothing in the genetic covariance matrix. This reflects a large difference and results should be interpreted with caution!! This can often result from including low powered traits, and you might consider removing those traits from the model. If you are going to run a multivariate GWAS we strongly recommend setting the smooth_check argument to true to check smoothing for each SNP.")
     }
     
     if(Z_diff > .025){
@@ -1561,6 +1574,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       names(resid_cov) <- c("Model Implied Covariance Matrix", "Residual Covariance Matrix: Calculated as Observed Cov - Model Implied Cov")
       return(list(modelfit=modelfit,results=results,resid_cov=resid_cov))
     }
-    }
+  }
   
 }
