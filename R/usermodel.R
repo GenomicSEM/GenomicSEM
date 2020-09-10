@@ -889,18 +889,46 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         W_stand<-solve(V_stand2[order,order])
         
         if(std.lv == FALSE){
-          DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2, optim.dx.tol = +Inf) 
+          emptystand<-tryCatch.W.E(DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2, optim.dx.tol = +Inf)) 
         }
         
         if(std.lv == TRUE){
-          DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf) 
+          emptystand<-tryCatch.W.E(DWLS.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf)) 
         }
         
         ##perform same procedures for sandwich correction as in the unstandardized case
         DWLS.delt_stand <- lavInspect(DWLS.fit_stand, "delta") 
         
         DWLS.W_stand <- lavInspect(DWLS.fit_stand, "WLS.V") 
-        bread_stand <- solve(t(DWLS.delt_stand)%*%DWLS.W_stand %*%DWLS.delt_stand) 
+        bread_stand2<-tryCatch.W.E(bread_stand <- solve(t(DWLS.delt_stand)%*%DWLS.W_stand %*%DWLS.delt_stand)) 
+        
+        
+        if(class(bread_stand2$value)[1] != "matrix" | lavInspect(DWLS.fit_stand,"converged") == FALSE | class(emptystand)[1] == "simpleError"){
+         warning("The standardized model failed to converge. This likely indicates more general problems with the model solution. Unstandardized results are printed below but this should be interpreted with caution.")
+          
+          unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
+          unstand<-subset(unstand, unstand$free != 0)                    
+          unstand$free<-NULL
+          results<-unstand
+          colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate")
+          
+          ##replace V1-VX general form in output with user provided trait names
+          for(i in 1:nrow(results)){
+            for(p in 1:length(traits)){
+              results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
+              results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+            }
+          }
+          if(exists("ghost2") == "TRUE"){
+            ghost2$free<-NULL
+            ghost2$label<-NULL
+            unstand2<-rbind(cbind(results,SE),ghost2)
+          }else{unstand2<-cbind(results,SE)}
+          
+          print(unstand2)
+          check<-1
+        }else{
+        
         lettuce_stand <- DWLS.W_stand%*%DWLS.delt_stand
         Vcov_stand<-as.matrix(V_stand[order,order])
         Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
@@ -1004,7 +1032,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         results$order<-paste0(results$lhs,results$op,results$rhs)
         results<-suppressWarnings(merge(results,std_all,by="order"))
         results$order<-NULL
-        
+        } 
       }
     }
   }
@@ -1422,14 +1450,44 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       
       print("Calculating Standardized Results")
       if(std.lv == FALSE){
-        ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf)} 
+        emptystand<-tryCatch.W.E(ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))} 
       if(std.lv == TRUE){
-        ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf)} 
+        emptystand<-tryCatch.W.E(ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf))} 
+      
+      
       
       ##perform same procedures for sandwich correction as in the unstandardized case
       ML.delt_stand <- lavInspect(ML.fit_stand, "delta") 
       ML.W_stand <- lavInspect(ML.fit_stand, "WLS.V") 
-      bread_stand <- solve(t(ML.delt_stand)%*%ML.W_stand %*%ML.delt_stand) 
+      bread_stand2<-tryCatch.W.E(bread_stand <- solve(t(ML.delt_stand)%*%ML.W_stand %*%ML.delt_stand))
+      
+      
+      if(class(bread_stand2$value)[1] != "matrix" | lavInspect(ML.fit_stand,"converged") == FALSE | class(emptystand)[1] == "simpleError"){
+        warning("The standardized model failed to converge. This likely indicates more general problems with the model solution. Unstandardized results are printed below but this should be interpreted with caution.")
+        
+        unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
+        unstand<-subset(unstand, unstand$free != 0)                    
+        unstand$free<-NULL
+        results<-unstand
+        colnames(results)=c("lhs","op","rhs","Unstandardized_Estimate")
+        
+        ##replace V1-VX general form in output with user provided trait names
+        for(i in 1:nrow(results)){
+          for(p in 1:length(traits)){
+            results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
+            results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+          }
+        }
+        if(exists("ghost2") == "TRUE"){
+          ghost2$free<-NULL
+          ghost2$label<-NULL
+          unstand2<-rbind(cbind(results,SE),ghost2)
+        }else{unstand2<-cbind(results,SE)}
+        
+        print(unstand2)
+        check<-1
+      }else{
+      
       lettuce_stand <- ML.W_stand%*%ML.delt_stand
       Vcov_stand<-as.matrix(V_stand[order,order])
       Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
@@ -1486,6 +1544,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       results<-suppressWarnings(merge(results,std_all,by="order"))
       results$order<-NULL
       
+    }
     }
   }
   
