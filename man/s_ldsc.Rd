@@ -14,8 +14,8 @@ s_ldsc(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait.names=NULL,
    \item{population.prev}{A vector of population prevalences for dichotomous traits and \code{NA} for continous traits. Default = NULL.}
    \item{ld}{A folder (or folders) of partitioned LD scores used as the independent variable in S-LDSC.}
    \item{wld}{A folder of non-partitioned LD scores used as regression weights.}
-   \item{frq}{A folder of allele frequency files used to restrict to MAF > 5%.}
-   \item{trait.names}{A character vector specifying how the traits should be named in the genetic covariance (S) matrix. These variable names can subsequently be used in later steps for model specification. If no value is provided, the function will automatically name the variables using the generic from of V1-VX.}
+   \item{frq}{A folder of allele frequency files.}
+   \item{trait.names}{A character vector specifying how the traits should be named. These variable names can subsequently be used in later steps for model specification.}
    \item{n.blocks}{Number of blocks to use for the jacknive procedure which is used to estiamte entries in V, higher values will be optimal if you have a large number of variables and also slower, defaults to 200.}                  
  }
 
