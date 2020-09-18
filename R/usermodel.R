@@ -326,7 +326,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     modelCFI<-write.null(k)
     
     ##run CFI model so it knows the reordering for the independence model
-    empty<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2, optim.dx.tol = +Inf))
+    empty<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
     
     orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
     
