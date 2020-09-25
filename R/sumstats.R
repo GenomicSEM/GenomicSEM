@@ -333,14 +333,15 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     
     data.frame.out <- ref
     
-    if(is.null(cores)){
-      ##if no default provided use 1 less than the total number of cores available so your computer will still function
-      int <- detectCores() - 1
-      if(int > length){
-        int<-length
-      }
-    }else{int<-cores}
-    
+   if(is.null(cores)){
+  ##if no default provided use 1 less than the total number of cores available so your computer will still function
+  int <- detectCores() - 1
+}else{int<-cores}
+
+#if more cores than traits then set to number of traits
+if(int > length){
+  int<-length
+}
     
     print("Performing conversions of individual summary statistics using parallel processing. Please note this step typically takes 10-20 minutes due to the size of the files.")
     Output<-mclapply(X=1:length,FUN=function(X){
