@@ -574,9 +574,6 @@ ldsc <- function(traits,sample.prev,population.prev,ld,wld,trait.names=NULL,sep_
     "Running ldsc for all files took ", mins," minutes and ", round(secs)," seconds."
   ) ) )
 
-  flush(log.file)
-  close(log.file)
-
   sink()
 
   return( list(

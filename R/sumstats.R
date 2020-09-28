@@ -364,10 +364,6 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
 
   }
 
-  writeLines( strwrap( paste0(
-    "Please note that the files should be in the same order in which they were listed in the ldsc function call."
-  ) ) )
-
   cat("Reading in reference file.\n")
   ref <- fread(file=reference,header=T,data.table=F)
 
@@ -406,9 +402,6 @@ sumstats <- function(filenames,reference,trait.names=NULL,se.logit=NULL,model=NU
     "Please check the log file(s) '", log.prefix, "_*.log' to ensure that all columns were ",
     "interpreted correctly and no warnings were issued for any of the summary statistics files."
   ) ) )
-
-  flush(log.file)
-  close(log.file)
 
   data.frame.out
 
