@@ -26,6 +26,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
   
   Operating<-Sys.info()[['sysname']]
   
+  #remove white spacing on subset argument so will exact match lavaan representation of parameter
+  if(!(sub[[1]])==FALSE){
+    sub<-str_replace_all(sub, fixed(" "), "")
+  }
+  
   if(parallel==FALSE){
     if(is.null(Output)){
       
