@@ -20,7 +20,7 @@ ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = F
    \item{n.blocks}{Number of blocks to use for the jacknive procedure which is used to estiamte entries in V, higher values will be optimal if you have a large number of variables and also slower, defaults to 200  }
    \item{ldsc.log}{How you want to name your .log file for ldsc. The default is NULL as the package will automatically name the log based in the file names unless a log file name is provided to this arugment. }
    \item{stand}{Whether you want the package to also output a genetic correlation and sampling correlation matrix. Default is FALSE.}
-   \item{select}{Whether you want the package to estimate LDSC using only even or odd chromosomes by setting select to "ODD" and "EVEN" respectively. Default is FALSE, in which case LDSC is estimated using all chromosomes.}                      
+   \item{select}{Whether you want the package to estimate LDSC using only even or odd chromosomes by setting select to "ODD" and "EVEN" respectively. It can also be set to a set of numbers, such as c(1,3,10), to run ldsc on a specific chromosome or chromosomes.  Default is FALSE, in which case LDSC is estimated using all chromosomes.}                      
        }
 
 \value{
