@@ -1,4 +1,3 @@
-
 ldsc <- function(traits, sample.prev, population.prev, ld, wld,
                 trait.names = NULL, sep_weights = FALSE, chr = 22,
                 n.blocks = 200, ldsc.log = NULL, stand = FALSE,select=FALSE) {
@@ -80,6 +79,15 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
     }))
   }
 
+  if(is.numeric(select)){
+    x <- do.call("rbind", lapply(select, function(i) {
+      suppressMessages(read_delim(
+        file.path(ld, paste0(i, ".l2.ldscore.gz")),
+        delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE))
+    }))
+  }
+  
+  
   x$CM <- NULL
   x$MAF <- NULL
   
@@ -107,6 +115,13 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
           delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE))
       }))
     }
+      if(is.numeric(select)){
+        w <- do.call("rbind", lapply(select, function(i) {
+          suppressMessages(read_delim(
+            file.path(wld, paste0(i, ".l2.ldscore.gz")),
+            delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE))
+        }))
+    }
   }else{w<-x}
   
   w$CM <- NULL
@@ -130,6 +145,12 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   
   if(select == "ODD"){
     m <- do.call("rbind", lapply(odd, function(i) {
+      suppressMessages(read_csv(file.path(ld, paste0(i, ".l2.M_5_50")), col_names = FALSE))
+    }))
+  }
+  
+  if(is.numeric(select)){
+    m <- do.call("rbind", lapply(select, function(i) {
       suppressMessages(read_csv(file.path(ld, paste0(i, ".l2.M_5_50")), col_names = FALSE))
     }))
   }
@@ -549,4 +570,3 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
     list(V=V,S=S,I=I,N=N.vec,m=m)
   }
 }
-
