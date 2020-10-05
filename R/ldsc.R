@@ -27,8 +27,8 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   
   
   if(select == "ODD" | select == "EVEN"){
-  odd<-seq(1,22,2)
-  even<-seq(2,22,2)
+  odd<-seq(1,chr,2)
+  even<-seq(2,chr,2)
   }
   
   # Dimensions
