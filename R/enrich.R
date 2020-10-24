@@ -376,6 +376,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     
     ModelQ_WLS$ustart <- ModelQ_WLS$est
     ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, 1, ModelQ_WLS$ustart)
+    ModelQ_WLS<-subset(ModelQ_WLS,ModelQ_WLS$op != "==")
     
     print("Confirming fixed model reproduces estimate from freely estimated model for baseline annotation.")
     
@@ -509,8 +510,8 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
               #calculate enrichment with null = 1 divided by proportional size of annotation
               results$enrichment[y]<-(results$est[y]/test1$est[y])/s_covstruc$Prop$Prop[n]
               
-              #caculate enrichment se
-              results$enrichment_se[y]<-(results$SE[y]/test1$est[y])/s_covstruc$Prop$Prop[n]
+              #caculate enrichment SE
+              results$enrichment_se[y]<-(results$SE[y]/abs(test1$est[y]))/s_covstruc$Prop$Prop[n]
               
             }
             
