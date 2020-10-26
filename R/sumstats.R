@@ -633,6 +633,8 @@ if(int > length){
     cat(print(paste0("Sumstats finished running at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
     cat(print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
     cat(print(paste("Please check the log file", paste0(log2, "_sumstats.log"), "to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files.")),file=log.file,sep="\n",append=TRUE)
+    flush(log.file)
+    close(log.file)
   }
   
   if(parallel == TRUE){
@@ -643,8 +645,7 @@ if(int > length){
     print(paste0("Please check the log files to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files."))
   }
 
-  flush(log.file)
-  close(log.file)
+
   
   data.frame.out
   
