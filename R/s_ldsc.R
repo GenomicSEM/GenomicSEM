@@ -9,13 +9,13 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   
   log2<-paste(traits,collapse="_")
   
-    logtraits<-gsub(".*/","",traits)
-    log2<-paste(logtraits,collapse="_")
-    if(object.size(log2) > 200){
-      log2<-substr(log2,1,100)
-    }
-    log.file <- file(paste0(log2, "_Partitioned.log"),open="wt")
-
+  logtraits<-gsub(".*/","",traits)
+  log2<-paste(logtraits,collapse="_")
+  if(object.size(log2) > 200){
+    log2<-substr(log2,1,100)
+  }
+  log.file <- file(paste0(log2, "_Partitioned.log"),open="wt")
+  
   begin.time <- Sys.time()
   
   Operating<-Sys.info()[['sysname']]
@@ -50,7 +50,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   x.files <- sort(Sys.glob(paste0(ld1,"*l2.ldscore*")))
   
   ##function to read in the files. used with ldply below
-  if(Operating != "Linux"){
+  if(Operating == "Darwin"){
     readLdFunc <- function(LD.in){
       if(substr(x=LD.in,start=nchar(LD.in)-1,stop=nchar(LD.in))=="gz"){
         dum=fread(input=paste("gzcat",LD.in),header=T,showProgress=F,data.table=F)
@@ -58,7 +58,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
       }
     }}
-  
+
   if(Operating == "Linux"){
     readLdFunc <- function(LD.in){
       if(substr(x=LD.in,start=nchar(LD.in)-1,stop=nchar(LD.in))=="gz"){
@@ -67,6 +67,13 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
       } 
     }}
+  
+  
+  if(Operating == "Windows"){
+    readLdFunc <- function(LD.in){
+        dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
+      }
+    }
   
   x <- suppressMessages(ldply(.data=x.files,.fun=readLdFunc))
   x$CM <- NULL
@@ -174,8 +181,10 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   
   for(i in 1:length(annot.files)){
     header <- suppressMessages(read.table(annot.files[i], header = TRUE, nrow = 1))
-    if(Operating != "Linux"){
+    if(Operating == "Darwin"){
       annot <- suppressMessages(fread(input=paste("gzcat",annot.files[i]),skip=1,header=FALSE,showProgress=F,data.table=F))}
+    if(Operating == "Windows"){
+      annot <- suppressMessages(fread(input=paste(annot.files[i]),skip=1,header=FALSE,showProgress=F,data.table=F))}
     if(Operating == "Linux"){
       annot <- suppressMessages(fread(input=paste("zcat",annot.files[i]),skip=1,header=FALSE,showProgress=F,data.table=F))
     }
@@ -184,8 +193,10 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     if(is.null(ld2)==F){
       for(j in 1:length(ld2)){
         extra.annot.files <- sort(Sys.glob(paste0(ld2[j],"*annot.gz")))
-        if(Operating != "Linux"){
+        if(Operating == "Darwin"){
           extra.annot <- suppressMessages(fread(input=paste("gzcat",extra.annot.files[i]),header=T,showProgress=F,data.table=F))}
+        if(Operating == "Windows"){
+          extra.annot <- suppressMessages(fread(input=paste(extra.annot.files[i]),header=T,showProgress=F,data.table=F))}
         if(Operating == "Linux"){
           extra.annot <- suppressMessages(fread(input=paste("zcat",extra.annot.files[i]),header=T,showProgress=F,data.table=F)) 
         }
@@ -227,39 +238,41 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   overlap.matrix <- matrix(data=NA,nrow=n.annot,ncol=n.annot)
   colnames(overlap.matrix) <- rownames(overlap.matrix) <- rownames(m)
   for(i in 1:n.annot){overlap.matrix[i,] <- annot.matrix[i,]/m}
-
-
+  
+  
   ### READ ALL CHI2 + MERGE WITH LDSC FILES
   s <- 0
   
   all_y <- lapply(traits, function(chi1) {
     
     ## READ chi2
-     if(substr(x=chi1,start=nchar(chi1)-1,stop=nchar(chi1))=="gz"){
-        if(Operating != "Linux"){
-          y1 <- suppressMessages(na.omit(fread(paste("gzcat",chi1),header=T,showProgress=F,data.table=F)))}
-        if(Operating == "Linux"){
-          y1 <- suppressMessages(na.omit(fread(paste("zcat",chi1),header=T,showProgress=F,data.table=F)))
-        }
-      }else{
-        y1 <- suppressMessages(na.omit(fread(chi1,header=T,showProgress=F,data.table=F)))
+    if(substr(x=chi1,start=nchar(chi1)-1,stop=nchar(chi1))=="gz"){
+      if(Operating == "Darwin"){
+        y1 <- suppressMessages(na.omit(fread(paste("gzcat",chi1),header=T,showProgress=F,data.table=F)))}
+      if(Operating == "Windows"){
+        y1 <- suppressMessages(na.omit(fread(paste(chi1),header=T,showProgress=F,data.table=F)))}
+      if(Operating == "Linux"){
+        y1 <- suppressMessages(na.omit(fread(paste("zcat",chi1),header=T,showProgress=F,data.table=F)))
       }
- 
+    }else{
+      y1 <- suppressMessages(na.omit(fread(chi1,header=T,showProgress=F,data.table=F)))
+    }
+    
     LOG("Read in summary statistics [", s <<- s + 1, "/", n.traits, "] from: ", chi1)
     
     ## Merge files
     merged <- merge(y1[, c("SNP", "N", "Z", "A1")], w[, c("SNP", "wLD")], by = "SNP", sort = FALSE)
-
+    
     merged <- merge(merged, x, by = "SNP", sort = FALSE)
     merged <- merged[with(merged, order(CHR, BP)), ]
- 
+    
     LOG("Out of ", nrow(y1), " SNPs, ", nrow(merged), " remain after merging with LD-score files")
     
     ## REMOVE SNPS with excess chi-square:
     chisq.max <- max(0.001 * max(merged$N), 80)
     rm <- (merged$Z^2 > chisq.max)
     merged <- merged[!rm, ]
-  
+    
     LOG("Removing ", sum(rm), " SNPs with Chi^2 > ", chisq.max, "; ", nrow(merged), " remain")
     
     merged
@@ -274,8 +287,8 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     chi1 <- traits[j]
     y1 <- all_y[[j]]
     y1$chi <- y1$Z^2
-
-  for(k in j:n.traits){
+    
+    for(k in j:n.traits){
       
       ##HERITABILITY
       if(j == k){
@@ -286,9 +299,9 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
           samp.prev<-NA
           pop.prev<-NA
         }
-   
+        
         merged <- y1
- 
+        
         n.snps <- nrow(merged)
         
         merged$intercept <- 1
@@ -298,7 +311,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         merged$A1<-NULL
         head(merged)
         merged<-merged[,c("SNP","chi",colnames(merged)[2:(n.annot+5)],"intercept","x.tot","x.tot.intercept")]
-       
+        
         tot.agg <- (M.tot*(mean(merged$chi)-1))/mean(merged$x.tot*merged$N)
         tot.agg <- max(tot.agg,0)
         tot.agg <- min(tot.agg,1)
@@ -371,7 +384,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         
         tot.cov <- sum(cat.cov)
         tot.se <- sqrt(tot.cov)
-       
+        
         ##for overall heritability
         if((is.na(pop.prev*samp.prev))){
           LOG("h2:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
@@ -429,7 +442,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
           S_List[[f]][j,j] <- HSQ.TOT[f]
           Tau_List[[f]][j,j]<- cats[f]
         }
-     
+        
         if(s == 1){
           t<-1
           d<-n.annot
@@ -454,7 +467,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         y$Z.x <- ifelse(y$A1.y == y$A1.x, y$Z.x, -y$Z.x)
         y$ZZ <- y$Z.y * y$Z.x
         y$chi2 <- y$Z.y^2
-  
+        
         merged <- na.omit(y)
         
         #removed unneeded columns
@@ -463,7 +476,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         merged$Z.x<-NULL
         merged$Z.y<-NULL
         merged<-merged[,c("SNP","chi","chi2","N.x","N.y","ZZ",colnames(merged)[3:(n.annot+5)])]
-  
+        
         n.snps <- nrow(merged)
         
         LOG(n.snps, " SNPs remain after merging ", chi1, " and ", chi2, " summary statistics", "\n")
@@ -509,7 +522,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         
         weighted.LD <- as.matrix(LD.scores*merged$weights_cov)
         weighted.chi <- as.matrix(merged$ZZ *merged$weights_cov)
-
+        
         select.from <- floor(seq(from=1,to=n.snps,length.out =(n.blocks+1)))
         select.to <- c(select.from[2:200]-1,n.snps)
         
@@ -636,7 +649,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   
   total_pseudo2<-(cov(total_pseudo)/n.blocks)
   Small_V<-vector(mode="list",length=n.V*n.V)
-
+  
   for (i in 1:length(Small_V)) { 
     Small_V[[i]] = matrix(NA,nrow=n.annot,ncol=n.annot)
   } 
@@ -769,7 +782,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     }else{binary_annot[tt,2]<-2}
     tt<-tt+1
   }
-
+  
   
   Prop<-data.frame(Prop)
   Prop$Prop<-Prop$Prop/Prop$Prop[1]
@@ -780,7 +793,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   secs <- total.time-mins*60
   LOG(paste("Analysis ended at",end.time),"\n")
   LOG("Analysis took ",mins," minutes and ",secs," seconds","\n")
-
+  
   return(list(S=S,V=V,S_Tau=S_Tau,V_Tau=V_Tau,I=I,N=N.vec,m=m,Prop=Prop,Select=binary_annot))
   
   flush(log.file)
@@ -789,3 +802,4 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   gc()
   
 }
+
