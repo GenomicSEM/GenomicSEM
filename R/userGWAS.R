@@ -537,15 +537,15 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           
           #double GC correctiong using univariate LDSC intercepts
           if(GC == "conserv"){
-          for (p in 1:nrow(coords)) { 
-            x<-coords[p,1]
-            y<-coords[p,2]
-            if (x != y) { 
-              V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-            if (x == y) {
-              V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+            for (p in 1:nrow(coords)) { 
+              x<-coords[p,1]
+              y<-coords[p,2]
+              if (x != y) { 
+                V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
+              if (x == y) {
+                V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+              }
             }
-          }
           }
           
           #single GC correction using sqrt of univariate LDSC intercepts
@@ -657,24 +657,24 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
           
           if(resid_var2 > 0){
-           
-                #pull the delta matrix (this doesn't depend on N)
-                S2.delt <- lavInspect(Model1_Results, "delta")
-                
-                ##weight matrix from stage 2
-                S2.W <- lavInspect(Model1_Results, "WLS.V") 
-                
-                #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-                bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt, tol=toler) 
-                
-                #create the "lettuce" part of the sandwich
-                lettuce <- S2.W%*%S2.delt
-                
-                #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-                Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
-                
-                #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))
+            
+            #pull the delta matrix (this doesn't depend on N)
+            S2.delt <- lavInspect(Model1_Results, "delta")
+            
+            ##weight matrix from stage 2
+            S2.W <- lavInspect(Model1_Results, "WLS.V") 
+            
+            #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt, tol=toler) 
+            
+            #create the "lettuce" part of the sandwich
+            lettuce <- S2.W%*%S2.delt
+            
+            #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+            Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
+            
+            #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+            SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
@@ -707,7 +707,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
-                se.ghost<-rep("SE could not be computed", count(":=" %in% Model_WLS$op)$freq)
+                se.ghost<-rep("SE could not be computed", sum(":=" %in% Model_WLS$op))
                 ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}} 
@@ -1079,23 +1079,23 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
             Model_ML <- parTable(Model1_Results)
             
-                #pull the delta matrix (this doesn't depend on N)
-                S2.delt <- lavInspect(Model1_Results, "delta")
-                
-                ##weight matrix from stage 2
-                S2.W <- lavInspect(Model1_Results, "WLS.V") 
-                
-                #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-                bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
-                
-                #create the "lettuce" part of the sandwich
-                lettuce <- S2.W%*%S2.delt
-                
-                #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-                Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
-                
-                #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))
+            #pull the delta matrix (this doesn't depend on N)
+            S2.delt <- lavInspect(Model1_Results, "delta")
+            
+            ##weight matrix from stage 2
+            S2.W <- lavInspect(Model1_Results, "WLS.V") 
+            
+            #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
+            
+            #create the "lettuce" part of the sandwich
+            lettuce <- S2.W%*%S2.delt
+            
+            #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+            Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
+            
+            #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+            SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
@@ -1104,14 +1104,14 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
-              se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
+              se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
               
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
-                se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
+                se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
                 ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}}
@@ -1686,24 +1686,24 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
           
           if(resid_var2 > 0){
-          
-                #pull the delta matrix (this doesn't depend on N)
-                S2.delt <- lavInspect(Model1_Results, "delta")
-                
-                ##weight matrix from stage 2
-                S2.W <- lavInspect(Model1_Results, "WLS.V") 
-                
-                #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-                bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
-                
-                #create the "lettuce" part of the sandwich
-                lettuce <- S2.W%*%S2.delt
-                
-                #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-                Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
-                
-                #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))
+            
+            #pull the delta matrix (this doesn't depend on N)
+            S2.delt <- lavInspect(Model1_Results, "delta")
+            
+            ##weight matrix from stage 2
+            S2.W <- lavInspect(Model1_Results, "WLS.V") 
+            
+            #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
+            
+            #create the "lettuce" part of the sandwich
+            lettuce <- S2.W%*%S2.delt
+            
+            #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+            Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
+            
+            #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+            SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
@@ -1736,7 +1736,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
-                se.ghost<-rep("SE could not be computed", count(":=" %in% Model_WLS$op)$freq)
+                se.ghost<-rep("SE could not be computed", sum(":=" %in% Model_WLS$op))
                 ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}} 
@@ -2001,24 +2001,24 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
           
           if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
             Model_ML <- parTable(Model1_Results)
-
-                #pull the delta matrix (this doesn't depend on N)
-                S2.delt <- lavInspect(Model1_Results, "delta")
-                
-                ##weight matrix from stage 2
-                S2.W <- lavInspect(Model1_Results, "WLS.V") 
-                
-                #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-                bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
-                
-                #create the "lettuce" part of the sandwich
-                lettuce <- S2.W%*%S2.delt
-                
-                #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-                Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
-                
-                #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))
+            
+            #pull the delta matrix (this doesn't depend on N)
+            S2.delt <- lavInspect(Model1_Results, "delta")
+            
+            ##weight matrix from stage 2
+            S2.W <- lavInspect(Model1_Results, "WLS.V") 
+            
+            #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
+            
+            #create the "lettuce" part of the sandwich
+            lettuce <- S2.W%*%S2.delt
+            
+            #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+            Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
+            
+            #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+            SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
@@ -2027,14 +2027,14 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
-              se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
+              se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
               
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
-                se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
+                se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
                 ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}}
@@ -2285,11 +2285,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
     }else{int<-cores}
     
     if(MPI == FALSE){
-    
-    registerDoParallel(int)
-    
-    ##specify the cores should have access to the local environment
-    makeCluster(int, type="FORK")
+      
+      registerDoParallel(int)
+      
+      ##specify the cores should have access to the local environment
+      makeCluster(int, type="FORK")
     }
     
     if(MPI == TRUE){
@@ -2808,15 +2808,15 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             
             #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
             if(GC == "conserv"){
-            for (p in 1:nrow(coords)) { 
-              x<-coords[p,1]
-              y<-coords[p,2]
-              if (x != y) { 
-                V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
-              if (x == y) {
-                V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
+              for (p in 1:nrow(coords)) { 
+                x<-coords[p,1]
+                y<-coords[p,2]
+                if (x != y) { 
+                  V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
+                if (x == y) {
+                  V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
+                }
               }
-            }
             }
             
             if(GC == "standard"){
@@ -2925,24 +2925,24 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
             
             if(resid_var2 > 0){
-         
-                  #pull the delta matrix (this doesn't depend on N)
-                  S2.delt <- lavInspect(Model1_Results, "delta")
-                  
-                  ##weight matrix from stage 2
-                  S2.W <- lavInspect(Model1_Results, "WLS.V") 
-                  
-                  #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-                  bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
-                  
-                  #create the "lettuce" part of the sandwich
-                  lettuce <- S2.W%*%S2.delt
-                  
-                  #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-                  Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
-                  
-                  #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                  SE <- as.matrix(sqrt(diag(Ohtt)))
+              
+              #pull the delta matrix (this doesn't depend on N)
+              S2.delt <- lavInspect(Model1_Results, "delta")
+              
+              ##weight matrix from stage 2
+              S2.W <- lavInspect(Model1_Results, "WLS.V") 
+              
+              #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+              bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
+              
+              #create the "lettuce" part of the sandwich
+              lettuce <- S2.W%*%S2.delt
+              
+              #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+              Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
+              
+              #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+              SE <- as.matrix(sqrt(diag(Ohtt)))
               
               #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
               if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
@@ -2975,7 +2975,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 colnames(ghost2)[7]<-"SE"
               }else{
                 if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
-                  se.ghost<-rep("SE could not be computed", count(":=" %in% Model_WLS$op)$freq)
+                  se.ghost<-rep("SE could not be computed", sum(":=" %in% Model_WLS$op))
                   ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                   ghost2<-cbind(ghost,se.ghost)
                   colnames(ghost2)[7]<-"SE"}else{}} 
@@ -3314,24 +3314,24 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
             
             Model_ML <- parTable(Model1_Results)
-
-                #pull the delta matrix (this doesn't depend on N)
-                S2.delt <- lavInspect(Model1_Results, "delta")
-                
-                ##weight matrix from stage 2
-                S2.W <- lavInspect(Model1_Results, "WLS.V") 
-                
-                #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-                bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
-                
-                #create the "lettuce" part of the sandwich
-                lettuce <- S2.W%*%S2.delt
-                
-                #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-                Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
-                
-                #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))
+            
+            #pull the delta matrix (this doesn't depend on N)
+            S2.delt <- lavInspect(Model1_Results, "delta")
+            
+            ##weight matrix from stage 2
+            S2.W <- lavInspect(Model1_Results, "WLS.V") 
+            
+            #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
+            
+            #create the "lettuce" part of the sandwich
+            lettuce <- S2.W%*%S2.delt
+            
+            #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+            Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
+            
+            #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+            SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
@@ -3340,14 +3340,14 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
-              se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
+              se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
               
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
-                se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
+                se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
                 ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}}
@@ -3904,24 +3904,24 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               resid_var2<-min(resid_var1$est)}else{resid_var2<--9}
             
             if(resid_var2 > 0){
-            
-                  #pull the delta matrix (this doesn't depend on N)
-                  S2.delt <- lavInspect(Model1_Results, "delta")
-                  
-                  ##weight matrix from stage 2
-                  S2.W <- lavInspect(Model1_Results, "WLS.V") 
-                  
-                  #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-                  bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
-                  
-                  #create the "lettuce" part of the sandwich
-                  lettuce <- S2.W%*%S2.delt
-                  
-                  #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-                  Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
-                  
-                  #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                  SE <- as.matrix(sqrt(diag(Ohtt)))
+              
+              #pull the delta matrix (this doesn't depend on N)
+              S2.delt <- lavInspect(Model1_Results, "delta")
+              
+              ##weight matrix from stage 2
+              S2.W <- lavInspect(Model1_Results, "WLS.V") 
+              
+              #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+              bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
+              
+              #create the "lettuce" part of the sandwich
+              lettuce <- S2.W%*%S2.delt
+              
+              #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+              Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
+              
+              #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+              SE <- as.matrix(sqrt(diag(Ohtt)))
               
               #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
               if(":=" %in% Model_WLS$op & !(NA %in% Model_WLS$se)){
@@ -3954,7 +3954,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 colnames(ghost2)[7]<-"SE"
               }else{
                 if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
-                  se.ghost<-rep("SE could not be computed", count(":=" %in% Model_WLS$op)$freq)
+                  se.ghost<-rep("SE could not be computed", sum(":=" %in% Model_WLS$op))
                   ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                   ghost2<-cbind(ghost,se.ghost)
                   colnames(ghost2)[7]<-"SE"}else{}} 
@@ -4194,24 +4194,24 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf))
             
             Model_ML <- parTable(Model1_Results)
-          
-                #pull the delta matrix (this doesn't depend on N)
-                S2.delt <- lavInspect(Model1_Results, "delta")
-                
-                ##weight matrix from stage 2
-                S2.W <- lavInspect(Model1_Results, "WLS.V") 
-                
-                #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-                bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
-                
-                #create the "lettuce" part of the sandwich
-                lettuce <- S2.W%*%S2.delt
-                
-                #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-                Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
-                
-                #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-                SE <- as.matrix(sqrt(diag(Ohtt)))
+            
+            #pull the delta matrix (this doesn't depend on N)
+            S2.delt <- lavInspect(Model1_Results, "delta")
+            
+            ##weight matrix from stage 2
+            S2.W <- lavInspect(Model1_Results, "WLS.V") 
+            
+            #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+            bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler) 
+            
+            #create the "lettuce" part of the sandwich
+            lettuce <- S2.W%*%S2.delt
+            
+            #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+            Ohtt <- bread %*% t(lettuce)%*%V_Full_Reorder%*%lettuce%*%bread  
+            
+            #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+            SE <- as.matrix(sqrt(diag(Ohtt)))
             
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
@@ -4220,14 +4220,14 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
-              se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
+              se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
               
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
-                se.ghost<-rep("SE of ghost parameters not available for ML estimation", count(":=" %in% Model_ML$op)$freq)
+                se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
                 ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}}
@@ -4448,10 +4448,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       
     }
     
-
+    
   }
   if(parallel == TRUE & Operating == "Windows"){
     stop("Parallel processing is not currently available for Windows operating systems. Please set the parallel argument to FALSE, or switch to a Linux or Mac operating system.")
   }
 }
-
