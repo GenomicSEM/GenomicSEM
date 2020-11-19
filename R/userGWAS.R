@@ -707,7 +707,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
-                se.ghost<-rep("SE could not be computed", sum(":=" %in% Model_WLS$op))
+                se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter could not be computed")
                 ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}} 
@@ -1104,14 +1105,15 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
-              se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
-              
+              se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter not available for ML")
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
-                se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
+                se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter not available for ML")
                 ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}}
@@ -1736,7 +1738,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
-                se.ghost<-rep("SE could not be computed", sum(":=" %in% Model_WLS$op))
+                se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter could not be computed")
                 ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}} 
@@ -2023,18 +2026,19 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
               
-              print("SEs of ghost parameters are not available for ML estimation")
+         
               
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
-              se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
-              
+              se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter not available for ML")
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
-                se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
+                se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter not available for ML")
                 ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}}
@@ -2975,7 +2979,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 colnames(ghost2)[7]<-"SE"
               }else{
                 if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
-                  se.ghost<-rep("SE could not be computed", sum(":=" %in% Model_WLS$op))
+                  se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter not available for ML")
                   ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                   ghost2<-cbind(ghost,se.ghost)
                   colnames(ghost2)[7]<-"SE"}else{}} 
@@ -3336,18 +3341,19 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
               
-              print("SEs of ghost parameters are not available for ML estimation")
+              
               
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
-              se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
-              
+              se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter not available for ML")
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
-                se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
+                se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter not available for ML")
                 ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}}
@@ -3954,7 +3960,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
                 colnames(ghost2)[7]<-"SE"
               }else{
                 if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
-                  se.ghost<-rep("SE could not be computed", sum(":=" %in% Model_WLS$op))
+                  se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter could not be computed")
                   ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                   ghost2<-cbind(ghost,se.ghost)
                   colnames(ghost2)[7]<-"SE"}else{}} 
@@ -4216,18 +4223,19 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
               
-              print("SEs of ghost parameters are not available for ML estimation")
+              
               
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
-              se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
-              
+              se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter not available for ML")
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
             }else{
               if(":=" %in% Model_ML$op & (NA %in% Model_ML$se)){
-                se.ghost<-rep("SE of ghost parameters not available for ML estimation", sum(":=" %in% Model_ML$op))
+                se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
+                warning("SE for ghost parameter not available for ML")
                 ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
                 ghost2<-cbind(ghost,se.ghost)
                 colnames(ghost2)[7]<-"SE"}else{}}
