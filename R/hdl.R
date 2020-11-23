@@ -252,7 +252,7 @@ cat("\n")
   gwas2.df$A2 <- as.character(gwas2.df$A2)
   
   
-  N0 = min(gwas1.df$N,gwas2.df$N)
+  N0 = min(gwas1.df$N,gwas2.df$N,na.rm = TRUE)
   
   if (!("Z" %in% colnames(gwas1.df))) {
     if (("b" %in% colnames(gwas1.df)) && ("se" %in% colnames(gwas1.df))) {
