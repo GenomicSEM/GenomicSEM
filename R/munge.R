@@ -96,7 +96,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
     ##rename common MAF labels
     names1<-hold_names
     if("MAF" %in% hold_names) cat(print(paste("Interpreting the MAF column as the MAF (minor allele frequency) column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in% c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF"
+    hold_names[hold_names %in% toupper(c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1"))] <- "MAF"
     if(length(setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the MAF (minor allele frequency) column.")),file=log.file,sep="\n",append=TRUE)
     
     #Replace the origonal names
