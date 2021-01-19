@@ -1,6 +1,6 @@
 ldsc <- function(traits, sample.prev, population.prev, ld, wld,
                 trait.names = NULL, sep_weights = FALSE, chr = 22,
-                n.blocks = 200, ldsc.log = NULL, stand = FALSE,select=FALSE) {
+                n.blocks = 200, ldsc.log = NULL, stand = FALSE,select=FALSE,chisq.max = NA) {
   
   LOG <- function(..., print = TRUE) {
     msg <- paste0(...)
@@ -177,7 +177,10 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
     LOG("Out of ", nrow(y1), " SNPs, ", nrow(merged), " remain after merging with LD-score files")
     
     ## REMOVE SNPS with excess chi-square:
+    
+    if(is.na(chisq.max)){
     chisq.max <- max(0.001 * max(merged$N), 80)
+    }
     rm <- (merged$Z^2 > chisq.max)
     merged <- merged[!rm, ]
     
