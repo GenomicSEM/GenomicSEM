@@ -1,4 +1,4 @@
-read.fusion <- function(files,trait.names=NULL,OLS=FALSE,linprob=FALSE,prop=FALSE,N=NA){
+read_fusion <- function(files,trait.names=NULL,OLS=FALSE,linprob=FALSE,prop=FALSE,N=NA){
   
   length <- length(files)
   

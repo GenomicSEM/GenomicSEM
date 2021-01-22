@@ -5,7 +5,7 @@ based on the summary statistics obtained from genome wide association studies (G
 
 **Feature update**: GenomicSEM can now run [HDL](https://t.co/OBHihTb7rE?amp=1) a novel method for estimating heritability and genetic correlation that can in some cases outperform LDSC. See out tutorial [HERE](https://rpubs.com/MichelNivard/640145)
 
-**Code Update**: The most recent code update is dated May 15, 2020. We recommend reinstalling to the most recent update of GenomicSEM. However, please note that changes in Genomic SEM defaults are likely to produce slight changes in results relative to previous versions. For further details, see [version history](https://github.com/MichelNivard/GenomicSEM/wiki/8.-Version-History)
+**Code Update**: The most recent code update is dated May 15, 2020. We recommend reinstalling to the most recent update of GenomicSEM. However, please note that changes in Genomic SEM defaults are likely to produce slight changes in results relative to previous versions. For further details, see [version history](https://github.com/MichelNivard/GenomicSEM/wiki/Version-History)
 
 **PGC worldwide lab meeting on genomicSEM**
 
@@ -23,7 +23,7 @@ Fit SEM models to GWAS summary data [without a SNP](https://github.com/MichelNiv
 
 Run a GWAS where the [SNP is included](https://github.com/MichelNivard/GenomicSEM/wiki/4.-Common-Factor-GWAS) in the structural equation model.
 
-Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/6.-GenomicSEM-and-OpenMx)
+Combine [`GenomicSEM` and `OpenMX`](https://github.com/MichelNivard/GenomicSEM/wiki/7.-GenomicSEM-and-OpenMx)
 
 **Installation:**
 

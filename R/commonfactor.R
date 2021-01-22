@@ -170,6 +170,12 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   ##k = number of phenotypes in dataset (i.e., number of columns in LD portion of S matrix)
   k<-ncol(S_LD)
   
+  ##return error if model is underidentified 
+  if(k == 2){
+    stop("Their are only 2 variables in the genetic covariance matrix so the common factor model will be under identified (df = -1). 
+         You can either specify a common factor model with constrained factor loadings with the user model function or rerun ldsc with at least one additional variable.")
+  }       
+         
   ##create the 1 factor model with k # of indicators
   Model1 <- write.Model1(k)
   
