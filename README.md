@@ -43,7 +43,7 @@ library(devtools)
 Now you are ready to install the latest version of `GenomicSEM`. Note that this will often raise 24 warnings about replacing previous imports; these warnings are safe to ignore.
 
 ```[r]
-install_github("MichelNivard/GenomicSEM")
+install_github("GenomicSEM/GenomicSEM")
 ```
 
 That's it! You  are ready to start using `GenomicSEM` 
