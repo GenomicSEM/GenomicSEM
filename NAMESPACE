@@ -16,4 +16,4 @@ import(dplyr)
 import(iterators)
 import(Rcpp)
 import(utils)
-
+import(mgsub)
