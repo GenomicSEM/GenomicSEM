@@ -10,7 +10,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
   print("Please note that an update was made to userGWAS on 11/21/19 so that it combines addSNPs and userGWAS.")
   
   
-  if(class(SNPs) == "character"){
+  if(class(SNPs)[1] == "character"){
     print("You are likely listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the 
           output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usag")    
     warning("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the 
@@ -22,7 +22,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       warning("You may be listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS; ; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
               output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usage") 
     }
-    }
+  }
   
   Operating<-Sys.info()[['sysname']]
   
@@ -283,9 +283,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         }
         
         ##replace trait names in user provided model with general form of V1-VX
-        for(i in 1:length(traits)){
-          model<-gsub(traits2[[i]], S_names[[i]], model)
-        }
+        model<-mgsub::mgsub(string = model, pattern = traits2, replacement = S_names)
         
         ##determine number of latent variables from writing extended model. 
         r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
@@ -853,10 +851,16 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(modelchi == TRUE){
               ##replace V1-VX general form in output with user provided trait names
               for(g in 1:nrow(final)){
-                for(p in 1:length(traits)){
-                  final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
-                  final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
-                }}
+                if(final$rhs[[g]] %in% S_names){
+                  p<-match(final$rhs[[g]],S_names)
+                  final$rhs[[g]]<-gsub(final$rhs[[g]], traits[[p]],final$rhs[[g]])
+                }
+                if(final$lhs[[g]] %in% S_names){
+                  p<-match(final$lhs[[g]],S_names)
+                  final$lhs[[g]]<-gsub(final$lhs[[g]], traits[[p]],final$lhs[[g]])
+                }
+              }
+              
               ##subest to only the pieces the user specified
               ##this is overly long and confusing with the model fit components added in
               Modeltest <- parTable(ReorderModel1)
@@ -1106,7 +1110,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
               se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
-                warning("SE for ghost parameter not available for ML")
+              warning("SE for ghost parameter not available for ML")
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
@@ -1257,10 +1261,16 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(modelchi == TRUE){
               ##replace V1-VX general form in output with user provided trait names
               for(g in 1:nrow(final)){
-                for(p in 1:length(traits)){
-                  final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
-                  final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
-                }}
+                if(final$rhs[[g]] %in% S_names){
+                  p<-match(final$rhs[[g]],S_names)
+                  final$rhs[[g]]<-gsub(final$rhs[[g]], traits[[p]],final$rhs[[g]])
+                }
+                if(final$lhs[[g]] %in% S_names){
+                  p<-match(final$lhs[[g]],S_names)
+                  final$lhs[[g]]<-gsub(final$lhs[[g]], traits[[p]],final$lhs[[g]])
+                }
+              }
+              
               ##subest to only the pieces the user specified
               ##this is overly long and confusing with the model fit components added in
               Modeltest <- parTable(ReorderModel1)
@@ -1444,9 +1454,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         }
         
         ##replace trait names in user provided model with general form of V1-VX
-        for(i in 1:length(traits)){
-          model<-gsub(traits2[[i]], S_names[[i]], model)
-        }
+        model<-mgsub::mgsub(string = model, pattern = traits2, replacement = S_names)
         
         ##determine number of latent variables from writing extended model. 
         r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
@@ -1883,10 +1891,16 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(modelchi == TRUE){
               ##replace V1-VX general form in output with user provided trait names
               for(g in 1:nrow(final)){
-                for(p in 1:length(traits)){
-                  final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
-                  final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
-                }}
+                if(final$rhs[[g]] %in% S_names){
+                  p<-match(final$rhs[[g]],S_names)
+                  final$rhs[[g]]<-gsub(final$rhs[[g]], traits[[p]],final$rhs[[g]])
+                }
+                if(final$lhs[[g]] %in% S_names){
+                  p<-match(final$lhs[[g]],S_names)
+                  final$lhs[[g]]<-gsub(final$lhs[[g]], traits[[p]],final$lhs[[g]])
+                }
+              }
+              
               ##subest to only the pieces the user specified
               ##this is overly long and confusing with the model fit components added in
               Modeltest <- parTable(ReorderModel1)
@@ -2026,12 +2040,12 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
             if(":=" %in% Model_ML$op){
               
-         
+              
               
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
               se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
-                warning("SE for ghost parameter not available for ML")
+              warning("SE for ghost parameter not available for ML")
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
@@ -2181,10 +2195,17 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(modelchi == TRUE){
               ##replace V1-VX general form in output with user provided trait names
               for(g in 1:nrow(final)){
-                for(p in 1:length(traits)){
-                  final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
-                  final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
-                }}
+                if(final$rhs[[g]] %in% S_names){
+                  p<-match(final$rhs[[g]],S_names)
+                  final$rhs[[g]]<-gsub(final$rhs[[g]], traits[[p]],final$rhs[[g]])
+                }
+                if(final$lhs[[g]] %in% S_names){
+                  p<-match(final$lhs[[g]],S_names)
+                  final$lhs[[g]]<-gsub(final$lhs[[g]], traits[[p]],final$lhs[[g]])
+                }
+              }
+              
+              
               ##subest to only the pieces the user specified
               ##this is overly long and confusing with the model fit components added in
               Modeltest <- parTable(ReorderModel1)
@@ -2555,9 +2576,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         }
         
         ##replace trait names in user provided model with general form of V1-VX
-        for(i in 1:length(traits)){
-          model<-gsub(traits2[[i]], S_names[[i]], model)
-        }
+        model<-mgsub::mgsub(string = model, pattern = traits2, replacement = S_names)
         
         ##determine number of latent variables from writing extended model. 
         r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
@@ -2800,6 +2819,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
       SE_SNP<-suppressWarnings(split(SE_SNP,1:int))
       varSNP<-suppressWarnings(split(varSNP,1:int))
       
+      print("Starting GWAS Estimation")
       ##estimation for WLS
       if(estimation=="DWLS"){
         
@@ -2980,7 +3000,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               }else{
                 if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
                   se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
-                warning("SE for ghost parameter not available for ML")
+                  warning("SE for ghost parameter not available for ML")
                   ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                   ghost2<-cbind(ghost,se.ghost)
                   colnames(ghost2)[7]<-"SE"}else{}} 
@@ -3125,10 +3145,16 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               if(modelchi == TRUE){
                 ##replace V1-VX general form in output with user provided trait names
                 for(g in 1:nrow(final)){
-                  for(p in 1:length(traits)){
-                    final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
-                    final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
-                  }}
+                  if(final$rhs[[g]] %in% S_names){
+                    p<-match(final$rhs[[g]],S_names)
+                    final$rhs[[g]]<-gsub(final$rhs[[g]], traits[[p]],final$rhs[[g]])
+                  }
+                  if(final$lhs[[g]] %in% S_names){
+                    p<-match(final$lhs[[g]],S_names)
+                    final$lhs[[g]]<-gsub(final$lhs[[g]], traits[[p]],final$lhs[[g]])
+                  }
+                }
+                
                 ##subest to only the pieces the user specified
                 Modeltest <- parTable(ReorderModel1)
                 for(t in 1:nrow(final)){
@@ -3346,7 +3372,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
               se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
-                warning("SE for ghost parameter not available for ML")
+              warning("SE for ghost parameter not available for ML")
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
@@ -3497,10 +3523,16 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(modelchi == TRUE){
               ##replace V1-VX general form in output with user provided trait names
               for(g in 1:nrow(final)){
-                for(p in 1:length(traits)){
-                  final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
-                  final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
-                }}
+                if(final$rhs[[g]] %in% S_names){
+                  p<-match(final$rhs[[g]],S_names)
+                  final$rhs[[g]]<-gsub(final$rhs[[g]], traits[[p]],final$rhs[[g]])
+                }
+                if(final$lhs[[g]] %in% S_names){
+                  p<-match(final$lhs[[g]],S_names)
+                  final$lhs[[g]]<-gsub(final$lhs[[g]], traits[[p]],final$lhs[[g]])
+                }
+              }
+              
               ##subest to only the pieces the user specified
               ##this is overly long and confusing with the model fit components added in
               Modeltest <- parTable(ReorderModel1)
@@ -3667,9 +3699,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
         }
         
         ##replace trait names in user provided model with general form of V1-VX
-        for(i in 1:length(traits)){
-          model<-gsub(traits2[[i]], S_names[[i]], model)
-        }
+        model<-mgsub::mgsub(string = model, pattern = traits2, replacement = S_names)
+        
         
         ##determine number of latent variables from writing extended model. 
         r<-nrow(lavInspect(ReorderModel1, "cor.lv"))
@@ -3961,7 +3992,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               }else{
                 if(":=" %in% Model_WLS$op & (NA %in% Model_WLS$se)){
                   se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
-                warning("SE for ghost parameter could not be computed")
+                  warning("SE for ghost parameter could not be computed")
                   ghost<-subset(Model_WLS, Model_WLS$op == ":=")[,c(2:4,8,11,14)]
                   ghost2<-cbind(ghost,se.ghost)
                   colnames(ghost2)[7]<-"SE"}else{}} 
@@ -4105,10 +4136,16 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               if(modelchi == TRUE){
                 ##replace V1-VX general form in output with user provided trait names
                 for(g in 1:nrow(final)){
-                  for(p in 1:length(traits)){
-                    final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
-                    final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
-                  }}
+                  if(final$rhs[[g]] %in% S_names){
+                    p<-match(final$rhs[[g]],S_names)
+                    final$rhs[[g]]<-gsub(final$rhs[[g]], traits[[p]],final$rhs[[g]])
+                  }
+                  if(final$lhs[[g]] %in% S_names){
+                    p<-match(final$lhs[[g]],S_names)
+                    final$lhs[[g]]<-gsub(final$lhs[[g]], traits[[p]],final$lhs[[g]])
+                  }
+                }
+                
                 ##subest to only the pieces the user specified
                 Modeltest <- parTable(ReorderModel1)
                 for(t in 1:nrow(final)){
@@ -4228,7 +4265,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
               #pull the ghost parameter point estiamte
               ghost<-subset(Model_ML, Model_ML$op == ":=")[,c(2:4,8,11,14)]
               se.ghost<-rep(NA, sum(":=" %in% Model_WLS$op))
-                warning("SE for ghost parameter not available for ML")
+              warning("SE for ghost parameter not available for ML")
               ##combine with delta method SE
               ghost2<-cbind(ghost,se.ghost)
               colnames(ghost2)[7]<-"SE"
@@ -4378,10 +4415,17 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
             if(modelchi == TRUE){
               ##replace V1-VX general form in output with user provided trait names
               for(g in 1:nrow(final)){
-                for(p in 1:length(traits)){
-                  final$lhs[[g]]<-ifelse(final$lhs[[g]] %in% S_names[[p]], gsub(final$lhs[[g]], traits[[p]], final$lhs[[g]]), final$lhs[[g]])
-                  final$rhs[[g]]<-ifelse(final$rhs[[g]] %in% S_names[[p]], gsub(final$rhs[[g]], traits[[p]], final$rhs[[g]]), final$rhs[[g]])
-                }}
+                if(final$rhs[[g]] %in% S_names){
+                  p<-match(final$rhs[[g]],S_names)
+                  final$rhs[[g]]<-gsub(final$rhs[[g]], traits[[p]],final$rhs[[g]])
+                }
+                if(final$lhs[[g]] %in% S_names){
+                  p<-match(final$lhs[[g]],S_names)
+                  final$lhs[[g]]<-gsub(final$lhs[[g]], traits[[p]],final$lhs[[g]])
+                }
+              }
+              
+              
               ##subest to only the pieces the user specified
               ##this is overly long and confusing with the model fit components added in
               Modeltest <- parTable(ReorderModel1)
@@ -4462,3 +4506,4 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=F
     stop("Parallel processing is not currently available for Windows operating systems. Please set the parallel argument to FALSE, or switch to a Linux or Mac operating system.")
   }
 }
+
