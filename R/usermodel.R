@@ -142,7 +142,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   Z_pre<-S_LDb/SE_pre
   Z_post<-S_LD/SE_post
   Z_diff<-max(abs(Z_pre-Z_post),na.rm=T)
-  
+  rm(S_LDb,V_LDb,SE_pre,SE_post)
+ 
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
