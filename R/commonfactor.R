@@ -201,12 +201,14 @@ commonfactor <-function(covstruc,estimation="DWLS"){
   smooth1<-ifelse(eigen(S_LD)$values[ks] <= 0, S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat), S_LD<-S_LD)
   diff<-(S_LD-S_LDb)
   LD_sdiff<-max(diff)
+  rm(S_LDb)
   
   kv<-nrow(V_LD)
   V_LDb<-V_LD
   smooth2<-ifelse(eigen(V_LD)$values[kv] <= 0, V_LD<-as.matrix((nearPD(V_LD, corr = FALSE))$mat), V_LD<-V_LD)
   diff2<-(V_LD-V_LDb)
   LD_sdiff2<-max(diff2)
+  rm(V_LDb)
   
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a diagonal weight matrix: 
