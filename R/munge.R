@@ -4,6 +4,10 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01)
   filenames <- as.vector(files)
 
   log2<-paste(trait.names,collapse="_")
+  
+ if(object.size(log2) > 200){
+    log2<-substr(log2,1,100)
+  }
 
   log.file <- file(paste0(log2, "_munge.log"),open="wt")
   
