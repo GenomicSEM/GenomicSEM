@@ -142,8 +142,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   Z_pre<-S_LDb/SE_pre
   Z_post<-S_LD/SE_post
   Z_diff<-max(abs(Z_pre-Z_post),na.rm=T)
-  rm(S_LDb,V_LDb,SE_pre,SE_post)
- 
+  
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
@@ -394,9 +393,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
-  V_Reorderb<-diag(z)
-  diag(V_Reorderb)<-diag(V_Reorder)
-  W_Reorder<-solve(V_Reorderb)
+  W_Reorder<-diag(z)
+  diag(W_Reorder)<-diag(V_Reorder)
+  W_Reorder<-solve(W_Reorder)
   
   ##estimation for DWLS
   if(estimation=="DWLS"){
@@ -413,7 +412,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
     
-  if(fix_resid == TRUE){
+    if(fix_resid == TRUE){
       if(class(empty4$value)[1] == "simpleError" | lavInspect(Model1_Results,"converged") == FALSE){
         
         write.Model2 <- function(k, label = "V", label2 = "VF") {  
@@ -506,7 +505,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         Model1<-write.Model2(k)
         
-      
+        
         if(std.lv == FALSE){
           empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
         }
@@ -521,7 +520,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         }else{print("The model as initially specified failed to converge. A lower bound of 0 on residual variances was automatically added to try and troubleshoot this. This behavior can be toggled off by setting the fix_resid argument to FALSE.")
         }
         
-        }
+      }
     }
     
     if(class(empty4$value)[1] == "simpleError"){
@@ -565,9 +564,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       
       ##replace V1-VX general form in output with user provided trait names
       for(i in 1:nrow(results)){
-        for(p in 1:length(traits)){
-          results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
-          results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+        if(results$rhs[[i]] %in% S_names){
+          p<-match(results$rhs[[i]],S_names)
+          results$rhs[[i]]<-gsub(results$rhs[[i]], traits[[p]],results$rhs[[i]])
+        }
+        if(results$lhs[[i]] %in% S_names){
+          p<-match(results$lhs[[i]],S_names)
+          results$lhs[[i]]<-gsub(results$lhs[[i]], traits[[p]],results$lhs[[i]])
         }
       }
       
@@ -649,11 +652,17 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         ##replace V1-VX general form in output with user provided trait names
         for(i in 1:nrow(results)){
-          for(p in 1:length(traits)){
-            results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
-            results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+          if(results$rhs[[i]] %in% S_names){
+            p<-match(results$rhs[[i]],S_names)
+            results$rhs[[i]]<-gsub(results$rhs[[i]], traits[[p]],results$rhs[[i]])
+          }
+          if(results$lhs[[i]] %in% S_names){
+            p<-match(results$lhs[[i]],S_names)
+            results$lhs[[i]]<-gsub(results$lhs[[i]], traits[[p]],results$lhs[[i]])
           }
         }
+        
+        
         if(exists("ghost2") == "TRUE"){
           ghost2$free<-NULL
           ghost2$label<-NULL
@@ -706,20 +715,19 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         ModelQ_WLS <- ModelQ_WLS[order(ModelQ_WLS$free),] 
         
         ModelQ_WLS$free <- c(rep(0, p),1:z)
-        
         ModelQ_WLS$ustart <- ModelQ_WLS$est
         ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .05, ModelQ_WLS$ustart)
-     
+        
         print("Calculating model chi-square")
         
         if(std.lv == FALSE){
-          testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart, optim.dx.tol = +Inf))
+          testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2,start=rep(.05,z),  optim.dx.tol = +Inf))
         }
         
         if(std.lv == TRUE){
-          testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart,std.lv=TRUE, optim.dx.tol = +Inf))
+          testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2,start=rep(.05,z), std.lv=TRUE, optim.dx.tol = +Inf))
         }
-     
+        
         testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
         testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
         
@@ -727,10 +735,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
           
           ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .01, ModelQ_WLS$ustart)
+       
           if(std.lv == FALSE){
-            testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf))}
+            testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=rep(.01,z), optim.dx.tol = +Inf))}
           if(std.lv == TRUE){
-            testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart,std.lv=TRUE, optim.dx.tol = +Inf))
+            testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=rep(.01,z),std.lv=TRUE, optim.dx.tol = +Inf))
           }
         }else{testQ2<-testQ}
         
@@ -740,11 +749,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         if(as.character(testQ2$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
           
           ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .1, ModelQ_WLS$ustart)
+          
           if(std.lv == FALSE){
-            testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart, optim.dx.tol = +Inf))}
+            testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=rep(.1,z), optim.dx.tol = +Inf))}
           
           if(std.lv == TRUE){
-            testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=ModelQ$ustart,std.lv=TRUE, optim.dx.tol = +Inf))  
+            testQ3<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=rep(.1,z),std.lv=TRUE, optim.dx.tol = +Inf))  
           }
         }else{testQ3<-testQ2}
         
@@ -903,7 +913,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         
         if(class(bread_stand2$value)[1] != "matrix" | lavInspect(DWLS.fit_stand,"converged") == FALSE | class(emptystand)[1] == "simpleError"){
-         warning("The standardized model failed to converge. This likely indicates more general problems with the model solution. Unstandardized results are printed below but this should be interpreted with caution.")
+          warning("The standardized model failed to converge. This likely indicates more general problems with the model solution. Unstandardized results are printed below but this should be interpreted with caution.")
           
           unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
           unstand<-subset(unstand, unstand$free != 0)                    
@@ -913,11 +923,16 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           
           ##replace V1-VX general form in output with user provided trait names
           for(i in 1:nrow(results)){
-            for(p in 1:length(traits)){
-              results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
-              results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+            if(results$rhs[[i]] %in% S_names){
+              p<-match(results$rhs[[i]],S_names)
+              results$rhs[[i]]<-gsub(results$rhs[[i]], traits[[p]],results$rhs[[i]])
+            }
+            if(results$lhs[[i]] %in% S_names){
+              p<-match(results$lhs[[i]],S_names)
+              results$lhs[[i]]<-gsub(results$lhs[[i]], traits[[p]],results$lhs[[i]])
             }
           }
+          
           if(exists("ghost2") == "TRUE"){
             ghost2$free<-NULL
             ghost2$label<-NULL
@@ -927,110 +942,111 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           print(unstand2)
           check<-1
         }else{
-        
-        lettuce_stand <- DWLS.W_stand%*%DWLS.delt_stand
-        Vcov_stand<-as.matrix(V_stand[order,order])
-        Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
-        SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
-        
-        Model_WLS_Stand <- parTable(DWLS.fit_stand)
-        
-        #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
-        if(":=" %in% Model_WLS_Stand$op & !(NA %in% Model_WLS_Stand$se)){
-          #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
-          vcov <- lavInspect(DWLS.fit_stand, "vcov") 
           
-          #internal lavaan representation of the model
-          lavmodel <- DWLS.fit_stand@Model 
+          lettuce_stand <- DWLS.W_stand%*%DWLS.delt_stand
+          Vcov_stand<-as.matrix(V_stand[order,order])
+          Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
+          SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
           
-          #lavaan representation of the indirect effect
-          func <- lavmodel@def.function
+          Model_WLS_Stand <- parTable(DWLS.fit_stand)
           
-          #vector of parameter estimates
-          x <- lav_model_get_parameters(lavmodel, type = "free") 
-          
-          #vector of indirect effect derivatives evaluated @ parameter estimates 
-          Jac <- lav_func_jacobian_complex(func = func, x = x)
-          
-          #replace vcov here with our corrected one. this gives parameter variance 
-          var.ind <- Jac %*% vcov %*% t(Jac) 
-          
-          #square root of parameter variance = parameter SE.
-          se.ghost_stand <- sqrt(diag(var.ind))
-          
-          #pull the ghost parameter point estiamte
-          ghost_stand<-subset(Model_WLS_Stand,  Model_WLS_Stand$op == ":=")[,c(2:4,8,11,14)]
-          
-          ##combine with delta method SE
-          ghost2_stand<-cbind(ghost_stand,se.ghost_stand)
-          colnames(ghost2_stand)[7]<-"SE_stand"
-        }else{
-          if(":=" %in% Model_WLS_Stand$op & (NA %in% Model_WLS_Stand$se)){
-            se.ghost_stand<-rep("SE could not be computed", count(":=" %in% Model_WLS_Stand$op)$freq)
-            ghost_stand<-subset(Model_WLS_Stand, Model_WLS_Stand$op == ":=")[,c(2:4,8,11,14)]
+          #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
+          if(":=" %in% Model_WLS_Stand$op & !(NA %in% Model_WLS_Stand$se)){
+            #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
+            vcov <- lavInspect(DWLS.fit_stand, "vcov") 
+            
+            #internal lavaan representation of the model
+            lavmodel <- DWLS.fit_stand@Model 
+            
+            #lavaan representation of the indirect effect
+            func <- lavmodel@def.function
+            
+            #vector of parameter estimates
+            x <- lav_model_get_parameters(lavmodel, type = "free") 
+            
+            #vector of indirect effect derivatives evaluated @ parameter estimates 
+            Jac <- lav_func_jacobian_complex(func = func, x = x)
+            
+            #replace vcov here with our corrected one. this gives parameter variance 
+            var.ind <- Jac %*% vcov %*% t(Jac) 
+            
+            #square root of parameter variance = parameter SE.
+            se.ghost_stand <- sqrt(diag(var.ind))
+            
+            #pull the ghost parameter point estiamte
+            ghost_stand<-subset(Model_WLS_Stand,  Model_WLS_Stand$op == ":=")[,c(2:4,8,11,14)]
+            
+            ##combine with delta method SE
             ghost2_stand<-cbind(ghost_stand,se.ghost_stand)
-            colnames(ghost2_stand)[7]<-"SE_stand"}else{}} 
-        
-        unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
-        unstand<-subset(unstand, unstand$free != 0)                    
-        unstand$free<-NULL
-        
-        ##combine ghost parameters with rest of output
-        if(exists("ghost2") == "TRUE"){
-          ghost2$free<-NULL
-          ghost2$label<-NULL
-          unstand2<-rbind(cbind(unstand,SE),ghost2)
-        }else{unstand2<-cbind(unstand,SE)}
-        
-        stand<-data.frame(inspect(DWLS.fit_stand,"list")[,c(8,14)])
-        stand<-subset(stand, stand$free != 0)
-        stand$free<-NULL
-        
-        ##combine ghost parameters with rest of output
-        if(exists("ghost2_stand") == "TRUE"){
-          ghost2_stand[,1:5]<-NULL
-          stand2<-rbind(cbind(stand,SE_stand),ghost2_stand)
-        }else{stand2<-cbind(stand,SE_stand)}
-        
-        ##df of user model
-        df<-lavInspect(Model1_Results, "fit")["df"]
-        
-        if(!(is.character(Q_WLS))){
-          chisq<-Q_WLS
-          AIC<-(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"])}else{chisq<-Q_WLS
-          AIC<-NA}
-        
-        print("Calculating SRMR")
-        
-        SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
-        
-        if(CFIcalc == TRUE){
-          modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
-        
-        std_all<-standardizedSolution(DWLS.fit_stand)
-        std_all<-subset(std_all, !(is.na(std_all$pvalue)))
-        
-        results<-cbind(unstand2, stand2)
-        
-        ##add in fixed effects
-        base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
-        base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
-        base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
-        if(nrow(base_model) > 0){
-          base_model$free<-NULL
-          base_model$SE<-""
-          base_model[6]<-base_model$est
-          base_model$SE_stand<-""
-          colnames(base_model)<-colnames(results)
-          results<-rbind(results,base_model)
-        }
-        std_all<-subset(std_all,  paste0(std_all$lhs, std_all$op, std_all$rhs) %in% paste0(results$lhs, results$op, results$rhs))
-        std_all$order<-paste0(std_all$lhs, std_all$op, std_all$rhs)
-        std_all<-data.frame(std_all$est.std,std_all$order)
-        colnames(std_all)<-c("est.std","order")
-        results$order<-paste0(results$lhs,results$op,results$rhs)
-        results<-suppressWarnings(merge(results,std_all,by="order"))
-        results$order<-NULL
+            colnames(ghost2_stand)[7]<-"SE_stand"
+          }else{
+            if(":=" %in% Model_WLS_Stand$op & (NA %in% Model_WLS_Stand$se)){
+              se.ghost_stand<-rep("SE could not be computed", count(":=" %in% Model_WLS_Stand$op)$freq)
+              ghost_stand<-subset(Model_WLS_Stand, Model_WLS_Stand$op == ":=")[,c(2:4,8,11,14)]
+              ghost2_stand<-cbind(ghost_stand,se.ghost_stand)
+              colnames(ghost2_stand)[7]<-"SE_stand"}else{}} 
+          
+          unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
+          unstand<-subset(unstand, unstand$free != 0)                    
+          unstand$free<-NULL
+          
+          ##combine ghost parameters with rest of output
+          if(exists("ghost2") == "TRUE"){
+            ghost2$free<-NULL
+            ghost2$label<-NULL
+            unstand2<-rbind(cbind(unstand,SE),ghost2)
+          }else{unstand2<-cbind(unstand,SE)}
+          
+          stand<-data.frame(inspect(DWLS.fit_stand,"list")[,c(8,14)])
+          stand<-subset(stand, stand$free != 0)
+          stand$free<-NULL
+          
+          ##combine ghost parameters with rest of output
+          if(exists("ghost2_stand") == "TRUE"){
+            ghost2_stand[,1:5]<-NULL
+            stand2<-rbind(cbind(stand,SE_stand),ghost2_stand)
+          }else{stand2<-cbind(stand,SE_stand)}
+          
+          ##df of user model
+          df<-lavInspect(Model1_Results, "fit")["df"]
+          
+          if(!(is.character(Q_WLS))){
+            chisq<-Q_WLS
+            AIC<-(Q_WLS + 2*lavInspect(Model1_Results, "fit")["npar"])}else{chisq<-Q_WLS
+            AIC<-NA}
+          
+          print("Calculating SRMR")
+          
+          SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
+          
+          if(CFIcalc == TRUE){
+            modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
+          
+          std_all<-standardizedSolution(DWLS.fit_stand)
+          std_all<-subset(std_all, !(is.na(std_all$pvalue)))
+          
+          results<-cbind(unstand2, stand2)
+          
+          ##add in fixed effects
+          base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
+          base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
+          base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
+          if(nrow(base_model) > 0){
+            base_model$free<-NULL
+            base_model$SE<-""
+            base_model[6]<-base_model$est
+            base_model$SE_stand<-""
+            colnames(base_model)<-colnames(results)
+            results<-rbind(results,base_model)
+          }
+          std_all<-subset(std_all,  paste0(std_all$lhs, std_all$op, std_all$rhs) %in% paste0(results$lhs, results$op, results$rhs))
+          std_all$order<-paste0(std_all$lhs, std_all$op, std_all$rhs)
+          std_all<-data.frame(std_all$est.std,std_all$order)
+          colnames(std_all)<-c("est.std","order")
+          results$order<-paste0(results$lhs,results$op,results$rhs)
+          results<-suppressWarnings(merge(results,std_all,by="order",all=T))
+          results$est.std<-ifelse(is.na(results$est.std), results$est, results$est.std)
+          results$order<-NULL
         } 
       }
     }
@@ -1201,9 +1217,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       
       ##replace V1-VX general form in output with user provided trait names
       for(i in 1:nrow(results)){
-        for(p in 1:length(traits)){
-          results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
-          results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+        if(results$rhs[[i]] %in% S_names){
+          p<-match(results$rhs[[i]],S_names)
+          results$rhs[[i]]<-gsub(results$rhs[[i]], traits[[p]],results$rhs[[i]])
+        }
+        if(results$lhs[[i]] %in% S_names){
+          p<-match(results$lhs[[i]],S_names)
+          results$lhs[[i]]<-gsub(results$lhs[[i]], traits[[p]],results$lhs[[i]])
         }
       }
       
@@ -1270,16 +1290,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       ModelQ_ML <- ModelQ_ML[order(ModelQ_ML$free),] 
       
       ModelQ_ML$free <- c(rep(0, p),1:z)
-      
       ModelQ_ML$ustart <- ModelQ_ML$est
-      
       ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .05, ModelQ_ML$ustart)
       
       print("Calculating model chi-square")
       if(std.lv == FALSE){
-        testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf))}
+        testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.05,z), optim.dx.tol = +Inf))}
       if(std.lv == TRUE){
-        testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE, optim.dx.tol = +Inf))
+        testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.05,z),std.lv=TRUE, optim.dx.tol = +Inf))
       }
       
       testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
@@ -1289,10 +1307,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
         
         ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .01, ModelQ_ML$ustart)
+        
         if(std.lv == FALSE){
-          testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf))}
+          testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.01,z), optim.dx.tol = +Inf))}
         if(std.lv == TRUE){
-          testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE, optim.dx.tol = +Inf)) 
+          testQ2<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.01,z),std.lv=TRUE, optim.dx.tol = +Inf)) 
         }
       }else{testQ2<-testQ}
       
@@ -1302,10 +1321,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       if(as.character(testQ2$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
         
         ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .1, ModelQ_ML$ustart)
+        
         if(std.lv == FALSE){
-          testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart, optim.dx.tol = +Inf))}
+          testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.1,z), optim.dx.tol = +Inf))}
         if(std.lv == TRUE){
-          testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  ModelQ_ML$ustart,std.lv=TRUE, optim.dx.tol = +Inf))}
+          testQ3<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.1,z),std.lv=TRUE, optim.dx.tol = +Inf))}
       }else{testQ3<-testQ2}
       
       testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
@@ -1453,8 +1473,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       if(std.lv == TRUE){
         emptystand<-tryCatch.W.E(ML.fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML", sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf))} 
       
-      
-      
       ##perform same procedures for sandwich correction as in the unstandardized case
       ML.delt_stand <- lavInspect(ML.fit_stand, "delta") 
       ML.W_stand <- lavInspect(ML.fit_stand, "WLS.V") 
@@ -1472,11 +1490,16 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         ##replace V1-VX general form in output with user provided trait names
         for(i in 1:nrow(results)){
-          for(p in 1:length(traits)){
-            results$lhs[[i]]<-ifelse(results$lhs[[i]] %in% S_names[[p]], gsub(results$lhs[[i]], traits[[p]], results$lhs[[i]]), results$lhs[[i]])
-            results$rhs[[i]]<-ifelse(results$rhs[[i]] %in% S_names[[p]], gsub(results$rhs[[i]], traits[[p]], results$rhs[[i]]), results$rhs[[i]])
+          if(results$rhs[[i]] %in% S_names){
+            p<-match(results$rhs[[i]],S_names)
+            results$rhs[[i]]<-gsub(results$rhs[[i]], traits[[p]],results$rhs[[i]])
+          }
+          if(results$lhs[[i]] %in% S_names){
+            p<-match(results$lhs[[i]],S_names)
+            results$lhs[[i]]<-gsub(results$lhs[[i]], traits[[p]],results$lhs[[i]])
           }
         }
+        
         if(exists("ghost2") == "TRUE"){
           ghost2$free<-NULL
           ghost2$label<-NULL
@@ -1486,64 +1509,65 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         print(unstand2)
         check<-1
       }else{
-      
-      lettuce_stand <- ML.W_stand%*%ML.delt_stand
-      Vcov_stand<-as.matrix(V_stand[order,order])
-      Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
-      SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
-      
-      unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
-      unstand<-subset(unstand, unstand$free != 0)                    
-      unstand$free<-NULL
-      
-      stand<-data.frame(inspect(ML.fit_stand,"list")[,c(8,14)])
-      stand<-subset(stand, stand$free != 0)
-      stand$free<-NULL
-      
-      #df of user model
-      df<-lavInspect(Model1_Results, "fit")["df"]
-      
-      if(!(is.character(Q_ML))){
-        chisq<-as.numeric(Q_ML)
-        AIC<-(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"])}else{chisq<-Q_ML
-        AIC<-NA}
-      
-      print("Calculating SRMR")
-      
-      SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
-      
-      if(CFIcalc == TRUE){
-        modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
-      
-      
-      std_all<-standardizedSolution(ML.fit_stand)
-      std_all<-subset(std_all, !(is.na(std_all$pvalue)))
-      
-      results<-cbind(unstand,SE,stand,SE_stand)
-      
-      ##add in fixed effects
-      base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
-      base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand$lhs, unstand$op, unstand$rhs)))
-      base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
-      
-      if(nrow(base_model) > 0){
-        base_model$free<-NULL
-        base_model$SE<-""
-        base_model[6]<-base_model$est
-        base_model$SE_stand<-""
-        #base_model[8]<-base_model$est
-        colnames(base_model)<-colnames(results)
-        results<-rbind(results,base_model)
+        
+        lettuce_stand <- ML.W_stand%*%ML.delt_stand
+        Vcov_stand<-as.matrix(V_stand[order,order])
+        Ohtt_stand <- bread_stand %*% t(lettuce_stand)%*%Vcov_stand%*%lettuce_stand%*%bread_stand
+        SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
+        
+        unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
+        unstand<-subset(unstand, unstand$free != 0)                    
+        unstand$free<-NULL
+        
+        stand<-data.frame(inspect(ML.fit_stand,"list")[,c(8,14)])
+        stand<-subset(stand, stand$free != 0)
+        stand$free<-NULL
+        
+        #df of user model
+        df<-lavInspect(Model1_Results, "fit")["df"]
+        
+        if(!(is.character(Q_ML))){
+          chisq<-as.numeric(Q_ML)
+          AIC<-(Q_ML + 2*lavInspect(Model1_Results, "fit")["npar"])}else{chisq<-Q_ML
+          AIC<-NA}
+        
+        print("Calculating SRMR")
+        
+        SRMR<-lavInspect(Model1_Results, "fit")["srmr"]
+        
+        if(CFIcalc == TRUE){
+          modelfit<-cbind(chisq,df,AIC,CFI,SRMR)}else{modelfit<-cbind(chisq,df,AIC,SRMR)}
+        
+        
+        std_all<-standardizedSolution(ML.fit_stand)
+        std_all<-subset(std_all, !(is.na(std_all$pvalue)))
+        
+        results<-cbind(unstand,SE,stand,SE_stand)
+        
+        ##add in fixed effects
+        base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
+        base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand$lhs, unstand$op, unstand$rhs)))
+        base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
+        
+        if(nrow(base_model) > 0){
+          base_model$free<-NULL
+          base_model$SE<-""
+          base_model[6]<-base_model$est
+          base_model$SE_stand<-""
+          #base_model[8]<-base_model$est
+          colnames(base_model)<-colnames(results)
+          results<-rbind(results,base_model)
+        }
+        std_all<-subset(std_all,  paste0(std_all$lhs, std_all$op, std_all$rhs) %in% paste0(results$lhs, results$op, results$rhs))
+        std_all$order<-paste0(std_all$lhs, std_all$op, std_all$rhs)
+        std_all<-data.frame(std_all$est.std,std_all$order)
+        colnames(std_all)<-c("est.std","order")
+        results$order<-paste0(results$lhs,results$op,results$rhs)
+        results<-suppressWarnings(merge(results,std_all,by="order",all=T))
+        results$est.std<-ifelse(is.na(results$est.std), results$est, results$est.std)
+        results$order<-NULL
+        
       }
-      std_all<-subset(std_all,  paste0(std_all$lhs, std_all$op, std_all$rhs) %in% paste0(results$lhs, results$op, results$rhs))
-      std_all$order<-paste0(std_all$lhs, std_all$op, std_all$rhs)
-      std_all<-data.frame(std_all$est.std,std_all$order)
-      colnames(std_all)<-c("est.std","order")
-      results$order<-paste0(results$lhs,results$op,results$rhs)
-      results<-suppressWarnings(merge(results,std_all,by="order"))
-      results$order<-NULL
-      
-    }
     }
   }
   
@@ -1552,7 +1576,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     colnames(results)=c("lhs","op","rhs","Unstand_Est","Unstand_SE","STD_Genotype","STD_Genotype_SE", "STD_All")
     
     ##replace V1-VX general form in output with user provided trait names
-     for(i in 1:nrow(results)){
+    for(i in 1:nrow(results)){
       if(results$rhs[[i]] %in% S_names){
         p<-match(results$rhs[[i]],S_names)
         results$rhs[[i]]<-gsub(results$rhs[[i]], traits[[p]],results$rhs[[i]])
@@ -1562,6 +1586,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         results$lhs[[i]]<-gsub(results$lhs[[i]], traits[[p]],results$lhs[[i]])
       }
     }
+    
     
     ##name model fit columns
     if(CFIcalc == TRUE){
