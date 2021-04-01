@@ -3,13 +3,6 @@
 R-package which allows the user to fit structural equation models 
 based on the summary statistics obtained from genome wide association studies (GWAS). Until explicitly stated otherwise the code on this github is an alpha version (now on version **0.0.2**) and under active development. The code may thus produce undesired results on certain operating systems or when run concurrently with specific packages or R versions. Feel free to raise issues if (or when...) the package produces undesired results, we will attempt to swiftly deal with known issues. Please  **[visit the wiki](https://github.com/MichelNivard/GenomicSEM/wiki)** to get started, or **[check out the paper](https://www.nature.com/articles/s41562-019-0566-x)**. If you are having issues and not finding the answers anywhere on the wiki or FAQs page, we encourage you to post your question on the **[google group](https://groups.google.com/forum/#!forum/genomic-sem-users)**.
 
-**A recent update to lavaan on March 10th, 2021, which Genomic SEM uses for model estimation, is causing some of the start values used  to throw an error reading: 'ModelQ_Results_WLS not found'. We are working on putting in the patches so this error isn't thrown; in the meantime the prior version of lavaan can be installed using the code directly below:
-
-library(devtools)
-install_version("lavaan", version = "0.6.7", repos = "http://cran.us.r-project.org")
-require(lavaan)
-**
-
 
 **Feature update**: GenomicSEM can now run [HDL](https://t.co/OBHihTb7rE?amp=1) a novel method for estimating heritability and genetic correlation that can in some cases outperform LDSC. See out tutorial [HERE](https://rpubs.com/MichelNivard/640145)
 
