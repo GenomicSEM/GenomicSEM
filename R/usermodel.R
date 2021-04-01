@@ -141,7 +141,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   
   Z_pre<-S_LDb/SE_pre
   Z_post<-S_LD/SE_post
-  Z_diff<-max(abs(Z_pre-Z_post),na.rm=T)
+  Z_diff<-(Z_pre-Z_post)
+  Z_diff[which(!is.finite(Z_diff))]<-0
+  Z_diff<-max(Z_diff)
   
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a weight matrix: 
@@ -720,6 +722,19 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         print("Calculating model chi-square")
         
+        #try running without starts to begin with
+        if(std.lv == FALSE){
+          testQa<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, optim.dx.tol = +Inf))
+        }
+        
+        if(std.lv == TRUE){
+          testQa<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2,std.lv=TRUE, optim.dx.tol = +Inf))
+        }
+        
+        testQa$warning$message[1]<-ifelse(is.null(testQa$warning$message), testQa$warning$message[1]<-"Safe", testQa$warning$message[1])
+        testQa$warning$message[1]<-ifelse(exists("ModelQ_Results_WLS") == FALSE, testQa$warning$message[1]<-"lavaan WARNING: model has NOT converged!", ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE ,testQa$warning$message[1]<-"lavaan WARNING: model has NOT converged!" , testQa$warning$message[1]))
+        
+        if(as.character(testQa$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
         if(std.lv == FALSE){
           testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2,start=rep(.05,z),  optim.dx.tol = +Inf))
         }
@@ -727,15 +742,15 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         if(std.lv == TRUE){
           testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2,start=rep(.05,z), std.lv=TRUE, optim.dx.tol = +Inf))
         }
+        }else{testQ<-testQa}
         
         testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
-        testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
-        
+        testQ$warning$message[1]<-ifelse(exists("ModelQ_Results_WLS") == FALSE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE ,testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!" , testQ$warning$message[1]))
         
         if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
           
           ModelQ_WLS$ustart<-ifelse(ModelQ_WLS$free > 0, .01, ModelQ_WLS$ustart)
-       
+          
           if(std.lv == FALSE){
             testQ2<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, start=rep(.01,z), optim.dx.tol = +Inf))}
           if(std.lv == TRUE){
@@ -744,7 +759,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         }else{testQ2<-testQ}
         
         testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
-        testQ2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ2$warning$message[1])
+        testQ2$warning$message[1]<-ifelse(exists("ModelQ_Results_WLS") == FALSE, testQ2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE ,testQ2$warning$message[1]<-"lavaan WARNING: model has NOT converged!" , testQ2$warning$message[1]))
         
         if(as.character(testQ2$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
           
@@ -759,7 +774,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         }else{testQ3<-testQ2}
         
         testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
-        testQ3$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ3$warning$message[1])
+        testQ3$warning$message[1]<-ifelse(exists("ModelQ_Results_WLS") == FALSE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE ,testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!" , testQ3$warning$message[1]))
         
         if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
           
@@ -1294,15 +1309,30 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       ModelQ_ML$ustart<-ifelse(ModelQ_ML$free > 0, .05, ModelQ_ML$ustart)
       
       print("Calculating model chi-square")
+      
+      #try running without starts to begin with
       if(std.lv == FALSE){
-        testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.05,z), optim.dx.tol = +Inf))}
-      if(std.lv == TRUE){
-        testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.05,z),std.lv=TRUE, optim.dx.tol = +Inf))
+        testQa<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf))
       }
       
-      testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
+      if(std.lv == TRUE){
+        testQa<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.05,z),std.lv=TRUE, optim.dx.tol = +Inf))
+      }
       
-      testQ$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1])
+      testQa$warning$message[1]<-ifelse(is.null(testQa$warning$message), testQa$warning$message[1]<-"Safe", testQa$warning$message[1])
+      testQa$warning$message[1]<-ifelse(exists("ModelQ_Results_WLS") == FALSE, testQa$warning$message[1]<-"lavaan WARNING: model has NOT converged!", ifelse(is.na(inspect(ModelQ_Results_WLS, "se")$theta[1,2]) == TRUE ,testQa$warning$message[1]<-"lavaan WARNING: model has NOT converged!" , testQa$warning$message[1]))
+      
+      if(as.character(testQa$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
+        if(std.lv == FALSE){
+          testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.05,z), optim.dx.tol = +Inf))}
+        if(std.lv == TRUE){
+          testQ<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.05,z),std.lv=TRUE, optim.dx.tol = +Inf))
+        }
+      }else{testQ<-testQa}
+      
+
+      testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
+      testQ$warning$message[1]<-ifelse(exists("ModelQ_Results_ML") == FALSE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ$warning$message[1]))
       
       if(as.character(testQ$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
         
@@ -1316,7 +1346,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       }else{testQ2<-testQ}
       
       testQ2$warning$message[1]<-ifelse(is.null(testQ2$warning$message), testQ2$warning$message[1]<-"Safe", testQ2$warning$message[1])
-      testQ2$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ2$warning$message[1])
+      testQ2$warning$message[1]<-ifelse(exists("ModelQ_Results_ML") == FALSE, testQ2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ2$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ2$warning$message[1]))
       
       if(as.character(testQ2$warning$message)[1] == "lavaan WARNING: model has NOT converged!"){
         
@@ -1329,7 +1359,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       }else{testQ3<-testQ2}
       
       testQ3$warning$message[1]<-ifelse(is.null(testQ3$warning$message), testQ3$warning$message[1]<-"Safe", testQ3$warning$message[1])
-      testQ3$warning$message[1]<-ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ3$warning$message[1])
+      testQ3$warning$message[1]<-ifelse(exists("ModelQ_Results_ML") == FALSE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", ifelse(is.na(inspect(ModelQ_Results_ML, "se")$theta[1,2]) == TRUE, testQ3$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testQ3$warning$message[1]))
       
       if(as.character(testQ3$warning$message)[1] != "lavaan WARNING: model has NOT converged!"){
         
