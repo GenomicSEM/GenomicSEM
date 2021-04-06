@@ -1316,7 +1316,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       }
       
       if(std.lv == TRUE){
-        testQa<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200, start =  rep(.05,z),std.lv=TRUE, optim.dx.tol = +Inf))
+        testQa<-tryCatch.W.E(ModelQ_Results_ML <- sem(model = ModelQ_ML, sample.cov = S_LD, estimator = "ML", sample.nobs=200,std.lv=TRUE, optim.dx.tol = +Inf))
       }
       
       testQa$warning$message[1]<-ifelse(is.null(testQa$warning$message), testQa$warning$message[1]<-"Safe", testQa$warning$message[1])
