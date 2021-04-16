@@ -56,6 +56,12 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   #enter in k for number of phenotypes
   k<-ncol(beta_SNP)
   
+  #print warning if number of traits are unequal across SNPs and LDSC output
+   if(ncol(beta_SNP) != ncol(S_LD)){
+    stop("There are different numbers of traits in the sumstats and ldsc output. Please verify that the same summary statistics have been provided to both functions before running commonfactorGWAS.") 
+  }
+  
+  
   #set univariate intercepts to 1 if estimated below 1
   diag(I_LD)<-ifelse(diag(I_LD)<= 1, 1, diag(I_LD))
   
