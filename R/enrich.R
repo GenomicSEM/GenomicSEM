@@ -381,11 +381,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     print("Confirming fixed model reproduces estimate from freely estimated model for baseline annotation.")
     
     if(std.lv == FALSE){
-      testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart, optim.dx.tol = +Inf))
+      testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, optim.dx.tol = +Inf))
     }
     
     if(std.lv == TRUE){
-      testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, start = ModelQ_WLS$ustart,std.lv=TRUE, optim.dx.tol = +Inf))
+      testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, std.lv=TRUE, optim.dx.tol = +Inf))
     }
     
     test1<-subset(ModelQ_WLS, ModelQ_WLS$free != 0)
