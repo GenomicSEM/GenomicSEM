@@ -407,7 +407,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     colnames(Select)<-c("Annot","Select")
     
     for(n in 1:length(s_covstruc$S)){
-
+      
       #only run for binary and non-flanking annotations
       if(Select$Select[n] == 1){
         
@@ -535,9 +535,16 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
                 Results_List[[y]][n,]<-results[y,]
               }
             }
+          }else{
+            for(y in 1:length(params)){
+              final<-data.frame(as.character(names(s_covstruc$S[n])), test1$lhs[y], test1$op[y], test1$rhs[y],LD_sdiff, Z_diff, NA,NA,NA)
+              final$error<-ifelse(class(part_warn$value) == "lavaan", 0, as.character(part_warn$value$message))[1]
+              final$warning<-ifelse(class(part_warn$warning) == 'NULL', 0, as.character(part_warn$warning$message))[1]
+              colnames(final)<-c("Annotation", "lhs", "op", "rhs", "Cov_Smooth", "Z_smooth", "Enrichment", "Enrichment_SE", "Enrichment_p_value", "Error", "Warning")
+              Results_List[[y]][n,]<-final
+            }
           }
-        }
-        else{
+        }else{
           for(y in 1:length(params)){
             final<-data.frame(as.character(names(s_covstruc$S[n])), test1$lhs[y], test1$op[y], test1$rhs[y],LD_sdiff, Z_diff, NA,NA,NA)
             final$error<-ifelse(class(part_warn$value) == "lavaan", 0, as.character(part_warn$value$message))[1]
@@ -580,4 +587,4 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   time_all<-proc.time()-time
   print(time_all[3])
   
-    }
+}
