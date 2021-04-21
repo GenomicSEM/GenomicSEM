@@ -498,6 +498,15 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
             #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
             SE <- as.matrix(sqrt(diag(Ohtt)))
             
+            ##replace any labels with the actual parameter name
+            for(e in 1:nrow(SE)){
+              for(w in 1:nrow(ModelQ_WLS)){
+                if(rownames(SE)[e] == ModelQ_WLS$label[w]){
+                  rownames(SE)[e]<-paste(ModelQ_WLS$lhs[w], ModelQ_WLS$op[w], ModelQ_WLS$rhs[w], sep = "")
+                }
+              }
+            }
+            
             unstand<-data.frame(inspect(ModelPart_Results, "list")[,c(2:4,7,14)])
             unstand<-subset(unstand, unstand$free != 0)                    
             unstand$free<-NULL
