@@ -1,6 +1,6 @@
 
 
-addGenes <-function(covstruc, Genes){
+addGenes <-function(covstruc, Genes,GC="standard"){
   time<-proc.time()
   
   V_LD<-as.matrix(covstruc[[1]])
@@ -86,6 +86,7 @@ addGenes <-function(covstruc, Genes){
     coords<-which(I_LD != 'NA', arr.ind= T)
     
     #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by Gene variance from reference panel
+    if(GC == "conserv"){
     for (p in 1:nrow(coords)) { 
       x<-coords[p,1]
       y<-coords[p,2]
@@ -95,6 +96,33 @@ addGenes <-function(covstruc, Genes){
         V_Gene[x,x]<-(SE_Gene[i,x]*I_LD[x,x]*varGene[i])^2
       }
     }
+    }
+    if(GC == "standard"){
+      for (p in 1:nrow(coords)) { 
+        x<-coords[p,1]
+        y<-coords[p,2]
+        if (x != y) { 
+          V_Gene[x,y]<-(SE_Gene[i,y]*SE_Gene[i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varGene[i]^2)}
+        if (x == y) {
+          V_Gene[x,x]<-(SE_Gene[i,x]*sqrt(I_LD[x,x])*varGene[i])^2
+        }
+      }
+    }
+    
+ 
+    
+    if(GC == "none"){
+      for (p in 1:nrow(coords)) { 
+        x<-coords[p,1]
+        y<-coords[p,2]
+        if (x != y) { 
+          V_Gene[x,y]<-(SE_Gene[i,y]*SE_Gene[i,x]*I_LD[x,y]*varGene[i]^2)}
+        if (x == y) {
+          V_Gene[x,x]<-(SE_Gene[i,x]*varGene[i])^2
+        }
+      }
+    }
+    
     
     ##create shell of full sampling covariance matrix
     V_Full<-diag(((k+1)*(k+2))/2)
@@ -117,9 +145,9 @@ addGenes <-function(covstruc, Genes){
     
     print(i)
   }
-  
-  ##save the rsnumbers, MAF, A1/A2, and BP
-  Genes2<-Genes[,c(1,4)]
+
+  ##save the GeneID and panel
+  Genes2<-Genes[,c(1,2)]
   
   return(Output <- list(V_Full=V_Full_List,S_Full=S_Full_List,ID=Genes2))
   
