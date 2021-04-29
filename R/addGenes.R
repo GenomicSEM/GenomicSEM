@@ -28,7 +28,7 @@ addGenes <-function(covstruc, Genes,GC="standard"){
   varGene= Genes$HSQ
   
   #small number because treating MAF as fixed
-  varGeneSE2=(.00001)^2
+  varGeneSE2=(.0005)^2
   
   #function to creat row/column names for S_full matrix
   write.names <- function(k, label = "V") {  
