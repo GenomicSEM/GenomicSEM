@@ -90,7 +90,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
      
       names1<-hold_names
       if("INFO" %in% hold_names) cat(print(paste("Interpreting the INFO column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("INFO")] <- "INFO"
+      hold_names[hold_names %in%c("INFO", "IMPINFO")] <- "INFO"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
