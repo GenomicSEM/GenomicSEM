@@ -154,6 +154,11 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       
       names(files[[i]]) <- hold_names
       
+      b<-nrow(files[[i]])
+      files[[i]]<-files[[i]][!duplicated(files[[i]][c("SNP","A1","A2")]),]
+      cat(print(paste((b-nrow(files[[i]])), "rows were removed from the", filenames[i], "summary statistics file due to entries that were duplicated across rsID, A1, and A2.")),file=log.file,sep="\n",append=TRUE)
+      
+      
       # Compute N as N cases and N control if reported:
       if("N_CAS" %in% colnames(files[[i]]) & "N_CON" %in% colnames(files[[i]])){
         files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
@@ -455,6 +460,11 @@ if(int > length){
       hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF_Other"
       
       names(files2) <- hold_names
+      
+      b<-nrow(files2)
+      files2<-files2[!duplicated(files2[c("SNP","A1","A2")]),]
+      cat(print(paste((b-nrow(files2)), "rows were removed from the", filenames[i], "summary statistics file due to entries that were duplicated across rsID, A1, and A2.")),file=log.file,sep="\n",append=TRUE)
+      
       
       # Compute N as N cases and N control if reported:
       if("N_CAS" %in% colnames(files2) & "N_CON" %in% colnames(files2)){
