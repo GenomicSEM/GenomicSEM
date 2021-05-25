@@ -155,8 +155,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       names(files[[i]]) <- hold_names
       
       b<-nrow(files[[i]])
-      files[[i]]<-files[[i]][!duplicated(files[[i]][c("SNP","A1","A2", "CHR","BP")]),]
-      cat(print(paste((b-nrow(files[[i]])), "rows were removed from the", filenames[i], "summary statistics file due to entries that were duplicated across rsID, A1, A2, chromosome and base pair.")),file=log.file,sep="\n",append=TRUE)
+      files[[i]]<-files[[i]][!duplicated(files[[i]][c("SNP","A1","A2")]),]
+      cat(print(paste((b-nrow(files[[i]])), "rows were removed from the", filenames[i], "summary statistics file due to entries that were duplicated across rsID, A1, and A2.")),file=log.file,sep="\n",append=TRUE)
       
       
       # Compute N as N cases and N control if reported:
@@ -462,8 +462,8 @@ if(int > length){
       names(files2) <- hold_names
       
       b<-nrow(files2)
-      files2<-files2[!duplicated(files2[c("SNP","A1","A2","CHR","BP")]),]
-      cat(print(paste((b-nrow(files2)), "rows were removed from the", filenames[i], "summary statistics file due to entries that were duplicated across rsID, A1, A2, chromosome, and base pair.")),file=log.file,sep="\n",append=TRUE)
+      files2<-files2[!duplicated(files2[c("SNP","A1","A2")]),]
+      cat(print(paste((b-nrow(files2)), "rows were removed from the", filenames[i], "summary statistics file due to entries that were duplicated across rsID, A1, and A2.")),file=log.file,sep="\n",append=TRUE)
       
       
       # Compute N as N cases and N control if reported:
