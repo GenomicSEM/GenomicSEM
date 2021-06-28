@@ -27,6 +27,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   if(parallel == FALSE){
     
     log2<-paste(trait.names,collapse="_")
+    log2<-str_remove_all(log2, "/")
     
     #subset log name to first 200 characters    
     if(object.size(log2) > 200){
