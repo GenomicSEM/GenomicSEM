@@ -28,6 +28,11 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     
     log2<-paste(trait.names,collapse="_")
     
+    #subset log name to first 200 characters    
+    if(object.size(log2) > 200){
+      log2<-substr(log2,1,100)
+    }
+    
     log.file <- file(paste0(log2, "_sumstats.log"),open="wt")
     
     cat(print(paste0("The preparation of ", length(trait.names), " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
