@@ -238,13 +238,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           #create unique combination of letters for residual variance parameter labels
           n<-combn(letters,4)[,sample(1:14000, k, replace=FALSE)]
           
-          Model3<-""
-          for (p in 1:k) {
-            linestart3a <- paste(colnames(S_LD)[p], " ~~ ",  paste(n[,p],collapse=""), "*", colnames(S_LD)[p], sep = "")
-            linestart3b <- paste(paste(n[,p],collapse=""), " > .0001", sep = "")
-            Model3<-paste(Model3, linestart3a, " \n ", linestart3b, " \n ", sep = "")}
           
-        Model1<-paste(Model1,Model3)
+      Model3<-""
+      for (p in 1:k) {
+        linestart3a <- paste(colnames(S_LD)[p], " ~~ ",  paste(n[,p],collapse=""), "*", colnames(S_LD)[p], sep = "")
+        linestart3b <- paste(paste(n[,p],collapse=""), " > .0001", sep = "")
+        Model3<-paste(Model3, " \n ", linestart3a, " \n ", linestart3b, " \n ", sep = "")}
+      
+      Model1<-paste(Model1,Model3)
         
         if(estimation == "DWLS"){
         if(std.lv == FALSE){
@@ -268,11 +269,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         }
         
         #if adding in residuals fixed above 0 is duplicating user provided arguments then revert to original model
+       if(class(empty4$value)[1] != "lavaan"){
         if(grepl("duplicate", as.character(empty4$value)[1]) == TRUE){
-          Model1<-model
-        }else{print("The model as initially specified failed to converge. A lower bound of 0 on residual variances was automatically added to try and troubleshoot this. This behavior can be toggled off by setting the fix_resid argument to FALSE.")
-        }
-        
+        Model1<-model
+      }else{print("The model as initially specified failed to converge. A lower bound of 0 on residual variances was automatically added to try and troubleshoot this. This behavior can be toggled off by setting the fix_resid argument to FALSE.")
+      }
+      }else{print("The model as initially specified failed to converge. A lower bound of 0 on residual variances was automatically added to try and troubleshoot this. This behavior can be toggled off by setting the fix_resid argument to FALSE.")}
+     
       }
     }
     
