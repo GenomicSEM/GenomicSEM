@@ -283,11 +283,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
       
       ##invert the reordered sampling covariance matrix to create a weight matrix 
       if(toler==FALSE){
-        W<- solve(V_Full_Reorderb)
+        W<- solve(W)
       }
       
       if(toler!=FALSE){
-        W <- solve(V_Full_Reorderb,tol=toler)
+        W <- solve(W,tol=toler)
       }
       
       #create empty vector for S_SNP
@@ -684,11 +684,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
         
         ##invert the reordered sampling covariance matrix to create a weight matrix 
         if(toler==FALSE){
-          W<- solve(V_Full_Reorderb)
+          W<- solve(W)
         }
         
         if(toler!=FALSE){
-          W <- solve(V_Full_Reorderb,tol=toler)
+          W <- solve(W,tol=toler)
         }
         
         #create empty vector for S_SNP
