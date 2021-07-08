@@ -278,8 +278,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
       #reorder sampling covariance matrix based on what lavaan expects given the specified model
       V_Full_Reorder <- V_Full[order,order]
       u<-nrow(V_Full_Reorder)
-      V_Full_Reorderb<-diag(u)
-      diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
+      W<-diag(u)
+      diag(W)<-diag(V_Full_Reorder)
       
       ##invert the reordered sampling covariance matrix to create a weight matrix 
       if(toler==FALSE){
@@ -679,8 +679,8 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
         #reorder sampling covariance matrix based on what lavaan expects given the specified model
         V_Full_Reorder <- V_Full[order,order]
         u<-nrow(V_Full_Reorder)
-        V_Full_Reorderb<-diag(u)
-        diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
+        W<-diag(u)
+        diag(W)<-diag(V_Full_Reorder)
         
         ##invert the reordered sampling covariance matrix to create a weight matrix 
         if(toler==FALSE){
