@@ -1,5 +1,5 @@
 
-commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,TWAS=FALSE){ 
+commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,TWAS=FALSE,smooth_check=FALSE){ 
   time<-proc.time()
   
   if(exists("Output")){
@@ -29,25 +29,25 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   SNPs<-data.frame(SNPs)
   
   if(TWAS == FALSE){
-  SNPs$A1<-as.character(SNPs$A1)
-  SNPs$A2<-as.character(SNPs$A2)
-  SNPs$SNP<-as.character(SNPs$SNP)
-  
-  #SNP variance
-  varSNP=2*SNPs$MAF*(1-SNPs$MAF)
+    SNPs$A1<-as.character(SNPs$A1)
+    SNPs$A2<-as.character(SNPs$A2)
+    SNPs$SNP<-as.character(SNPs$SNP)
+    
+    #SNP variance
+    varSNP=2*SNPs$MAF*(1-SNPs$MAF)
   }
   
   if(TWAS == TRUE){
-  SNPs$Gene<-as.character(SNPs$Gene)
-  SNPs$Panel<-as.character(SNPs$Panel)
-  varSNP=SNPs$HSQ
+    SNPs$Gene<-as.character(SNPs$Gene)
+    SNPs$Panel<-as.character(SNPs$Panel)
+    varSNP=SNPs$HSQ
   }
   
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
     varSNPSE2=(.0005)^2
   }
-
+  
   if(SNPSE != FALSE){
     varSNPSE2 = SNPSE^2
   }
@@ -61,7 +61,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   
   beta_SNP<-SNPs[,grep("beta.",fixed=TRUE,colnames(SNPs))] 
   SE_SNP<-SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))] 
- 
+  
   #enter in k for number of phenotypes
   k<-ncol(beta_SNP)
   
@@ -69,7 +69,6 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   if(ncol(beta_SNP) != ncol(S_LD)){
     stop("There are different numbers of traits in the sumstats and ldsc output. Please verify that the same summary statistics have been provided to both functions before running commonfactorGWAS.") 
   }
-  
   
   #set univariate intercepts to 1 if estimated below 1
   diag(I_LD)<-ifelse(diag(I_LD)<= 1, 1, diag(I_LD))
@@ -219,10 +218,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     
     order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Fullrun))
   }
-
+  
   
   if(TWAS == FALSE){
-  SNPs2<-SNPs[,1:6]}
+    SNPs2<-SNPs[,1:6]}
   if(TWAS == TRUE){
     SNPs2<-SNPs[,1:3]
   }
@@ -231,8 +230,14 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   if(parallel==FALSE){
     
     ##name the columns of the results file
+    if(smooth_check==FALSE){
     results=as.data.frame(matrix(NA,ncol=10,nrow=f))
     colnames(results)=c("i","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning")
+    }
+    if(smooth_check==TRUE){
+      results=as.data.frame(matrix(NA,ncol=11,nrow=f))
+      colnames(results)=c("i","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning","Z_smooth")
+    }
     
     for (i in 1:f) { 
       
@@ -280,6 +285,19 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         }
       }
       
+      if(smooth_check == TRUE){
+        if(GC == "conserv"){
+          Z_pre<-beta_SNP[i,]/(SE_SNP[i,]*diag(I_LD))
+        }
+        if(GC=="standard"){
+          Z_pre<-beta_SNP[i,]/(SE_SNP[i,]*sqrt(diag(I_LD))) 
+        }
+        if(GC=="none"){
+          Z_pre<-beta_SNP[i,]/SE_SNP[i,] 
+        }
+      }
+      
+      
       ##create shell of full sampling covariance matrix
       V_Full<-diag(((k+1)*(k+2))/2)
       
@@ -293,21 +311,24 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       V_Full[2:(k+1),2:(k+1)]<-V_SNP
       
       kv<-nrow(V_Full)
-      smooth2<-ifelse(eigen(V_Full)$values[kv] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
-      
+      if(eigen(V_Full)$values[kv] <= 0){
+        V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat)
+        V_smooth<-1
+      }
+    
       #reorder sampling covariance matrix based on what lavaan expects given the specified model
       V_Full_Reorder <- V_Full[order,order]
       u<-nrow(V_Full_Reorder)
-      V_Full_Reorderb<-diag(u)
-      diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
+      W<-diag(u)
+      diag(W)<-diag(V_Full_Reorder)
       
       ##invert the reordered sampling covariance matrix to create a weight matrix 
       if(toler==FALSE){
-        W<- solve(V_Full_Reorderb)
+        W<- solve(W)
       }
       
       if(toler!=FALSE){
-        W <- solve(V_Full_Reorderb,tol=toler)
+        W <- solve(W,tol=toler)
       }
       
       #create empty vector for S_SNP
@@ -338,7 +359,20 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       ##smooth to near positive definite if either V or S are non-positive definite
       ks<-nrow(S_Fullrun)
-      smooth1<-ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
+      
+      if(eigen(S_Fullrun)$values[ks] <= 0){
+        S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat)
+        S_smooth<-1
+      }
+      
+      if(smooth_check == TRUE){
+        if(exists("S_smooth") | exists("V_smooth")){
+          SE_smooth<-matrix(0, ks, ks)
+          SE_smooth[lower.tri(SE_smooth,diag=TRUE)] <-sqrt(diag(V_Full))
+          Z_smooth<-(S_Fullrun/SE_smooth)[2:ks,1]
+          Z_smooth<-max(abs(Z_smooth-Z_pre))
+        }else{Z_smooth<-0}
+      }
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       if(estimation == "DWLS"){
@@ -434,29 +468,48 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             Q<-t(eta)%*%P1%*%solve(Eig,tol=toler)%*%t(P1)%*%eta}} else{Q<-"Not Computed"}
         
         ##pull all the results into a single row
+        if(smooth_check == FALSE){
         results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
+        }
+        
+       if(smooth_check == TRUE){
+        results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),Z_smooth,stringsAsFactors = FALSE)
+       }
         
       }else{
+        if(smooth_check == FALSE){
         results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
+        }
+        if(smooth_check == TRUE){
+        results[i,]<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),Z_smooth,stringsAsFactors = FALSE)
+        }
       } 
     }
-    
+
     time_all<-proc.time()-time
     print(time_all[3])
     results$se <- NULL
-    results2<-cbind(SNPs2,results)
-    results2$Z_Estimate<-results2$est/results2$se_c
-    results2$Pval_Estimate<-2*pnorm(abs(results2$Z_Estimate),lower.tail=FALSE)
-    results2$Q_df<-k-1
-    results2$Q_pval<-pchisq(results2$Q,results2$Q_df,lower.tail=FALSE)
-
-    if(TWAS == FALSE){
-    results2<-results2[,c(1:12,16,17,13,18,19,14,15)]}
-    if(TWAS == TRUE){
-      results2<-results2[,c(1:9,13,14,10,15,16,11,12)]
-      results2$rhs<-rep("Gene",nrow(results2))
+    results<-cbind(SNPs2,results)
+    results$Z_Estimate<-results$est/results$se_c
+    results$Pval_Estimate<-2*pnorm(abs(results$Z_Estimate),lower.tail=FALSE)
+    results$Q_df<-k-1
+    results$Q_pval<-pchisq(results$Q,results$Q_df,lower.tail=FALSE)
+    
+    if(TWAS == FALSE & smooth_check == FALSE){
+      results<-results[,c(1:12,16,17,13,18,19,14,15)]
+      }
+    if(TWAS == FALSE & smooth_check == TRUE){
+      results<-results[,c(1:12,17,18,13,19,20,14,15,16)]
+      }
+    if(TWAS == TRUE & smooth_check == FALSE){
+      results<-results[,c(1:9,13,14,10,15,16,11,12)]
+      results$rhs<-rep("Gene",nrow(results))
     }
-    return(results2)
+    if(TWAS == TRUE & smooth_check == TRUE){
+      results<-results[,c(1:9,14,15,10,16,17,11,12,13)]
+      results$rhs<-rep("Gene",nrow(results))
+    }
+    return(results)
     
   }
   
@@ -535,6 +588,18 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
           }
         }
         
+        if(smooth_check == TRUE){
+          if(GC == "conserv"){
+            Z_pre<-beta_SNP[[n]][i,]/(SE_SNP[[n]][i,]*diag(I_LD))
+          }
+          if(GC=="standard"){
+            Z_pre<-beta_SNP[[n]][i,]/(SE_SNP[[n]][i,]*sqrt(diag(I_LD))) 
+          }
+          if(GC=="none"){
+            Z_pre<-beta_SNP[[n]][i,]/SE_SNP[[n]][i,] 
+          }
+        }
+        
         ##create shell of full sampling covariance matrix
         V_Full<-diag(((k+1)*(k+2))/2)
         
@@ -548,21 +613,24 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         V_Full[2:(k+1),2:(k+1)]<-V_SNP
         
         kv<-nrow(V_Full)
-        smooth2<-ifelse(eigen(V_Full)$values[kv] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
+        if(eigen(V_Full)$values[kv] <= 0){
+          V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat)
+          V_smooth<-1
+        }
         
         #reorder sampling covariance matrix based on what lavaan expects given the specified model
         V_Full_Reorder <- V_Full[order,order]
         u<-nrow(V_Full_Reorder)
-        V_Full_Reorderb<-diag(u)
-        diag(V_Full_Reorderb)<-diag(V_Full_Reorder)
+        W<-diag(u)
+        diag(W)<-diag(V_Full_Reorder)
         
         ##invert the reordered sampling covariance matrix to create a weight matrix 
         if(toler==FALSE){
-          W<- solve(V_Full_Reorderb)
+          W<- solve(W)
         }
         
         if(toler!=FALSE){
-          W <- solve(V_Full_Reorderb,tol=toler)
+          W <- solve(W,tol=toler)
         }
         
         #create empty vector for S_SNP
@@ -588,7 +656,19 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         
         ##smooth to near positive definite if either V or S are non-positive definite
         ks<-nrow(S_Fullrun)
-        smooth1<-ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
+        if(eigen(S_Fullrun)$values[ks] <= 0){
+          S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat)
+          S_smooth<-1
+        }
+        
+        if(smooth_check == TRUE){
+          if(exists("S_smooth") | exists("V_smooth")){
+            SE_smooth<-matrix(0, ks, ks)
+            SE_smooth[lower.tri(SE_smooth,diag=TRUE)] <-sqrt(diag(V_Full))
+            Z_smooth<-(S_Fullrun/SE_smooth)[2:ks,1]
+            Z_smooth<-max(abs(Z_smooth-Z_pre))
+          }else{Z_smooth<-0}
+        }
         
         #name the columns
         colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
@@ -686,45 +766,61 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
               #Combining all the pieces from above:
               Q<-t(eta)%*%P1%*%solve(Eig,tol=toler)%*%t(P1)%*%eta}} else{Q<-"Not Computed"}
           
-          ##pull all the results into a single row
-          cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
+          if(smooth_check==TRUE){
+            cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1],Z_smooth)
+          }else{cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])}
           
         }else{
           se<-NA
           se_c<-NA
           Q<-NA
           ##pull all the results into a single row
+          if(smooth_check == FALSE){
           cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],se,se_c,Q,ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1])
-        }
+          }else{cbind(i,n,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],se,se_c,Q,ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1],Z_smooth)}
+            }
+          
       }
     
-    
+  
     ##name the columns of the results file
+    if(smooth_check == FALSE){
     colnames(results)=c("i","n","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning")
+    }
+    if(smooth_check == TRUE){
+      colnames(results)=c("i","n","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning","Z_smooth")
+    }
     
     ##sort results so it is in order of the output lists provided for the function
     results<- results[order(results$i, results$n),] 
     
     results$se <- NULL
-    results2<-cbind(SNPs2,results)
-    results2$Z_Estimate<-results2$est/results2$se_c
-    results2$Pval_Estimate<-2*pnorm(abs(results2$Z_Estimate),lower.tail=FALSE)
-    results2$Q_df<-k-1
-    results2$Q_pval<-pchisq(results2$Q,results2$Q_df,lower.tail=FALSE)
-    results2$i<-1:nrow(results2)
-    results2$n<-NULL
+    results<-cbind(SNPs2,results)
+    results$Z_Estimate<-results$est/results$se_c
+    results$Pval_Estimate<-2*pnorm(abs(results$Z_Estimate),lower.tail=FALSE)
+    results$Q_df<-k-1
+    results$Q_pval<-pchisq(results$Q,results$Q_df,lower.tail=FALSE)
+    results$i<-1:nrow(results)
+    results$n<-NULL
     
-    
-    if(TWAS == FALSE){
-      results2<-results2[,c(1:12,16,17,13,18,19,14,15)]}
-    if(TWAS == TRUE){
-      results2<-results2[,c(1:9,13,14,10,15,16,11,12)]
-      results2$rhs<-rep("Gene",nrow(results2))
+    if(TWAS == FALSE & smooth_check == FALSE){
+      results<-results[,c(1:12,16,17,13,18,19,14,15)]
+      }
+    if(TWAS == FALSE & smooth_check == TRUE){
+      results<-results[,c(1:12,17,18,13,19,20,14,15,16)]
+      }
+    if(TWAS == TRUE & smooth_check == FALSE){
+      results<-results[,c(1:9,13,14,10,15,16,11,12)]
+      results$rhs<-rep("Gene",nrow(results))
     }
-    
+    if(TWAS == TRUE & smooth_check == TRUE){
+      results<-results[,c(1:9,14,15,10,16,17,11,12,13)]
+      results$rhs<-rep("Gene",nrow(results))
+    }
+
     time_all<-proc.time()-time
     print(time_all[3])
-    return(results2)
+    return(results)
     
   }
   
