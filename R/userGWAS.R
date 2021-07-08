@@ -1,4 +1,4 @@
-userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=TRUE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE){ 
+userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=TRUE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,smooth_check=FALSE){ 
   time<-proc.time()
   
   if(exists("Output")){
@@ -99,72 +99,71 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
                                      warning = w.handler),
          warning = W)
   }
-
-
-    coords<-which(I_LD != 'NA', arr.ind= T)
-    i<-1
-    #create empty shell of V_SNP matrix
-    V_SNP<-diag(k)
-    
-    #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-    for (p in 1:nrow(coords)) { 
-      x<-coords[p,1]
-      y<-coords[p,2]
-      if (x != y) { 
-        V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-      if (x == y) {
-        V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
-      }
-    }
-    
-    ##create shell of full sampling covariance matrix
-    V_Full<-diag(((k+1)*(k+2))/2)
-    
-    ##input the ld-score regression region of sampling covariance from ld-score regression SEs
-    V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
-    
-    ##add in SE of SNP variance as first observation in sampling covariance matrix
-    V_Full[1,1]<-varSNPSE2
-    
-    ##add in SNP region of sampling covariance matrix
-    V_Full[2:(k+1),2:(k+1)]<-V_SNP
-    
-    kv<-nrow(V_Full)
-    smooth2<-ifelse(eigen(V_Full)$values[kv] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
-    
-    #create empty vector for S_SNP
-    S_SNP<-vector(mode="numeric",length=k+1)
-    
-    #enter SNP variance from reference panel as first observation
-    S_SNP[1]<-varSNP[i]
-    
-    #enter SNP covariances (standardized beta * SNP variance from refference panel)
-    for (p in 1:k) {
-      S_SNP[p+1]<-varSNP[i]*beta_SNP[i,p]
-    }
-    
-    #create shell of the full S (observed covariance) matrix
-    S_Full<-diag(k+1)
-    
-    ##add the LD portion of the S matrix
-    S_Full[(2:(k+1)),(2:(k+1))]<-S_LD
-    
-    ##add in observed SNP variances as first row/column
-    S_Full[1:(k+1),1]<-S_SNP
-    S_Full[1,1:(k+1)]<-t(S_SNP)
-    
-    ##pull in variables names specified in LDSC function and name first column as SNP
-    colnames(S_Full)<-c("SNP", colnames(S_LD))
-    
-    ##name rows like columns
-    rownames(S_Full)<-colnames(S_Full)
-    
-    ##smooth to near positive definite if either V or S are non-positive definite
-    ks<-nrow(S_Full)
-    smooth1<-ifelse(eigen(S_Full)$values[ks] <= 0, S_Full<-as.matrix((nearPD(S_Full, corr = FALSE))$mat), S_Full<-S_Full)
-    
-    k2<-ncol(S_Full)
   
+  
+  coords<-which(I_LD != 'NA', arr.ind= T)
+  i<-1
+  #create empty shell of V_SNP matrix
+  V_SNP<-diag(k)
+  
+  #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+  for (p in 1:nrow(coords)) { 
+    x<-coords[p,1]
+    y<-coords[p,2]
+    if (x != y) { 
+      V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
+    if (x == y) {
+      V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+    }
+  }
+  
+  ##create shell of full sampling covariance matrix
+  V_Full<-diag(((k+1)*(k+2))/2)
+  
+  ##input the ld-score regression region of sampling covariance from ld-score regression SEs
+  V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
+  
+  ##add in SE of SNP variance as first observation in sampling covariance matrix
+  V_Full[1,1]<-varSNPSE2
+  
+  ##add in SNP region of sampling covariance matrix
+  V_Full[2:(k+1),2:(k+1)]<-V_SNP
+  
+  kv<-nrow(V_Full)
+  smooth2<-ifelse(eigen(V_Full)$values[kv] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
+  
+  #create empty vector for S_SNP
+  S_SNP<-vector(mode="numeric",length=k+1)
+  
+  #enter SNP variance from reference panel as first observation
+  S_SNP[1]<-varSNP[i]
+  
+  #enter SNP covariances (standardized beta * SNP variance from refference panel)
+  for (p in 1:k) {
+    S_SNP[p+1]<-varSNP[i]*beta_SNP[i,p]
+  }
+  
+  #create shell of the full S (observed covariance) matrix
+  S_Full<-diag(k+1)
+  
+  ##add the LD portion of the S matrix
+  S_Full[(2:(k+1)),(2:(k+1))]<-S_LD
+  
+  ##add in observed SNP variances as first row/column
+  S_Full[1:(k+1),1]<-S_SNP
+  S_Full[1,1:(k+1)]<-t(S_SNP)
+  
+  ##pull in variables names specified in LDSC function and name first column as SNP
+  colnames(S_Full)<-c("SNP", colnames(S_LD))
+  
+  ##name rows like columns
+  rownames(S_Full)<-colnames(S_Full)
+  
+  ##smooth to near positive definite if either V or S are non-positive definite
+  ks<-nrow(S_Full)
+  smooth1<-ifelse(eigen(S_Full)$values[ks] <= 0, S_Full<-as.matrix((nearPD(S_Full, corr = FALSE))$mat), S_Full<-S_Full)
+  
+  k2<-ncol(S_Full)
   
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
@@ -194,10 +193,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
     #f = number of SNPs in dataset
     f=nrow(beta_SNP) 
     
-    #make empty list object for model results
+    #make empty list object for model results if not saving specific model parameter
     if(sub[[1]]==FALSE){
       Results_List<-vector(mode="list",length=f)}
-    
     
     print("Starting GWAS Estimation")
     for (i in 1:f) { 
@@ -205,9 +203,9 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
       #create empty shell of V_SNP matrix
       V_SNP<-diag(k)
       
-      #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+      #loops to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
       
-      #double GC correctiong using univariate LDSC intercepts
+      #double GC correction using univariate LDSC intercepts
       if(GC == "conserv"){
         for (p in 1:nrow(coords)) { 
           x<-coords[p,1]
@@ -246,6 +244,18 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
         }
       }
       
+      if(smooth_check == TRUE){
+        if(GC == "conserv"){
+          Z_pre<-beta_SNP[i,]/(SE_SNP[i,]*diag(I_LD))
+        }
+        if(GC=="standard"){
+          Z_pre<-beta_SNP[i,]/(SE_SNP[i,]*sqrt(diag(I_LD))) 
+        }
+        if(GC=="none"){
+          Z_pre<-beta_SNP[i,]/SE_SNP[i,] 
+        }
+      }
+      
       ##create shell of full sampling covariance matrix
       V_Full<-diag(((k+1)*(k+2))/2)
       
@@ -259,7 +269,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
       V_Full[2:(k+1),2:(k+1)]<-V_SNP
       
       kv<-nrow(V_Full)
-      smooth2<-ifelse(eigen(V_Full)$values[kv] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
+      
+      if(eigen(V_Full)$values[kv] <= 0){
+        V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat)
+        V_smooth<-1
+      }
       
       #reorder sampling covariance matrix based on what lavaan expects given the specified model
       V_Full_Reorder <- V_Full[order,order]
@@ -299,18 +313,32 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
       
       ##smooth to near positive definite if either V or S are non-positive definite
       ks<-nrow(S_Fullrun)
-      smooth1<-ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
-
-        #name the columns
-        colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
-        
-        ##name rows like columns
-        rownames(S_Fullrun)<-colnames(S_Fullrun)
+      
+      if(eigen(S_Fullrun)$values[ks] <= 0){
+        S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat)
+        S_smooth<-1
+      }
+      
+      if(smooth_check == TRUE){
+        if(exists("S_smooth") | exists("V_smooth")){
+          SE_smooth<-matrix(0, ks, ks)
+          SE_smooth[lower.tri(SE_smooth,diag=TRUE)] <-sqrt(diag(V_Full))
+          Z_smooth<-(S_Fullrun/SE_smooth)[2:ks,1]
+          Z_smooth<-max(abs(Z_smooth-Z_pre))
+        }else{Z_smooth<-0}
+      }
+      
+      #name the columns
+      colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
+      
+      ##name rows like columns
+      rownames(S_Fullrun)<-colnames(S_Fullrun)
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       if(estimation == "DWLS"){
         test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
       }
+      
       if(estimation == "ML"){
         test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
       }
@@ -443,17 +471,17 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
           final$SE<-as.character(final$SE)
           final$Z_Estimate<-NA
           final$Pval_Estimate<-NA}
-      
-          ##add in model fit components to each row
-          if(!(is.na(Q))){
-            final$chisq<-rep(Q,nrow(final))
-            final$chisq_df<-df
-            final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-            final$AIC<-rep(Q + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
-            final$chisq_df<-rep(NA,nrow(final))
-            final$chisq_pval<-rep(NA,nrow(final))
-            final$AIC<-rep(NA, nrow(final))}
-
+        
+        ##add in model fit components to each row
+        if(!(is.na(Q))){
+          final$chisq<-rep(Q,nrow(final))
+          final$chisq_df<-df
+          final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
+          final$AIC<-rep(Q + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+          final$chisq_df<-rep(NA,nrow(final))
+          final$chisq_pval<-rep(NA,nrow(final))
+          final$AIC<-rep(NA, nrow(final))}
+        
         ##add in error and warning messages 
         if(printwarn == TRUE){
           final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
@@ -461,6 +489,10 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
         
         ##combine results with SNP, CHR, BP, A1, A2 for particular model
         final2<-cbind(SNPs2[i,],final,row.names=NULL)
+        
+        if(smooth_check==TRUE){
+          final2<-cbind(final2,Z_smooth)
+        }
         
         if(!(sub[[1]])==FALSE){
           final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
@@ -481,7 +513,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
           final2$est<-ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
           Results_List[[i]]<-final2}
       }else{
-          final<-data.frame(t(rep(NA, 13)))
+        final<-data.frame(t(rep(NA, 13)))
         if(printwarn == TRUE){
           final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
           if(resid_var2 != -9){
@@ -492,11 +524,17 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
         ##combine results with SNP, CHR, BP, A1, A2 for particular model
         final2<-cbind(SNPs2[i,],final,row.names=NULL)
         
+        if(smooth_check==TRUE){
+          final2<-cbind(final2,Z_smooth)
+        }
+        
         if(!(sub[[1]])==FALSE){
           final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
           final3[1:length(sub),]<-final2[1,]
-          colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-
+          if(smooth_check == TRUE){
+            colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning","Z_smooth")
+          }else{colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")}
+          
           if(i == 1){
             Results_List<-vector(mode="list",length=length(sub))
             for(y in 1:length(sub)){
@@ -607,6 +645,19 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
           }
         }
         
+        if(smooth_check == TRUE){
+          if(GC == "conserv"){
+            Z_pre<-beta_SNP[[n]][i,]/(SE_SNP[[n]][i,]*diag(I_LD))
+          }
+          if(GC=="standard"){
+            Z_pre<-beta_SNP[[n]][i,]/(SE_SNP[[n]][i,]*sqrt(diag(I_LD))) 
+          }
+          if(GC=="none"){
+            Z_pre<-beta_SNP[[n]][i,]/SE_SNP[[n]][i,] 
+          }
+        }
+        
+        
         ##create shell of full sampling covariance matrix
         V_Full<-diag(((k+1)*(k+2))/2)
         
@@ -620,8 +671,11 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
         V_Full[2:(k+1),2:(k+1)]<-V_SNP
         
         kv<-nrow(V_Full)
-        smooth2<-ifelse(eigen(V_Full)$values[kv] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
-        
+        if(eigen(V_Full)$values[kv] <= 0){
+          V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat)
+          V_smooth<-1
+        }
+  
         #reorder sampling covariance matrix based on what lavaan expects given the specified model
         V_Full_Reorder <- V_Full[order,order]
         u<-nrow(V_Full_Reorder)
@@ -660,14 +714,25 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
         
         ##smooth to near positive definite if either V or S are non-positive definite
         ks<-nrow(S_Fullrun)
-        smooth1<-ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
-
-          #name the columns
-          colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
-          
-          ##name rows like columns
-          rownames(S_Fullrun)<-colnames(S_Fullrun)
+        if(eigen(S_Fullrun)$values[ks] <= 0){
+          S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat)
+          S_smooth<-1
+        }
         
+        if(smooth_check == TRUE){
+          if(exists("S_smooth") | exists("V_smooth")){
+            SE_smooth<-matrix(0, ks, ks)
+            SE_smooth[lower.tri(SE_smooth,diag=TRUE)] <-sqrt(diag(V_Full))
+            Z_smooth<-(S_Fullrun/SE_smooth)[2:ks,1]
+            Z_smooth<-max(abs(Z_smooth-Z_pre))
+          }else{Z_smooth<-0}
+        }
+        
+        #name the columns
+        colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
+        
+        ##name rows like columns
+        rownames(S_Fullrun)<-colnames(S_Fullrun)
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
         if(estimation == "DWLS"){
@@ -779,7 +844,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
           implied2<-S_Fullrun-implied[[1]]
           eta<-as.vector(lowerTriangle(implied2,diag=TRUE))
           Q<-t(eta)%*%P1%*%solve(Eig2)%*%t(P1)%*%eta
-
+          
           ##remove parameter constraints, ghost parameters, and fixed effects from output to merge with SEs
           unstand<-subset(Model_Output, Model_Output$plabel != "" & Model_Output$free > 0)[,c(2:4,8,11,14)]
           
@@ -810,17 +875,16 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
             final$SE<-as.character(final$SE)
             final$Z_Estimate<-NA
             final$Pval_Estimate<-NA}
-
-            ##add in model fit components to each row
-            if(!(is.na(Q))){
-              final$chisq<-rep(Q,nrow(final))
-              final$chisq_df<-df
-              final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
-              final$AIC<-rep(Q + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
-              final$chisq_df<-rep(NA,nrow(final))
-              final$chisq_pval<-rep(NA,nrow(final))
-              final$AIC<-rep(NA, nrow(final))}
-
+          
+          ##add in model fit components to each row
+          if(!(is.na(Q))){
+            final$chisq<-rep(Q,nrow(final))
+            final$chisq_df<-df
+            final$chisq_pval<-pchisq(final$chisq,final$chisq_df,lower.tail=FALSE)
+            final$AIC<-rep(Q + 2*npar,nrow(final))}else{final$chisq<-rep(NA, nrow(final))
+            final$chisq_df<-rep(NA,nrow(final))
+            final$chisq_pval<-rep(NA,nrow(final))
+            final$AIC<-rep(NA, nrow(final))}
           
           ##add in error and warning messages 
           if(printwarn == TRUE){
@@ -829,6 +893,10 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
           
           ##combine with rs-id, BP, CHR, etc.
           final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
+          
+          if(smooth_check==TRUE){
+            final2<-cbind(final2,Z_smooth)
+          }
           
           if(!(sub[[1]])==FALSE){
             final2<-subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
@@ -839,19 +907,22 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
           final2
           
         }else{ 
+          
+          final<-data.frame(t(rep(NA, 13)))
+          if(printwarn == TRUE){
+            final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
+            if(resid_var2 != -9){
+              final$error<-c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
+            }
+            final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+          
+          ##combine results with SNP, CHR, BP, A1, A2 for particular model
+          final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
+          if(smooth_check==TRUE){
+            final2<-cbind(final2,Z_smooth)
+            colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning","Z_smooth")
+          }else{colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")}
         
-            final<-data.frame(t(rep(NA, 13)))
-            if(printwarn == TRUE){
-              final$error<-ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
-              if(resid_var2 != -9){
-                final$error<-c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
-              }
-              final$warning<-ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
-            
-            ##combine results with SNP, CHR, BP, A1, A2 for particular model
-            final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
-            colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-   
           final2
         }
         
