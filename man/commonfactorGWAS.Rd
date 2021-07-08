@@ -5,7 +5,7 @@
 Function to obtain SNP effects on common factor along with index of SNP heterogeneity
 }
 \usage{
-commonfactorGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,TWAS=FALSE, \dots)
+commonfactorGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,TWAS=FALSE,smooth_check=FALSE, \dots)
 
 }
 \arguments{
@@ -19,6 +19,7 @@ commonfactorGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALS
    \item{GC}{Level of Genomic Control (GC) you want the function to use. The default is 'standard' which adjusts the univariate GWAS standard errors by multiplying them by the square root of the univariate LDSC intercept. Additional options include 'conserv' which corrects standard errors using the univariate LDSC intercept, and 'none' which does not correct the standard errors.}
    \item{MPI}{Whether the function should use multi-node processing (i.e., MPI). Please note that this should only be used on a computing cluster on which the R pacakge Rmpi is already installed.} 
    \item{TWAS}{Whether the function is being used to estimate a multivariate TWAS using read_fusion output for the SNPs argument.} 
+   \item{smooth_check}{Whetehr the function should save the consequent largest Zstatistic difference between the pre and post-smooth matrices.} 
 }
 
 \value{
