@@ -1,5 +1,5 @@
 
-usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE,fix_resid=TRUE){ 
+usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE,fix_resid=TRUE,toler=FALSE){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
   test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
@@ -292,7 +292,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     S2.W <- lavInspect(Model1_Results, "WLS.V") 
     
     #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+  if(toler != FALSE){
+  bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler)) 
+  }
+  
+  if(toler == FALSE){
     bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt)) 
+  }    
+         
     
     if(!(is.null(empty4$warning))){
       if(lavInspect(Model1_Results,"converged") == FALSE){
@@ -570,8 +577,15 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         delt_stand <- lavInspect(Fit_stand, "delta") 
         
         W_stand <- lavInspect(Fit_stand, "WLS.V") 
-        bread_stand2<-tryCatch.W.E(bread_stand <- solve(t(delt_stand)%*%W_stand %*%delt_stand)) 
         
+        if(toler==FALSE){
+      bread_stand2<-tryCatch.W.E(bread_stand <- solve(t(delt_stand)%*%W_stand %*%delt_stand)) 
+      }
+      
+      if(toler!=FALSE){
+        bread_stand2<-tryCatch.W.E(bread_stand <- solve(t(delt_stand)%*%W_stand %*%delt_stand,tol=toler)) 
+      }
+      
         
         if(class(bread_stand2$value)[1] != "matrix" | lavInspect(Fit_stand,"converged") == FALSE | class(emptystand)[1] == "simpleError"){
           warning("The standardized model failed to converge. This likely indicates more general problems with the model solution. Unstandardized results are printed below but this should be interpreted with caution.")
