@@ -1,4 +1,4 @@
-userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=TRUE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,smooth_check=FALSE){ 
+userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=TRUE,printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,smooth_check=FALSE,TWAS=FALSE,std.lv=FALSE){ 
   time<-proc.time()
   
   if(exists("Output")){
@@ -37,12 +37,22 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
   
   ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
   SNPs<-data.frame(SNPs)
-  SNPs$A1<-as.character(SNPs$A1)
-  SNPs$A2<-as.character(SNPs$A2)
-  SNPs$SNP<-as.character(SNPs$SNP)
   
-  #SNP variance
-  varSNP=2*SNPs$MAF*(1-SNPs$MAF)  
+  if(TWAS == FALSE){
+    SNPs$A1<-as.character(SNPs$A1)
+    SNPs$A2<-as.character(SNPs$A2)
+    SNPs$SNP<-as.character(SNPs$SNP)
+    
+    #SNP variance
+    varSNP=2*SNPs$MAF*(1-SNPs$MAF)
+  }
+  
+  if(TWAS == TRUE){
+    SNPs$Gene<-as.character(SNPs$Gene)
+    SNPs$Panel<-as.character(SNPs$Panel)
+    varSNP=SNPs$HSQ
+  }
+
   
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
@@ -154,7 +164,13 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
   S_Full[1,1:(k+1)]<-t(S_SNP)
   
   ##pull in variables names specified in LDSC function and name first column as SNP
+  if(TWAS == FALSE){
   colnames(S_Full)<-c("SNP", colnames(S_LD))
+  }
+  
+  if(TWAS == TRUE){
+    colnames(S_Full)<-c("Gene", colnames(S_LD))
+  }
   
   ##name rows like columns
   rownames(S_Full)<-colnames(S_Full)
@@ -176,7 +192,12 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
       W <- solve(V_Full,tol=toler)
     }
     
+    if(std.lv == FALSE){
     test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
+    }
+    if(std.lv == TRUE){
+      test2<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1),std.lv=TRUE))
+    }
     
     order <- rearrange(k = k2, fit = ReorderModel, names = rownames(S_Full))
     
@@ -185,9 +206,15 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
     
   }
   
-  SNPs2<-SNPs[,1:6]
-  rm(SNPs)
+  if(TWAS == FALSE){
+    SNPs2<-SNPs[,1:6]}
   
+  if(TWAS == TRUE){
+    SNPs2<-SNPs[,1:3]
+  }
+  
+  rm(SNPs)
+
   if(parallel==FALSE){
     
     #f = number of SNPs in dataset
@@ -197,7 +224,14 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
     if(sub[[1]]==FALSE){
       Results_List<-vector(mode="list",length=f)}
     
+    if(TWAS == FALSE){
     print("Starting GWAS Estimation")
+    }
+    
+    if(TWAS == TRUE){
+      print("Starting TWAS Estimation")
+    }
+    
     for (i in 1:f) { 
       
       #create empty shell of V_SNP matrix
@@ -329,19 +363,36 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
       }
       
       #name the columns
+      if(TWAS == FALSE){
       colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
+      }
+      
+      if(TWAS == TRUE){
+        colnames(S_Fullrun)<-c("Gene", colnames(S_LD))
+      }
+      
       
       ##name rows like columns
       rownames(S_Fullrun)<-colnames(S_Fullrun)
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       if(estimation == "DWLS"){
+        if(std.lv == FALSE){
         test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
-      }
+        }
+        if(std.lv == TRUE){
+          test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,std.lv=TRUE))
+        }
+        }
       
       if(estimation == "ML"){
+        if(std.lv == FALSE){
         test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
-      }
+        }
+        if(std.lv == TRUE){
+          test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE,std.lv=TRUE))
+        }
+        }
       
       test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
       
@@ -531,9 +582,18 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
         if(!(sub[[1]])==FALSE){
           final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
           final3[1:length(sub),]<-final2[1,]
+          
+          if(TWAS == FALSE){
           if(smooth_check == TRUE){
             colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning","Z_smooth")
           }else{colnames(final3)<-c("SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")}
+          }
+          
+          if(TWAS == TRUE){
+            if(smooth_check == TRUE){
+              colnames(final3)<-c("Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning","Z_smooth")
+            }else{colnames(final3)<-c("Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")}
+          }
           
           if(i == 1){
             Results_List<-vector(mode="list",length=length(sub))
@@ -599,7 +659,12 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
     SE_SNP<-suppressWarnings(split(SE_SNP,1:int))
     varSNP<-suppressWarnings(split(varSNP,1:int))
     
+    if(TWAS == FALSE){
     print("Starting GWAS Estimation")
+    }
+    if(TWAS == TRUE){
+      print("Starting TWAS Estimation")
+    }
     
     results<-foreach(n = icount(int), .combine = 'rbind') %:% 
       
@@ -675,7 +740,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
           V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat)
           V_smooth<-1
         }
-  
+        
         #reorder sampling covariance matrix based on what lavaan expects given the specified model
         V_Full_Reorder <- V_Full[order,order]
         u<-nrow(V_Full_Reorder)
@@ -729,18 +794,33 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
         }
         
         #name the columns
+        if(TWAS == FALSE){
         colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
+        }
+        if(TWAS == TRUE){
+          colnames(S_Fullrun)<-c("Gene", colnames(S_LD))
+        }
         
         ##name rows like columns
         rownames(S_Fullrun)<-colnames(S_Fullrun)
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
         if(estimation == "DWLS"){
+          if(std.lv == FALSE){
           test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
-        }
+          }
+          if(std.lv == TRUE){
+            test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,std.lv=TRUE))
+          }
+           }
         if(estimation == "ML"){
+          if(std.lv == FALSE){
           test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
-        }
+          }
+          if(std.lv == TRUE){
+            test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE,std.lv=TRUE))
+          }
+           }
         
         test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
         
@@ -920,9 +1000,21 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
           final2<-cbind(i,n,SNPs2[[n]][i,],final,row.names=NULL)
           if(smooth_check==TRUE){
             final2<-cbind(final2,Z_smooth)
+            if(TWAS == FALSE){
             colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning","Z_smooth")
-          }else{colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")}
-        
+            }
+            if(TWAS == TRUE){
+              colnames(final2)<-c("i", "n","Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning","Z_smooth")
+            }
+          }else{
+            if(TWAS == FALSE){
+              colnames(final2)<-c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+            }
+            if(TWAS == TRUE){
+              colnames(final2)<-c("i", "n", "SNP", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+            }
+              }
+          
           final2
         }
         
@@ -943,6 +1035,7 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
       rm(results)
     }
     
+    if(TWAS == FALSE){
     if(sub[[1]]==FALSE){
       names<-unique(results$SNP)
       Results_List<-vector(mode="list",length=length(names))
@@ -952,6 +1045,21 @@ userGWAS<-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",modelchi=T
       }
       rm(results)
       rm(names)
+    }
+    }
+    
+    
+    if(TWAS == TRUE){
+      if(sub[[1]]==FALSE){
+        names<-unique(results$Panel)
+        Results_List<-vector(mode="list",length=length(names))
+        for(y in 1:length(names)){
+          Results_List[[y]]<-subset(results, results$Panel == names[[y]])
+          Results_List[[y]]$Model_Number<-NULL
+        }
+        rm(results)
+        rm(names)
+      }
     }
     
     time_all<-proc.time()-time
