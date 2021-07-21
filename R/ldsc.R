@@ -109,7 +109,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
       }))
     }
     if(select == "ODD"){
-      w <- do.call("rbind", lapply(even, function(i) {
+      w <- do.call("rbind", lapply(odd, function(i) {
         suppressMessages(read_delim(
           file.path(wld, paste0(i, ".l2.ldscore.gz")),
           delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE))
