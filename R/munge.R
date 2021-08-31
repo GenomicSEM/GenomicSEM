@@ -49,7 +49,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01,
     )
 
     for (col in names(interpreted_names)) {
-      if (col in names(column_names)) {
+      if (col %in% names(column_names)) {
         cat(print(paste("Interpreting the",column_names[[col]],"column as the ",col, " column, as requested")),file=log.file,sep="\n",append=TRUE)
         hold_names[ hold_names == toupper(column_names[[col]]) ] <- col
       } else if(col %in% hold_names) {
