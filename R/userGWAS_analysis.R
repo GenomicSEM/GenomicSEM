@@ -1,8 +1,9 @@
 # Created by: mze210
 # Created on: 24/08/2021
 
-.userGWAS_analysis <- function(i, k, SNPs2, beta_SNP, SE_SNP, varSNP, GC, coords, smooth_check, TWAS, printwarn) {
+.userGWAS_analysis <- function(i, k, I_LD, V_LD, S_LD, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC, coords, smooth_check, TWAS, printwarn) {
     #create empty shell of V_SNP matrix
+    
         V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, GC, coords, k, i)
         if(smooth_check){
           if(GC == "conserv"){
@@ -101,18 +102,18 @@
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
         if(estimation == "DWLS"){
           if(std.lv == FALSE){
-          test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
+          test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
           }
           if(std.lv == TRUE){
-            test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,std.lv=TRUE))
+            test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,std.lv=TRUE))
           }
            }
         if(estimation == "ML"){
           if(std.lv == FALSE){
-          test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+          test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
           }
           if(std.lv == TRUE){
-            test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE,std.lv=TRUE))
+            test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE,std.lv=TRUE))
           }
            }
         

@@ -206,7 +206,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
         if(i %% 1000==0) {
           cat(paste0("Running Model: ", i, "\n"))
         }}
-      final2 <- .userGWAS_analysis(i, k, SNPs2, beta_SNP, SE_SNP, varSNP, GC, coords, smooth_check, TWAS, printwarn)
+      final2 <- .userGWAS_analysis(i, k, I_LD, V_LD, S_LD,varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC, coords, smooth_check, TWAS, printwarn)
       if(!(sub[[1]])==FALSE){
         final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
         final3[1:length(sub),]<-final2[1,]
