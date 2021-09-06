@@ -186,7 +186,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   }
 
   rm(SNPs)
-
+  f=nrow(beta_SNP)
   if(parallel==FALSE){
     #make empty list object for model results if not saving specific model parameter
     if(sub[[1]]==FALSE){
@@ -203,10 +203,12 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
       if(i == 1){
         cat(paste0("Running Model: ", i, "\n"))
       }else{
-        if(i %% 1000==0) {
+        if(i %% 10==0) {
           cat(paste0("Running Model: ", i, "\n"))
         }}
-      final2 <- .userGWAS_analysis(i, k, I_LD, V_LD, S_LD,varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC, coords, smooth_check, TWAS, printwarn)
+      n=1
+      final2 <- .userGWAS_analysis(i, k, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC, 
+                                   coords, smooth_check, TWAS, printwarn, toler, estimation, sub)
       if(!(sub[[1]])==FALSE){
         final3<-as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
         final3[1:length(sub),]<-final2[1,]
@@ -274,7 +276,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
     foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% {
 
       .userGWAS_analysis(i, k, SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]],
-                         GC, coords, smooth_check, TWAS, printwarn)
+                         GC, coords, smooth_check, TWAS, printwarn, toler)
 
     }
 

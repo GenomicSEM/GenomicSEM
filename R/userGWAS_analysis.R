@@ -1,7 +1,8 @@
 # Created by: mze210
 # Created on: 24/08/2021
 
-.userGWAS_analysis <- function(i, k, I_LD, V_LD, S_LD, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC, coords, smooth_check, TWAS, printwarn) {
+.userGWAS_analysis <- function(i, k, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC, 
+                               coords, smooth_check, TWAS, printwarn, toler, estimation, sub) {
     #create empty shell of V_SNP matrix
     
         V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, GC, coords, k, i)
