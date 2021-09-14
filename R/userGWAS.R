@@ -46,23 +46,23 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   if (TWAS) {
     SNPs$Gene <- as.character(SNPs$Gene)
     SNPs$Panel <- as.character(SNPs$Panel)
-    varSNP=SNPs$HSQ
+    varSNP <- SNPs$HSQ
   } else {
     SNPs$A1 <- as.character(SNPs$A1)
     SNPs$A2 <- as.character(SNPs$A2)
     SNPs$SNP <- as.character(SNPs$SNP)
 
     #SNP variance
-    varSNP=2*SNPs$MAF*(1-SNPs$MAF)
+    varSNP <- 2*SNPs$MAF*(1-SNPs$MAF)
   }
 
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
-    varSNPSE2=(.0005)^2
+    varSNPSE2 <- (.0005)^2
   }
 
   if(SNPSE != FALSE){
-    varSNPSE2 = SNPSE^2
+    varSNPSE2 <- SNPSE^2
   }
 
   V_LD <- as.matrix(covstruc[[1]])
@@ -185,7 +185,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   }
 
   rm(SNPs)
-  f=nrow(beta_SNP)
+  f <- nrow(beta_SNP)
   if(parallel==FALSE){
     #make empty list object for model results if not saving specific model parameter
     if(sub[[1]]==FALSE){
@@ -205,7 +205,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
         if(i %% 1000==0) {
           cat(paste0("Running Model: ", i, "\n"))
         }}
-      n=1
+      n <- 1
       final2 <- .userGWAS_analysis(i, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
       coords, smooth_check, TWAS, printwarn, toler, estimation, sub)
       if(sub[[1]]){
@@ -227,7 +227,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
         Results_List[[i]] <- final2
       }
     }
-
+    results$n <- NULL
     time_all <- proc.time()-time
     print(time_all[3])
 
@@ -274,7 +274,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
 
     foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% {
 
-      .userGWAS_analysis(i, n_ph, SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]],
+      .userGWAS_analysis(i, n_phenotypes, SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]],
       GC, coords, smooth_check, TWAS, printwarn, toler)
 
     }

@@ -1,7 +1,7 @@
 # Created by: mze210
 # Created on: 24/08/2021
 
-.userGWAS_analysis <- function(i, k, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
+.userGWAS_analysis <- function(i, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
 coords, smooth_check, TWAS, printwarn, toler, estimation, sub) {
     #create empty shell of V_SNP matrix
 
@@ -57,7 +57,7 @@ coords, smooth_check, TWAS, printwarn, toler, estimation, sub) {
     S_SNP[1]<-varSNP[i]
 
     #enter SNP covariances (standardized beta * SNP variance from refference panel)
-    for (p in 1:k) {
+    for (p in 1:n_phenotypes) {
         S_SNP[p+1]<-varSNP[i]*beta_SNP[i,p]
     }
 
@@ -65,11 +65,11 @@ coords, smooth_check, TWAS, printwarn, toler, estimation, sub) {
     S_Fullrun<-diag(k+1)
 
     ##add the LD portion of the S matrix
-    S_Fullrun[(2:(k+1)),(2:(k+1))]<-S_LD
+    S_Fullrun[(2:(n_phenotypes+1)),(2:(n_phenotypes+1))]<-S_LD
 
     ##add in observed SNP variances as first row/column
-    S_Fullrun[1:(k+1),1]<-S_SNP
-    S_Fullrun[1,1:(k+1)]<-t(S_SNP)
+    S_Fullrun[1:(n_phenotypes+1),1]<-S_SNP
+    S_Fullrun[1,1:(n_phenotypes+1)]<-t(S_SNP)
 
     ##smooth to near positive definite if either V or S are non-positive definite
     ks<-nrow(S_Fullrun)
