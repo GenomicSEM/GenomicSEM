@@ -1,6 +1,6 @@
 \name{userGWAS}
 \alias{userGWAS}
-\title{Create genetic covariance matrices for individaul SNPs and estimate SNP effects for a user specified multivariate GWAS}
+\title{Create genetic covariance matrices for individual SNPs and estimate SNP effects for a user specified multivariate GWAS}
 \description{
 Function to obtain model estimates for a user-specified model across SNPs. 
 }
@@ -19,8 +19,8 @@ userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",printwarn=TRUE,sub=F
    \item{SNPSE}{Whether the user wants to provide a different standard error (SE) of the SNP variance than the package default. The default is to use .0005 to reflect the fact that the SNP SE is assumed to be population fixed.}
    \item{parallel}{Whether the function should run using parallel or serial processing. Default = TRUE}
    \item{GC}{Level of Genomic Control (GC) you want the function to use. The default is 'standard' which adjusts the univariate GWAS standard errors by multiplying them by the square root of the univariate LDSC intercept. Additional options include 'conserv' which corrects standard errors using the univariate LDSC intercept, and 'none' which does not correct the standard errors.}
-   \item{MPI}{Whetehr the function should use multi-node processing (i.e., MPI). Please note that this should only be used on a computing cluster on which the R pacakge Rmpi is already installed.} 
-   \item{smooth_check}{Whetehr the function should save the consequent largest Zstatistic difference between the pre and post-smooth matrices.} 
+   \item{MPI}{Whether the function should use multi-node processing (i.e., MPI). Please note that this should only be used on a computing cluster on which the R package Rmpi is already installed.}
+   \item{smooth_check}{Whether the function should save the consequent largest Z-statistic difference between the pre and post-smooth matrices.}
    \item{TWAS}{Whether the function is being used to estimate a multivariate TWAS using read_fusion output for the SNPs argument.} 
     \item{std.lv}{Optional argument to denote whether all latent variables are standardized using unit variance identification (default = FALSE)}             
 
@@ -28,7 +28,7 @@ userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",printwarn=TRUE,sub=F
 
 \value{
   The function outputs results from the multivariate GWAS. If the sub argument is used, it will output as many list objects as there are sub objects requested. 
-  If the sub argument is FALSE (as is the package default), the function will ouptut as many list objects as there are SNPs.
+  If the sub argument is FALSE (as is the package default), the function will ouput as many list objects as there are SNPs.
 }
 
 
