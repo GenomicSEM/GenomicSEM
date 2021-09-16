@@ -28,7 +28,11 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
   SNPs<-data.frame(SNPs)
   
-  if(TWAS == FALSE){
+  if (TWAS) {
+    SNPs$Gene<-as.character(SNPs$Gene)
+    SNPs$Panel<-as.character(SNPs$Panel)
+    varSNP=SNPs$HSQ
+  } else {
     SNPs$A1<-as.character(SNPs$A1)
     SNPs$A2<-as.character(SNPs$A2)
     SNPs$SNP<-as.character(SNPs$SNP)
@@ -37,12 +41,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     varSNP=2*SNPs$MAF*(1-SNPs$MAF)
   }
   
-  if(TWAS == TRUE){
-    SNPs$Gene<-as.character(SNPs$Gene)
-    SNPs$Panel<-as.character(SNPs$Panel)
-    varSNP=SNPs$HSQ
-  }
-  
+
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
     varSNPSE2=(.0005)^2
@@ -75,26 +74,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   
   #f = number of SNPs in dataset
   f=nrow(beta_SNP) 
-  
-  #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-  #'k' is the number of variables in the model
-  #'fit' is the fit function of the regression model
-  #'names' is a vector of variable names in the order you used
-  rearrange <- function (k, fit, names) {
-    order1 <- names
-    order2 <- rownames(inspect(fit)[[1]]) #order of variables
-    kst <- k*(k+1)/2
-    covA <- matrix(NA, k, k)
-    covA[lower.tri(covA, diag = TRUE)] <- 1:kst
-    covA <- t(covA)
-    covA[lower.tri(covA, diag = TRUE)] <- 1:kst 
-    colnames(covA) <- rownames(covA) <- order1 #give A actual variable order from lavaan output
-    #reorder A by order2
-    covA <- covA[order2, order2] #rearrange rows/columns
-    vec2 <- lav_matrix_vech(covA) #grab new vectorized order
-    return(vec2)
-  }
-  
+
   ##pull the column names specified in the munge function
   traits<-colnames(S_LD)
   
@@ -128,37 +108,12 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   ##create the model
   Model1 <- write.Model1(k)
   
-  ##modification of trycatch that allows the results of a failed run to still be saved
-  tryCatch.W.E <- function(expr)
-  {
-    W <- NULL
-    w.handler <- function(w){ # warning handler
-      W <<- w
-      invokeRestart("muffleWarning")
-    }
-    list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
-                                     warning = w.handler),
-         warning = W)
-  }
-  
   ##pull the coordinates of the I_LD matrix to loop making the V_SNP matrix
   coords<-which(I_LD != 'NA', arr.ind= T)
   
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
-    #create empty shell of V_SNP matrix
-    V_SNP<-diag(k)
-    
-    #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-    for (p in 1:nrow(coords)) { 
-      x<-coords[p,1]
-      y<-coords[p,2]
-      if (x != y) { 
-        V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-      if (x == y) {
-        V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
-      }
-    }
+    V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, "conserv", coords, k, i)
     
     ##create shell of full sampling covariance matrix
     V_Full<-diag(((k+1)*(k+2))/2)
@@ -214,9 +169,9 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     ks<-nrow(S_Fullrun)
     smooth1<-ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
     
-    suppress<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
+    suppress<-.tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
     
-    order <- rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Fullrun))
+    order <- .rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Fullrun))
   }
   
   
@@ -242,48 +197,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     for (i in 1:f) { 
       
       #create empty shell of V_SNP matrix
-      V_SNP<-diag(k)
-      
-      #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-      
-      #double GC correctiong using univariate LDSC intercepts
-      if(GC == "conserv"){
-        for (p in 1:nrow(coords)) { 
-          x<-coords[p,1]
-          y<-coords[p,2]
-          if (x != y) { 
-            V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-          if (x == y) {
-            V_SNP[x,x]<-(SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
-          }
-        }
-      }
-      
-      #single GC correction using sqrt of univariate LDSC intercepts
-      if(GC == "standard"){
-        for (p in 1:nrow(coords)) { 
-          x<-coords[p,1]
-          y<-coords[p,2]
-          if (x != y) { 
-            V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[i]^2)}
-          if (x == y) {
-            V_SNP[x,x]<-(SE_SNP[i,x]*sqrt(I_LD[x,x])*varSNP[i])^2
-          }
-        }
-      }
-      
-      #no GC correction
-      if(GC == "none"){
-        for (p in 1:nrow(coords)) { 
-          x<-coords[p,1]
-          y<-coords[p,2]
-          if (x != y) { 
-            V_SNP[x,y]<-(SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*varSNP[i]^2)}
-          if (x == y) {
-            V_SNP[x,x]<-(SE_SNP[i,x]*varSNP[i])^2
-          }
-        }
-      }
+      V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, GC, coords, k, i)
       
       if(smooth_check == TRUE){
         if(GC == "conserv"){
@@ -376,11 +290,11 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       
       ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
       if(estimation == "DWLS"){
-        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
+        test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
       }
       
       if(estimation == "ML"){
-        test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
+        test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
       }
       
       test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
@@ -424,11 +338,11 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         
         #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
         if(estimation == "DWLS"){
-          testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2,  optim.dx.tol = +Inf))
+          testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2,  optim.dx.tol = +Inf))
         }
         
         if(estimation == "ML"){
-          testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
+          testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
         }
         
         testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
@@ -442,7 +356,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
           S2.W_Q <- lavInspect(ModelQ_Results, "WLS.V") 
           
           #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-          Q_catch<-tryCatch.W.E(bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler)) 
+          Q_catch<-.tryCatch.W.E(bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler)) 
           
           if(class(Q_catch$value)[1] == "matrix"){
             
@@ -549,44 +463,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
       foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% { 
         
         #create empty shell of V_SNP matrix
-        V_SNP<-diag(k)
-        
-        #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-        if(GC == "conserv"){
-          for (p in 1:nrow(coords)) { 
-            x<-coords[p,1]
-            y<-coords[p,2]
-            if (x != y) { 
-              V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[[n]][i]^2)}
-            if (x == y) {
-              V_SNP[x,x]<-(SE_SNP[[n]][i,x]*I_LD[x,x]*varSNP[[n]][i])^2
-            }
-          }
-        }
-        
-        if(GC == "standard"){
-          for (p in 1:nrow(coords)) { 
-            x<-coords[p,1]
-            y<-coords[p,2]
-            if (x != y) { 
-              V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*sqrt(I_LD[x,x])*sqrt(I_LD[y,y])*varSNP[[n]][i]^2)}
-            if (x == y) {
-              V_SNP[x,x]<-(SE_SNP[[n]][i,x]*sqrt(I_LD[x,x])*varSNP[[n]][i])^2
-            }
-          }
-        }
-        
-        if(GC == "none"){
-          for (p in 1:nrow(coords)) { 
-            x<-coords[p,1]
-            y<-coords[p,2]
-            if (x != y) { 
-              V_SNP[x,y]<-(SE_SNP[[n]][i,y]*SE_SNP[[n]][i,x]*I_LD[x,y]*varSNP[[n]][i]^2)}
-            if (x == y) {
-              V_SNP[x,x]<-(SE_SNP[[n]][i,x]*varSNP[[n]][i])^2
-            }
-          }
-        }
+        V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, GC, coords, k, i)
         
         if(smooth_check == TRUE){
           if(GC == "conserv"){
@@ -678,11 +555,11 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
         
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
         if(estimation == "DWLS"){
-          test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
+          test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
         }
         
         if(estimation == "ML"){
-          test<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
+          test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
         }
         
         test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
@@ -724,10 +601,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
           
           #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
           if(estimation == "DWLS"){
-            testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, optim.dx.tol = +Inf)) 
+            testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs=2, optim.dx.tol = +Inf)) 
           }
           if(estimation == "ML"){
-            testQ<-tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
+            testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
           }
           
           testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
@@ -741,7 +618,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
             S2.W_Q <- lavInspect(ModelQ_Results, "WLS.V") 
             
             #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-            Q_catch<-tryCatch.W.E(bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler)) 
+            Q_catch<-.tryCatch.W.E(bread_Q <- solve(t(S2.delt_Q)%*%S2.W_Q%*%S2.delt_Q,tol=toler)) 
             
             if(class(Q_catch$value)[1] == "matrix"){
               

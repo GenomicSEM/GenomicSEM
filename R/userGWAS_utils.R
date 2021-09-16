@@ -43,3 +43,31 @@
     }
     return(V_SNP)
 }
+
+.get_Z_pre <- function(i, beta_SNP, SE_SNP, I_LD, GC) {
+    if(GC == "conserv"){
+        Z_pre<-beta_SNP[i,]/(SE_SNP[i,]*diag(I_LD))
+    }
+    if(GC=="standard"){
+        Z_pre<-beta_SNP[i,]/(SE_SNP[i,]*sqrt(diag(I_LD)))
+    }
+    if(GC=="none"){
+        Z_pre<-beta_SNP[i,]/SE_SNP[i,]
+    }
+    return(Z_pre)
+}
+
+.get_V_full <- function(k, V_LD, varSNPSE2, V_SNP) {
+    ##create shell of full sampling covariance matrix
+    V_Full<-diag(((k+1)*(k+2))/2)
+
+    ##input the ld-score regression region of sampling covariance from ld-score regression SEs
+    V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
+
+    ##add in SE of SNP variance as first observation in sampling covariance matrix
+    V_Full[1,1]<-varSNPSE2
+
+    ##add in SNP region of sampling covariance matrix
+    V_Full[2:(k+1),2:(k+1)]<-V_SNP
+    return(V_Full)
+}

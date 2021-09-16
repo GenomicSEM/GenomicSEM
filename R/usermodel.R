@@ -7,25 +7,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     warning("Your model name may be listed in quotes; please remove the quotes and try re-running if the function has returned an error about not locating the ReorderModel.")
   }
   
-  #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-  #'k' is the number of variables in the model
-  #'fit' is the fit function of the regression model
-  #'names' is a vector of variable names in the order you used
-  rearrange <- function (k, fit, names) {
-    order1 <- names
-    order2 <- rownames(inspect(fit)[[1]]) #order of variables
-    kst <- k*(k+1)/2
-    covA <- matrix(NA, k, k)
-    covA[lower.tri(covA, diag = TRUE)] <- 1:kst
-    covA <- t(covA)
-    covA[lower.tri(covA, diag = TRUE)] <- 1:kst 
-    colnames(covA) <- rownames(covA) <- order1 #give A actual variable order from lavaan output
-    #reorder A by order2
-    covA <- covA[order2, order2] #rearrange rows/columns
-    vec2 <- lav_matrix_vech(covA) #grab new vectorized order
-    return(vec2)
-  }
-  
   ##read in the LD portion of the V (sampling covariance) matrix
   V_LD<-as.matrix(covstruc[[1]])
   
@@ -107,19 +88,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
   
-  tryCatch.W.E <- function(expr)
-  {
-    W <- NULL
-    w.handler <- function(w){ # warning handler
-      W <<- w
-      invokeRestart("muffleWarning")
-    }
-    list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
-                                     warning = w.handler),
-         warning = W)
-  }
-  
-  
   if(CFIcalc==TRUE){
     
     ##code to write null model for calculation of CFI
@@ -171,9 +139,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     modelCFI<-write.null(k)
     
     ##run CFI model so it knows the reordering for the independence model
-    empty<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
+    empty<-.tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W,sample.nobs=2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
    
-    orderCFI <- rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
+    orderCFI <- .rearrange(k = k, fit =  fitCFI, names =  rownames(S_LD))
     
     ##reorder matrix for independence (i.e., null) model for CFI calculation
     V_Reorder2 <- V_LD[orderCFI,orderCFI]
@@ -184,11 +152,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   }
   
   if(std.lv == FALSE){
-    empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
+    empty3<-.tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
   }
   
   if(std.lv == TRUE){
-    empty3<-tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1))) 
+    empty3<-.tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
   }
   
   r<-nrow(lavInspect(ReorderModel, "cor.lv"))
@@ -198,7 +166,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
   }
   
   ##save the ordering
-  order <- rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
+  order <- .rearrange(k = k, fit = ReorderModel, names = rownames(S_LD))
   
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
@@ -212,21 +180,21 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     if(estimation == "DWLS"){
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
     if(std.lv == FALSE){
-      empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = +Inf))
+      empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = +Inf))
     }
     
     if(std.lv == TRUE){
-      empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
+      empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
     }
     }
     
     if(estimation == "ML"){
       if(std.lv == FALSE){
-        empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML",  sample.nobs = 200,optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+        empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML",  sample.nobs = 200,optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
       }
       
       if(std.lv == TRUE){
-        empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+        empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
       }
     }
     
@@ -249,21 +217,21 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         if(estimation == "DWLS"){
         if(std.lv == FALSE){
-          empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
+          empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
         }
         
         if(std.lv == TRUE){
-          empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf,remove.duplicated=TRUE))
+          empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf,remove.duplicated=TRUE))
         }
         }
         
         if(estimation == "ML"){
           if(std.lv == FALSE){
-            empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML",  sample.nobs = 200,optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+            empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML",  sample.nobs = 200,optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
           }
           
           if(std.lv == TRUE){
-            empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+            empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
           }
           
         }
@@ -293,11 +261,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     
     #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
   if(toler != FALSE){
-  bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler)) 
+  bread2<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler))
   }
   
   if(toler == FALSE){
-    bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt)) 
+    bread2<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
   }    
          
     
@@ -392,7 +360,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       
       ##check whether correlations among latent variables is positive definite
       if(r > 1){
-        empty<-tryCatch.W.E(check<-lowerTriangle(lavInspect(Model1_Results,"cor.lv")[1:r,1:r]))
+        empty<-.tryCatch.W.E(check<-lowerTriangle(lavInspect(Model1_Results,"cor.lv")[1:r,1:r]))
         t<-max(check)
         t2<-min(check)}else{
           t<-1
@@ -442,11 +410,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           ##now CFI
           ##run independence model
           if(estimation == "DWLS"){
-          testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
+          testCFI<-.tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
           }
           
           if(estimation == "ML"){
-            testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML",sample.nobs=200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+            testCFI<-.tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML",sample.nobs=200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
           }
           testCFI$warning$message[1]<-ifelse(is.null(testCFI$warning$message), testCFI$warning$message[1]<-"Safe", testCFI$warning$message[1])
           testCFI$warning$message[1]<-ifelse(is.na(inspect(fitCFI, "se")$theta[1,2]) == TRUE, testCFI$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI$warning$message[1])
@@ -463,11 +431,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
             ModelQ_CFI$ustart <- ModelQ_CFI$est
             
             if(estimation == "DWLS"){
-            testCFI2<-tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
+            testCFI2<-.tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
             }
             
             if(estimation == "ML"){
-              testCFI2<-tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+              testCFI2<-.tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
             }
             
             testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
@@ -554,21 +522,21 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         if(estimation == "DWLS"){
         if(std.lv == FALSE){
-          emptystand<-tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2, optim.dx.tol = +Inf)) 
+          emptystand<-.tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2, optim.dx.tol = +Inf))
         }
         
         if(std.lv == TRUE){
-          emptystand<-tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf)) 
+          emptystand<-.tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
         }
         }
         
         if(estimation == "ML"){
           if(std.lv == FALSE){
-            emptystand<-tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML",  sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE)) 
+            emptystand<-.tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML",  sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
           }
           
           if(std.lv == TRUE){
-            emptystand<-tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML",  sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf,sample.cov.rescale=FALSE)) 
+            emptystand<-.tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML",  sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
           }
         }
         
@@ -579,11 +547,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         W_stand <- lavInspect(Fit_stand, "WLS.V") 
         
         if(toler==FALSE){
-      bread_stand2<-tryCatch.W.E(bread_stand <- solve(t(delt_stand)%*%W_stand %*%delt_stand)) 
+      bread_stand2<-.tryCatch.W.E(bread_stand <- solve(t(delt_stand)%*%W_stand %*%delt_stand))
       }
       
       if(toler!=FALSE){
-        bread_stand2<-tryCatch.W.E(bread_stand <- solve(t(delt_stand)%*%W_stand %*%delt_stand,tol=toler)) 
+        bread_stand2<-.tryCatch.W.E(bread_stand <- solve(t(delt_stand)%*%W_stand %*%delt_stand,tol=toler))
       }
       
         
