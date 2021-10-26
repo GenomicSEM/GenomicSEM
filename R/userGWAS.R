@@ -1,11 +1,15 @@
-# k = n_phenotypes
+# Changed k to n_phenotypes in main code body for clarity
+# Added parallel fucntionality for windows
+# Moved main analysis code to userGWAS_analysis
+# moved tryCatch.W.E and rearrange to utils
+
 userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", modelchi=TRUE, printwarn=TRUE,
 sub=FALSE,cores=NULL, toler=FALSE, SNPSE=FALSE, parallel=TRUE, GC="standard", MPI=FALSE,
 smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   time <- proc.time()
   Operating <- Sys.info()[['sysname']]
-  if(parallel == TRUE & Operating == "Windows"){
-    stop("Parallel processing is not currently available for Windows operating systems. Please set the parallel argument to FALSE, or switch to a Linux or Mac operating system.")
+  if(MPI == TRUE & Operating == "Windows"){
+    stop("MPI is not currently available for Windows operating systems. Please set the MPI argument to FALSE, or switch to a Linux or Mac operating system.")
   }
 
   if(exists("Output")){
@@ -36,7 +40,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   }
 
   #remove white spacing on subset argument so will exact match lavaan representation of parameter
-  if(sub[[1]]){
+  if(sub[[1]] != FALSE){
     sub <- str_replace_all(sub, fixed(" "), "")
   }
 
@@ -46,23 +50,23 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   if (TWAS) {
     SNPs$Gene <- as.character(SNPs$Gene)
     SNPs$Panel <- as.character(SNPs$Panel)
-    varSNP <- SNPs$HSQ
+    varSNP=SNPs$HSQ
   } else {
     SNPs$A1 <- as.character(SNPs$A1)
     SNPs$A2 <- as.character(SNPs$A2)
     SNPs$SNP <- as.character(SNPs$SNP)
 
     #SNP variance
-    varSNP <- 2*SNPs$MAF*(1-SNPs$MAF)
+    varSNP=2*SNPs$MAF*(1-SNPs$MAF)
   }
 
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
-    varSNPSE2 <- (.0005)^2
+    varSNPSE2=(.0005)^2
   }
 
   if(SNPSE != FALSE){
-    varSNPSE2 <- SNPSE^2
+    varSNPSE2 = SNPSE^2
   }
 
   V_LD <- as.matrix(covstruc[[1]])
@@ -97,29 +101,19 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
     }
   }
 
-  ##create shell of full sampling covariance matrix
-  V_Full <- diag(((n_phenotypes+1)*(n_phenotypes+2))/2)
+  V_full <- .get_V_full(n_phenotypes, V_LD, varSNPSE2, V_SNP)
 
-  ##input the ld-score regression region of sampling covariance from ld-score regression SEs
-  V_Full[(n_phenotypes+2):nrow(V_Full),(n_phenotypes+2):nrow(V_Full)] <- V_LD
-
-  ##add in SE of SNP variance as first observation in sampling covariance matrix
-  V_Full[1,1] <- varSNPSE2
-
-  ##add in SNP region of sampling covariance matrix
-  V_Full[2:(n_phenotypes+1),2:(n_phenotypes+1)] <- V_SNP
-
-  kv <- nrow(V_Full)
-  smooth2 <- ifelse(eigen(V_Full)$values[kv] <= 0, V_Full <- as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full <- V_Full)
+  kv <- nrow(V_full)
+  smooth2 <- ifelse(eigen(V_full)$values[kv] <= 0, V_full <- as.matrix((nearPD(V_full, corr = FALSE))$mat), V_full <- V_full)
 
   #create empty vector for S_SNP
-  S_SNP <- vector(mode="numeric",length=k+1)
+  S_SNP <- vector(mode="numeric",length=n_phenotypes+1)
 
   #enter SNP variance from reference panel as first observation
   S_SNP[1] <- varSNP[i]
 
   #enter SNP covariances (standardized beta * SNP variance from refference panel)
-  for (p in 1:k) {
+  for (p in 1:n_phenotypes) {
     S_SNP[p+1] <- varSNP[i]*beta_SNP[i,p]
   }
 
@@ -153,11 +147,11 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   for (i in 1) {
 
     if(toler==FALSE){
-      W <-  solve(V_Full)
+      W <-  solve(V_full)
     }
 
     if(toler!=FALSE){
-      W <- solve(V_Full,tol=toler)
+      W <- solve(V_full,tol=toler)
     }
 
     if(std.lv == FALSE){
@@ -185,7 +179,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   }
 
   rm(SNPs)
-  f <- nrow(beta_SNP)
+  f=nrow(beta_SNP)
   if(parallel==FALSE){
     #make empty list object for model results if not saving specific model parameter
     if(sub[[1]]==FALSE){
@@ -205,10 +199,10 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
         if(i %% 1000==0) {
           cat(paste0("Running Model: ", i, "\n"))
         }}
-      n <- 1
+      n=1
       final2 <- .userGWAS_analysis(i, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
-      coords, smooth_check, TWAS, printwarn, toler, estimation, sub)
-      if(sub[[1]]){
+      coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar)
+      if(sub[[1]] != FALSE){
         final3 <- as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
         final3[1:length(sub),] <- final2[1,]
         if(i == 1){
@@ -227,7 +221,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
         Results_List[[i]] <- final2
       }
     }
-    results$n <- NULL
+
     time_all <- proc.time()-time
     print(time_all[3])
 
@@ -235,7 +229,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
 
   }
 
-  if(parallel == TRUE & Operating != "Windows"){
+  if(parallel == TRUE){
 
     if(is.null(cores)){
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
@@ -247,14 +241,19 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
     if(MPI == FALSE){
       registerDoParallel(int)
       ##specify the cores should have access to the local environment
-      makeCluster(int, type="FORK")
+      if (Operating != "Windows") {
+        cl <- makeCluster(int, type="FORK")
+      } else {
+        cl <- makeCluster(int, type="PSOCK")
+      }
+
     }
 
-    if(MPI == TRUE){
+    if(MPI){
       #register MPI
-      cluster <- getMPIcluster()
+      cl <- getMPIcluster()
       #register cluster; no makecluster as ibrun already starts the MPI process. 
-      registerDoParallel(cluster)
+      registerDoParallel(cl)
     }
 
     SNPs2 <- suppressWarnings(split(SNPs2,1:int))
@@ -266,24 +265,44 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
     if(TWAS){
       print("Starting TWAS Estimation")
     } else {
-      print("Starting TWAS Estimation")
+      print("Starting GWAS Estimation")
     }
 
-
-    results <- foreach(n = icount(int), .combine = 'rbind') %:%
-
-    foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% {
-
-      .userGWAS_analysis(i, n_phenotypes, SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]],
-      GC, coords, smooth_check, TWAS, printwarn, toler)
-
+    if (Operating != "Windows") {
+      results <- foreach(n = icount(int), .combine = 'rbind') %:%
+      foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% {
+        .userGWAS_analysis(i, n_phenotypes, n, I_LD, V_LD, S_LD,
+        std.lv, varSNPSE2, order, SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC,
+        coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar)
+      }
+    } else {
+      #Util-functions have to be explicitly passed to the analysis function in PSOCK cluster
+      utilfuncs = list()
+      utilfuncs[[".tryCatch.W.E"]] <- .tryCatch.W.E
+      utilfuncs[[".get_V_SNP"]] <- .get_V_SNP
+      utilfuncs[[".get_Z_pre"]] <- .get_Z_pre
+      utilfuncs[[".get_V_full"]] <- .get_V_full
+      #for (j in c(".tryCatch.W.E", ".get_V_SNP", ".get_Z_pre", ".get_V_full")) {
+      #  utilfuncs[[j]] <- get(j)
+      #}
+      results <- foreach(n = icount(int), .combine = 'rbind') %:%
+      foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
+      .export=c(".userGWAS_analysis")) %dopar% {
+        .userGWAS_analysis(i, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order,
+        SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC, coords,
+        smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
+        df, npar, utilfuncs)
+      }
+    }
+    if (!MPI) {
+      stopCluster(cl)
     }
 
     ##sort results so it is in order of the output lists provided for the function
     results <-  results[order(results$i, results$n),]
     results$n <- NULL
 
-    if(!(sub[[1]])==FALSE){
+    if(sub[[1]] != FALSE){
       results$i <- NULL
       Results_List <- vector(mode="list", length=length(sub))
       for(y in 1:length(sub)){
@@ -293,27 +312,23 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
       }
       rm(results)
     }
-
-    if(TWAS == FALSE){
-      if(sub[[1]]==FALSE){
-        names <- unique(results$SNP)
-        Results_List <- vector(mode="list", length=length(names))
-        for(y in 1:length(names)){
-          Results_List[[y]] <- subset(results, results$SNP == names[[y]])
-          Results_List[[y]]$Model_Number <- NULL
-        }
-        rm(results)
-        rm(names)
-      }
-    }
-
-
     if (TWAS) {
       if(!sub[[1]]){
         names <- unique(results$Panel)
         Results_List <- vector(mode="list", length=length(names))
         for(y in 1:length(names)){
           Results_List[[y]] <- subset(results, results$Panel == names[[y]])
+          Results_List[[y]]$Model_Number <- NULL
+        }
+        rm(results)
+        rm(names)
+      }
+    } else {
+      if(sub[[1]]==FALSE){
+        names <- unique(results$SNP)
+        Results_List <- vector(mode="list", length=length(names))
+        for(y in 1:length(names)){
+          Results_List[[y]] <- subset(results, results$SNP == names[[y]])
           Results_List[[y]]$Model_Number <- NULL
         }
         rm(results)

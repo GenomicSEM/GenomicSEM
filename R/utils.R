@@ -27,3 +27,4 @@
     list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
                                      warning = w.handler), warning = W)
 }
+
