@@ -1,7 +1,7 @@
 
 commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,TWAS=FALSE,smooth_check=FALSE){ 
   time<-proc.time()
-  
+  if (!toler) toler <- .Machine$double.eps
   if(exists("Output")){
     stop("Please note that an update was made to commonfactorGWAS on 4/1/21 so that addSNPs output CANNOT be fed directly to the function. It now expects the 
             output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments.")
@@ -116,27 +116,12 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, "conserv", coords, k, i)
     
     ##create shell of full sampling covariance matrix
-    V_Full<-diag(((k+1)*(k+2))/2)
-    
-    ##input the ld-score regression region of sampling covariance from ld-score regression SEs
-    V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
-    
-    ##add in SE of SNP variance as first observation in sampling covariance matrix
-    V_Full[1,1]<-varSNPSE2
-    
-    ##add in SNP region of sampling covariance matrix
-    V_Full[2:(k+1),2:(k+1)]<-V_SNP
+    V_Full<-.get_V_Full(k, V_LD, varSNPSE2, V_SNP)
     
     k2<-nrow(V_Full)
     smooth2<-ifelse(eigen(V_Full)$values[k2] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
     
-    if(toler==FALSE){
-      W <- solve(V_Full)
-    }
-    
-    if(toler!=FALSE){
-      W <- solve(V_Full,tol=toler)
-    }
+    W <- solve(V_Full,tol=toler)
     
     #create empty vector for S_SNP
     S_SNP<-vector(mode="numeric",length=k+1)

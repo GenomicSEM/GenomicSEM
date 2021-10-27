@@ -2,12 +2,18 @@
 # Added parallel fucntionality for windows
 # Moved main analysis code to userGWAS_analysis
 # moved tryCatch.W.E and rearrange to utils
+# moved creation of Z_pre, V_SNP and V_full to utils
+# removed argument modelchi as it was unused
+# Changed assignments that used = to <- script-wide for consistency
+# Changed NAMESPACE exportPattern to "^[^\\.]", to keep functions starting with . internal
 
-userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", modelchi=TRUE, printwarn=TRUE,
-sub=FALSE,cores=NULL, toler=FALSE, SNPSE=FALSE, parallel=TRUE, GC="standard", MPI=FALSE,
-smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
+userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", printwarn=TRUE,
+                     sub=FALSE,cores=NULL, toler=FALSE, SNPSE=FALSE, parallel=TRUE, GC="standard", MPI=FALSE,
+                     smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   time <- proc.time()
   Operating <- Sys.info()[['sysname']]
+  # Set toler to machine precision to enable passing this to solve() directly
+  if (!toler) toler <- .Machine$double.eps
   if(MPI == TRUE & Operating == "Windows"){
     stop("MPI is not currently available for Windows operating systems. Please set the MPI argument to FALSE, or switch to a Linux or Mac operating system.")
   }
@@ -50,23 +56,23 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   if (TWAS) {
     SNPs$Gene <- as.character(SNPs$Gene)
     SNPs$Panel <- as.character(SNPs$Panel)
-    varSNP=SNPs$HSQ
+    varSNP <- SNPs$HSQ
   } else {
     SNPs$A1 <- as.character(SNPs$A1)
     SNPs$A2 <- as.character(SNPs$A2)
     SNPs$SNP <- as.character(SNPs$SNP)
 
     #SNP variance
-    varSNP=2*SNPs$MAF*(1-SNPs$MAF)
+    varSNP <- 2*SNPs$MAF*(1-SNPs$MAF)
   }
 
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
-    varSNPSE2=(.0005)^2
+    varSNPSE2 <- (.0005)^2
   }
 
   if(SNPSE != FALSE){
-    varSNPSE2 = SNPSE^2
+    varSNPSE2 <- SNPSE^2
   }
 
   V_LD <- as.matrix(covstruc[[1]])
@@ -146,24 +152,11 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
 
-    if(toler==FALSE){
-      W <-  solve(V_full)
-    }
+    W <- solve(V_full,tol=toler)
 
-    if(toler!=FALSE){
-      W <- solve(V_full,tol=toler)
-    }
-
-    if(std.lv == FALSE){
-      test2 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",
-      WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,
-      control=list(iter.max=1)))
-    }
-    if(std.lv == TRUE){
-      test2 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",
-      WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,
-      optim.force.converged=TRUE,control=list(iter.max=1),std.lv=TRUE))
-    }
+    test2 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",
+    WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf, optim.force.converged=TRUE
+      ,control=list(iter.max=1),std.lv=std.lv))
 
     order <- .rearrange(k = k2, fit = ReorderModel, names = rownames(S_Full))
 
@@ -179,7 +172,7 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
   }
 
   rm(SNPs)
-  f=nrow(beta_SNP)
+  f <- nrow(beta_SNP)
   if(parallel==FALSE){
     #make empty list object for model results if not saving specific model parameter
     if(sub[[1]]==FALSE){
@@ -198,8 +191,9 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
       }else{
         if(i %% 1000==0) {
           cat(paste0("Running Model: ", i, "\n"))
-        }}
-      n=1
+        }
+      }
+      n <- 1
       final2 <- .userGWAS_analysis(i, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
       coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar)
       if(sub[[1]] != FALSE){
@@ -237,8 +231,12 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
     }else{
       int <- cores
     }
-
-    if(MPI == FALSE){
+    if(MPI){
+      #register MPI
+      cl <- getMPIcluster()
+      #register cluster; no makecluster as ibrun already starts the MPI process.
+      registerDoParallel(cl)
+    } else {
       registerDoParallel(int)
       ##specify the cores should have access to the local environment
       if (Operating != "Windows") {
@@ -246,14 +244,6 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
       } else {
         cl <- makeCluster(int, type="PSOCK")
       }
-
-    }
-
-    if(MPI){
-      #register MPI
-      cl <- getMPIcluster()
-      #register cluster; no makecluster as ibrun already starts the MPI process. 
-      registerDoParallel(cl)
     }
 
     SNPs2 <- suppressWarnings(split(SNPs2,1:int))
@@ -277,14 +267,11 @@ smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
       }
     } else {
       #Util-functions have to be explicitly passed to the analysis function in PSOCK cluster
-      utilfuncs = list()
+      utilfuncs <- list()
       utilfuncs[[".tryCatch.W.E"]] <- .tryCatch.W.E
       utilfuncs[[".get_V_SNP"]] <- .get_V_SNP
       utilfuncs[[".get_Z_pre"]] <- .get_Z_pre
       utilfuncs[[".get_V_full"]] <- .get_V_full
-      #for (j in c(".tryCatch.W.E", ".get_V_SNP", ".get_Z_pre", ".get_V_full")) {
-      #  utilfuncs[[j]] <- get(j)
-      #}
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
       foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
       .export=c(".userGWAS_analysis")) %dopar% {

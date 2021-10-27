@@ -1,8 +1,7 @@
-# Moved generation of V_SNP, Z_pre and V_full to userGWAS_utils
-
 .userGWAS_analysis <- function(i, k, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP,
                                varSNP, GC, coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
                                df, npar, utilfuncs=NULL) {
+    # utilfuncs contains utility functions to enable this code to work on PSOC clusters (for Windows)
     if (!is.null(utilfuncs)) {
         for (j in names(utilfuncs)) {
             assign(j, utilfuncs[[j]], envir=environment())
@@ -29,11 +28,7 @@
     diag(W) <- diag(V_full_Reorder)
 
     ##invert the reordered sampling covariance matrix to create a weight matrix
-    if(!(toler)){
-        W <-  solve(W)
-    } else {
-        W <- solve(W, tol=toler)
-    }
+    W <- solve(W, tol=toler)
 
     #create empty vector for S_SNP
     S_SNP <- vector(mode="numeric",length=k+1)
@@ -248,7 +243,8 @@
         ##add in error and warning messages
         if(printwarn == TRUE){
             final$error <- ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
-            final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
+            final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]
+        }
 
         ##combine with rs-id, BP, CHR, etc.
         final2 <- cbind(i,n,SNPs2[i,],final,row.names=NULL)
