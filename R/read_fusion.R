@@ -1,4 +1,4 @@
-read_fusion <- function(files,trait.names=NULL,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,perm=NULL){
+read_fusion <- function(files,trait.names=NULL,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,perm=FALSE){
   
   length <- length(files)
   
@@ -25,12 +25,7 @@ read_fusion <- function(files,trait.names=NULL,OLS=NULL,linprob=NULL,prop=NULL,N
   if(is.null(linprob)){
     linprob<-rep(FALSE,length)
   }
-  
-  if(is.null(perm)){
-    perm<-rep(FALSE,length)
-  }
-  
-  
+    
   for(i in 1:length){
     
     if(linprob[i] == T){
