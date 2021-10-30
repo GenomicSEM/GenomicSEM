@@ -34,6 +34,18 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   n.traits <- length(traits)
   n.V <- n.traits * (n.traits + 1) / 2
   
+  if(n.traits > 18){
+  n.blocks<-(((n.traits+1)*(n.traits+2))/2)+1
+  LOG("     ", print = FALSE)
+  LOG("Setting the number of blocks used to perform the block jacknife used to estimate the sampling covariance matrix (V) to ", n.blocks)
+  LOG("This reflects the need to estimate V using at least one more block then their are nonredundant elements in the genetic covariance matrix that includes individual SNPs.")
+  LOG("If the n.blocks is > 1000 you should carefully inspect output for any strange results, such as extremely significant Q_SNP estimates.")
+  LOG("     ", print = FALSE)
+  if(n.blocks > 1000){
+    warning("The number of blocks needed to estimate V is > 1000, which may result in sampling dependencies across the blocks used to estimate standard errors and can bias results.")
+  }
+}
+  
   if(!(is.null(trait.names))){
     check_names<-str_detect(trait.names, "-")
     if(any(check_names))
