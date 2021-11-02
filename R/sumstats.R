@@ -1,4 +1,4 @@
-sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,prop=NULL,N=NULL,info.filter = .6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL){
+sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N=NULL,betas=NULL,info.filter = .6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL){
   
   begin.time <- Sys.time()
   
@@ -14,6 +14,10 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
   
   if(is.null(linprob)){
     linprob<-rep(FALSE,length)
+  }
+  
+  if(is.null(betas)){
+    betas<-rep(FALSE,length)
   }
   
   if(is.null(trait.names)){
@@ -38,12 +42,12 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     
     cat(print(paste0("The preparation of ", length(trait.names), " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
     cat(print(paste0("Please note that the files should be in the same order that they were listed for the ldsc function"), sep = ""),file=log.file,sep="\n",append=TRUE)
-  
+    
     cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
     ref <- fread(ref,header=T,data.table=F)
-    
+ 
     ##filter ref file on user provided maf.filter
-    cat(print(paste("Applying MAF filer of", maf.filter, "to the refernece file.")),file=log.file,sep="\n",append=TRUE)
+    cat(print(paste("Applying MAF filer of", maf.filter, "to the reference file.")),file=log.file,sep="\n",append=TRUE)
     ref<-subset(ref, ref$MAF >= maf.filter)
     
     data.frame.out <- ref
@@ -52,11 +56,11 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     
     ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
     files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
-    
+   
     cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
     
     for(i in 1:length){
-      
+      files[[i]]<-data.frame(files[[i]])
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       
@@ -82,18 +86,20 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       if(linprob[i] == F){
         if(OLS[i] == F){ 
           if("Z" %in% names1 | "ZSCORE" %in% names1 | "Z-SCORE" %in% names1 | "ZSTATISTIC" %in% names1 | "Z-STATISTIC" %in% names1){
-            warning(paste0("There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ". Transformations for case/control traits require either an OR or logistic beta column. Please remove/replace the Z-statistic column"))
-            cat(print(paste("WARNING: There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ". Transformations for case/control traits require either an OR or logistic beta column. Please remove/replace the Z-statistic column"),file=log.file,sep="\n",append=TRUE))
+            warning(paste0("There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ". Please set linprob to TRUE for binary traits or OLS to true for continuous traits in order to back out the betas or if betas are already available remove this column."))
           }
         }}
       
-      
+      if(betas[[i]] == FALSE){
       names1<-hold_names
       if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("OR","B","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Z","ZSCORE","EST","ZSTAT","ZSTATISTIC", "BETA1" ,"LOGOR")] <- "effect"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-    
-     
+      }else{
+        hold_names[hold_names %in% betas[[i]]] <- "effect"
+        if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column. As this was directly supplied to the betas argument, the assumption is being made that this reflects a beta for a continuous trait that is standardized with respect to the trait variance.")),file=log.file,sep="\n",append=TRUE)
+      }
+      
       names1<-hold_names
       if("INFO" %in% hold_names) cat(print(paste("Interpreting the INFO column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("INFO", "IMPINFO")] <- "INFO"
@@ -111,20 +117,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       
       names1<-hold_names
       if("N" %in% hold_names) cat(print(paste("Interpreting the N column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("N","WEIGHT","NCOMPLETESAMPLES", "TOTALSAMPLESIZE", "TOTALN", "TOTAL_N","N_COMPLETE_SAMPLES", "SAMPLESIZE")] <- "N"
+      hold_names[hold_names %in%c("N","WEIGHT","NCOMPLETESAMPLES", "TOTALSAMPLESIZE", "TOTALN", "TOTAL_N","N_COMPLETE_SAMPLES", "SAMPLESIZE", "NEFF", "NEFFSUM")] <- "N"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("N_CAS" %in% hold_names) cat(print(paste("Interpreting the N_CAS column as the N_CAS (sample size for cases) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS", "NCAS", "NCA")] <- "N_CAS"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CAS (sample size for cases) column.")),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("N_CON" %in% hold_names) cat(print(paste("Interpreting the N_CON column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N", "NCON", "NCO")] <- "N_CON"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
-      
-       
+  
+      if("NEFF" %in% names1 & is.null(N)){
+        cat(print(paste("Using the NEFF column for sample size. 
+                      Please note that this is likely effective sample size and should only be used for backing out logistic betas and standard errors for binary traits and that it should reflect the sum of effective sample sizes across cohorts. 
+                      Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running sumstats.")),file=log.file,sep="\n",append=TRUE)
+      }
       
       # Print a message for misisng P value, rs, effect or allele column
       if(sum(hold_names %in% "P") == 0) cat(print(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
@@ -156,7 +156,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       
       
       ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
-      hold_names[hold_names %in%c("MAF", "CEUAF", "FREQ1", "EAF", "FREQ1.HAPMAP", "FREQALLELE1HAPMAPCEU", "FREQ.ALLELE1.HAPMAPCEU", "EFFECT_ALLELE_FREQ", "FREQ.A1")] <- "MAF_Other"
+      hold_names[hold_names %in%c("MAF", "CEUAF", "FREQ1", "EAF", "FREQ1.HAPMAP", "FREQALLELE1HAPMAPCEU", "FREQ.ALLELE1.HAPMAPCEU", "EFFECT_ALLELE_FREQ", "FREQ.A1")] <- "MAF"
+      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the MAF column.")),file=log.file,sep="\n",append=TRUE)
       
       names(files[[i]]) <- hold_names
       
@@ -164,27 +165,21 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       files[[i]]<-files[[i]][!duplicated(files[[i]][c("SNP","A1","A2")]),]
       cat(print(paste((b-nrow(files[[i]])), "rows were removed from the", filenames[i], "summary statistics file due to entries that were duplicated across rsID, A1, and A2.")),file=log.file,sep="\n",append=TRUE)
       
-      
-      # Compute N as N cases and N control if reported:
-      if("N_CAS" %in% colnames(files[[i]]) & "N_CON" %in% colnames(files[[i]])){
-        files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
-        cat(print(paste("As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the total sample size")),file=log.file,sep="\n",append=TRUE)
-      }
-      
-      if("N" %in% colnames(files[[i]]) & !(is.null(N))){
-        if(!(is.na(N[i]))){
-          cat(print(paste("As the summary statistics file includes a sample size column, this is being used in place of the user provided sample size. If the user wishes to still use the provided sample size, as opposed to the sample size listed in the summary statistics file, please change the sample size column header to N2.However, we note that sample size is only used for LPM and OLS conversions.")),file=log.file,sep="\n",append=TRUE)
-        }}
-      
-      if(!(is.null(N)) & !("N" %in% colnames(files[[i]]))){
+      if(!(is.null(N))){
         if(!(is.na(N[i]))){
           files[[i]]$N<-N[i]
+          if(OLS[i] == FALSE){
+            cat(print(paste("Using user provided N of ", N[i], " for ", filenames[i], " . Please note that this should reflect the sum of effective sample sizes if the linprob argument is being used to back out logistic betas.")),file=log.file,sep="\n",append=TRUE)
+          }
+          if(OLS[i] == TRUE){
+            cat(print(paste("Using user provided N of ", N[i], " for ", filenames[i], " . Please note that this should reflect the total sample size.")),file=log.file,sep="\n",append=TRUE)
+          }
         }}
       
       if(keep.indel == TRUE){
         files[[i]]$A1 <- factor(toupper(files[[i]]$A1))
         files[[i]]$A2 <- factor(toupper(files[[i]]$A2))
-        cat(print(paste0("Keeping variants other than SNPs, this may cause problems when alligning allle's across traits and the reference file")),file=log.file,sep="\n",append=TRUE)
+        cat(print(paste0("Keeping variants other than SNPs, this may cause problems when alligning alleles across traits and the reference file")),file=log.file,sep="\n",append=TRUE)
       }
       
       if(keep.indel == FALSE){
@@ -214,13 +209,19 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       }
       if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the effect column")),file=log.file,sep="\n",append=TRUE)
       
+      #use sample specific MAF for later conversions when possible; otherwise use ref MAF
+      if("MAF.y" %in% colnames(files[[i]])){
+      files[[i]]$MAF.y<-ifelse(files[[i]]$MAF.y > .5, 1-files[[i]]$MAF.y, files[[i]]$MAF.y)
+      files[[i]]$varSNP<-2*files[[i]]$MAF.y*(1-files[[i]]$MAF.y)
+      }else{files[[i]]$varSNP<-2*files[[i]]$MAF*(1-files[[i]]$MAF)}
+      
       ##determine whether it is OR or logistic/continuous effect based on median effect size 
       a1<-files[[i]]$effect[[1]]
       files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect,na.rm=T)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
       a2<-files[[i]]$effect[[1]]
       if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
       if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
-     
+      
       ##remove any rows printed as exactly 0
       b<-nrow(files[[i]])
       if("effect" %in% colnames(files[[i]])) {
@@ -228,24 +229,25 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       }
       if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
       
+      files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
       
-      if(OLS[i] == T){
-        cat(print(paste("An OLS transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
-        
+      if(OLS[i] == T & betas[[i]] == TRUE){
+        cat(print(paste("User provided arguments indicate that a GWAS of a continuous trait with already standardized betas is being provided for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
+      }
+      
+        if(OLS[i] == T & betas[[i]] == FALSE){
         if("N" %in% colnames(files[[i]])){
-          files[[i]]$effect <- files[[i]]$Z/ sqrt(files[[i]]$N * 2 * (files[[i]]$MAF *(1-files[[i]]$MAF)))}else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
-      
+          files[[i]]$effect <- files[[i]]$Z/sqrt(files[[i]]$N * files[[i]]$SNPvar)
+          }else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}
+        }
       
       if(linprob[i] == T){
-        cat(print(paste("An LPM transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
+        cat(print(paste("An transformation used to back out logistic betas for binary traits is being applied for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
         
         if("N" %in% colnames(files[[i]])){
-          files[[i]]$effect <- files[[i]]$Z/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))
-          files[[i]]$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*files[[i]]$N*files[[i]]$MAF*(1-files[[i]]$MAF))))}else{cat(print("ERROR: A Sample Size (N) is needed for LPM Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
+          files[[i]]$effect <- files[[i]]$Z/sqrt((files[[i]]$N/4)*files[[i]]$varSNP)
+          files[[i]]$SE<-1/sqrt((files[[i]]$N/4)*files[[i]]$varSNP)
+          }else{cat(print("ERROR: An effective sample Size (N) is needed for backing out betas for binary traits. Please provide the sum of effective sample sizes to the N argument."),file=log.file,sep="\n",append=TRUE)}}
       
       # Flip effect to match ordering in ref file
       files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
@@ -270,8 +272,6 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
         cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to INFO values below the designated threshold of", info.filter)),file=log.file,sep="\n",append=TRUE)
       }else{cat(print("No INFO column, cannot filter on INFO, which may influence results"),file=log.file,sep="\n",append=TRUE)}
       
-      varSNP<-2*files[[i]]$MAF*(1-files[[i]]$MAF)  
-      
       if(OLS[i] == T){
         output <- cbind.data.frame(files[[i]]$SNP,
                                    files[[i]]$effect,
@@ -282,8 +282,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
       
       if(linprob[i] == T){
         output<-cbind.data.frame(files[[i]]$SNP,
-                                 (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                                 (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
+                                 (files[[i]]$effect)/((files[[i]]$effect^2) * files[[i]]$varSNP + (pi^2)/3)^.5,
+                                 (files[[i]]$SE)/(((files[[i]]$effect)^2) * files[[i]]$varSNP + (pi^2)/3)^.5)  
         output<-na.omit(output)
         output<-output[apply(output!=0, 1, all),]
         colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
@@ -298,8 +298,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
             if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
             
             output <- cbind.data.frame(files[[i]]$SNP,
-                                       (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                                       (files[[i]]$SE/exp(files[[i]]$effect))/(((files[[i]]$effect)^2 * varSNP + (pi^2)/3)^.5))
+                                       (files[[i]]$effect)/((files[[i]]$effect^2) * files[[i]]$varSNP + (pi^2)/3)^.5,
+                                       (files[[i]]$SE/exp(files[[i]]$effect))/(((files[[i]]$effect)^2 * files[[i]]$varSNP + (pi^2)/3)^.5))
             output<-na.omit(output)  
             colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
       
@@ -310,8 +310,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
         if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
         
         output <- cbind.data.frame(files[[i]]$SNP,
-                                   (files[[i]]$effect)/((files[[i]]$effect^2) * varSNP + (pi^2)/3)^.5,
-                                   (files[[i]]$SE)/(((files[[i]]$effect)^2) * varSNP + (pi^2)/3)^.5)  
+                                   (files[[i]]$effect)/((files[[i]]$effect^2) * files[[i]]$varSNP + (pi^2)/3)^.5,
+                                   (files[[i]]$SE)/(((files[[i]]$effect)^2) * files[[i]]$varSNP + (pi^2)/3)^.5)  
         output<-na.omit(output)  
         colnames(output) <- c("SNP",names.beta[i],names.se[i])}
       
@@ -344,15 +344,15 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,p
     
     data.frame.out <- ref
     
-   if(is.null(cores)){
-  ##if no default provided use 1 less than the total number of cores available so your computer will still function
-  int <- detectCores() - 1
-}else{int<-cores}
-
-#if more cores than traits then set to number of traits
-if(int > length){
-  int<-length
-}
+    if(is.null(cores)){
+      ##if no default provided use 1 less than the total number of cores available so your computer will still function
+      int <- detectCores() - 1
+    }else{int<-cores}
+    
+    #if more cores than traits then set to number of traits
+    if(int > length){
+      int<-length
+    }
     
     print("Performing conversions of individual summary statistics using parallel processing. Please note this step typically takes 10-20 minutes due to the size of the files.")
     Output<-mclapply(X=1:length,FUN=function(X){
@@ -360,7 +360,7 @@ if(int > length){
       
       log.file <- file(paste0(trait.names[i], "_sumstats.log"),open="wt")  
       files2<-read.table(files[[i]], header = T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
-      
+      files2<-data.frame(files2)
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       cat(paste("     "),file=log.file,sep="\n",append=TRUE)
       
@@ -370,76 +370,77 @@ if(int > length){
       hold_names <- toupper(names(files2))
       names1<-hold_names
       
+      
       if("SNP" %in% hold_names) cat(print(paste("Interpreting the SNP column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in% c("SNP","SNPID","RSID","RS_NUMBER","RS_NUMBERS", "MARKERNAME", "ID","SNP_ID")] <- "SNP"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the SNP column."),file=log.file,sep="\n",append=TRUE)
+      hold_names[hold_names %in% c("SNP","SNPID","RSID","RS_NUMBER","RS_NUMBERS", "MARKERNAME", "ID", "SNP_ID")] <- "SNP"
+      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
       if("A1" %in% hold_names) cat(print(paste("Interpreting the A1 column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("A1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","REF")] <- "A1"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the A1 column."),file=log.file,sep="\n",append=TRUE)
+      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
       if("A2" %in% hold_names) cat(print(paste("Interpreting the A2 column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("A2","ALLELE2","ALLELE0","OTHER_ALLELE","REF","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA", "ALT")]  <- "A2"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the A2 column."),file=log.file,sep="\n",append=TRUE)
+      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
       
       if(linprob[i] == F){
         if(OLS[i] == F){ 
           if("Z" %in% names1 | "ZSCORE" %in% names1 | "Z-SCORE" %in% names1 | "ZSTATISTIC" %in% names1 | "Z-STATISTIC" %in% names1){
-            cat(paste("WARNING: There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ". Transformations for case/control traits require either an OR or logistic beta column. Please remove/replace the Z-statistic column"),file=log.file,sep="\n",append=TRUE)
+            warning(paste0("There appears to be a Z-statistic column in the summary statistic file for ", trait.names[i], ". Please set linprob to TRUE for binary traits or OLS to true for continuous traits in order to back out the betas or if betas are already available remove this column."))
           }
         }}
       
-      
-      names1<-hold_names
-      if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("OR","B","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Z","ZSCORE","EST","ZSTAT","ZSTATISTIC", "LOGOR")] <- "effect"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column."),file=log.file,sep="\n",append=TRUE)
+      if(betas[[i]] == FALSE){
+        names1<-hold_names
+        if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
+        hold_names[hold_names %in%c("OR","B","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Z","ZSCORE","EST","ZSTAT","ZSTATISTIC", "BETA1" ,"LOGOR")] <- "effect"
+        if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column.")),file=log.file,sep="\n",append=TRUE)
+      }else{
+        hold_names[hold_names %in% betas[[i]]] <- "effect"
+        if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column. As this was directly supplied to the betas argument, the assumption is being made that this reflects a beta for a continuous trait that is standardized with respect to the trait variance.")),file=log.file,sep="\n",append=TRUE)
+      }
       
       names1<-hold_names
       if("INFO" %in% hold_names) cat(print(paste("Interpreting the INFO column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("INFO","IMPINFO")] <- "INFO"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the INFO column."),file=log.file,sep="\n",append=TRUE)
+      hold_names[hold_names %in%c("INFO", "IMPINFO")] <- "INFO"
+      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
       if("SE" %in% hold_names) cat(print(paste("Interpreting the SE column as the SE column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("STDERR","SE","STDERRLOGOR")] <- "SE"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the SE column."),file=log.file,sep="\n",append=TRUE)
+      hold_names[hold_names %in%c("STDERR","SE", "STDERRLOGOR")] <- "SE"
+      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the SE column.")),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
       if("P" %in% hold_names) cat(print(paste("Interpreting the P column as the P column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("P","PVALUE","PVAL","P_VALUE","P-VALUE","P.VALUE","P_VAL","GC_PVALUE","PVAL_ESTIMATE")] <- "P"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the", setdiff(names1, hold_names), "column as the P column."),file=log.file,sep="\n",append=TRUE)
+      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the P column.")),file=log.file,sep="\n",append=TRUE)
       
       names1<-hold_names
       if("N" %in% hold_names) cat(print(paste("Interpreting the N column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("N","WEIGHT","NCOMPLETESAMPLES", "TOTALSAMPLESIZE", "TOTALN", "TOTAL_N","N_COMPLETE_SAMPLES")] <- "N"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N (sample size) column."),file=log.file,sep="\n",append=TRUE)
+      hold_names[hold_names %in%c("N","WEIGHT","NCOMPLETESAMPLES", "TOTALSAMPLESIZE", "TOTALN", "TOTAL_N","N_COMPLETE_SAMPLES", "SAMPLESIZE", "NEFF", "NEFFSUM")] <- "N"
+      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
       
-      names1<-hold_names
-      if("N_CAS" %in% hold_names) cat(print(paste("Interpreting the N_CAS column as the N_CAS (sample size for cases) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCASE","N_CASE","N_CASES","N_CAS", "NCAS", "NCA")] <- "N_CAS"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CAS (sample size for cases) column."),file=log.file,sep="\n",append=TRUE)
-      
-      names1<-hold_names
-      if("N_CON" %in% hold_names) cat(print(paste("Interpreting the N_CON column as the N_CON (sample size for controls) column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N", "NCON", "NCO")] <- "N_CON"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N_CON (sample size for controls) column."),file=log.file,sep="\n",append=TRUE)
+      if("NEFF" %in% names1 & is.null(N)){
+        cat(print(paste("Using the NEFF column for sample size. 
+                      Please note that this is likely effective sample size and should only be used for backing out logistic betas and standard errors for binary traits and that it should reflect the sum of effective sample sizes across cohorts. 
+                      Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running sumstats.")),file=log.file,sep="\n",append=TRUE)
+      }
       
       # Print a message for misisng P value, rs, effect or allele column
-      if(sum(hold_names %in% "P") == 0) cat(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A1") == 0) cat(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A2") == 0) cat(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "effect") == 0) cat(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "SNP") == 0) cat(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i]),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "P") == 0) cat(print(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "A1") == 0) cat(print(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "A2") == 0) cat(print(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "effect") == 0) cat(print(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "SNP") == 0) cat(print(paste0('Cannot find rs-id column, try renaming it SNP in the summary statistics file for:',trait.names[i])),file=log.file,sep="\n",append=TRUE)
       
       # Print a warning message when multiple columns interpreted as P-values, rsID, effect or allele columns
-      if(sum(hold_names %in% "P") > 1) cat(paste0('Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted as P to P2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A1") > 1) cat(paste0('Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want interpreted as effect allele column to A1_2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "A2") > 1) cat(paste0('Multiple columns are being interpreted as the other allele column. Try renaming the column you dont want interpreted as the other allele column to A2_2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "effect") > 1) cat(paste0('Multiple columns are being interpreted as the beta or effect column. Try renaming the column you dont want interpreted as the beta or effect column to effect2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
-      if(sum(hold_names %in% "SNP") > 1) cat(paste0('Multiple columns are being interpreted as the rs-id column. Try renaming the column you dont want interpreted as rs-id to SNP2 for:',filenames[i]),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "P") > 1) cat(print(paste0('Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted as P to P2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "A1") > 1) cat(print(paste0('Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want interpreted as effect allele column to A1_2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "A2") > 1) cat(print(paste0('Multiple columns are being interpreted as the other allele column. Try renaming the column you dont want interpreted as the other allele column to A2_2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "effect") > 1) cat(print(paste0('Multiple columns are being interpreted as the beta or effect column. Try renaming the column you dont want interpreted as the beta or effect column to effect2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
+      if(sum(hold_names %in% "SNP") > 1) cat(print(paste0('Multiple columns are being interpreted as the rs-id column. Try renaming the column you dont want interpreted as rs-id to SNP2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
       
       # Throw warnings for misisng P valuue, rs, effect or allele columns
       if(sum(hold_names %in% "P") == 0) warning(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',trait.names[i]))
@@ -456,41 +457,38 @@ if(int > length){
       if(sum(hold_names %in% "SNP") > 1) warning(paste0('Multiple columns are being interpreted as the rs-id column. Try renaming the column you dont want interpreted as rs-id to SNP2 for:',filenames[i]))
       
       
-      ##rename common MAF labels
-      names1<-hold_names
-      if("MAF" %in% hold_names) cat(paste("Interpreting the MAF column as the MAF (minor allele frequency) column."),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in% c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF"
-      if(length(setdiff(names1,hold_names)) > 0) cat(paste("Interpreting the ", setdiff(names1, hold_names), " column as the MAF (minor allele frequency) column."),file=log.file,sep="\n",append=TRUE)
-      
       ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
-      hold_names[hold_names %in%c("MAF","maf", "CEUaf", "Freq1", "EAF", "Freq1.Hapmap", "FreqAllele1HapMapCEU", "Freq.Allele1.HapMapCEU", "EFFECT_ALLELE_FREQ", "Freq.A1")] <- "MAF_Other"
-      
+      hold_names[hold_names %in%c("MAF", "CEUAF", "FREQ1", "EAF", "FREQ1.HAPMAP", "FREQALLELE1HAPMAPCEU", "FREQ.ALLELE1.HAPMAPCEU", "EFFECT_ALLELE_FREQ", "FREQ.A1")] <- "MAF"
+      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the MAF column.")),file=log.file,sep="\n",append=TRUE)
+
       names(files2) <- hold_names
       
       b<-nrow(files2)
       files2<-files2[!duplicated(files2[c("SNP","A1","A2")]),]
       cat(print(paste((b-nrow(files2)), "rows were removed from the", filenames[i], "summary statistics file due to entries that were duplicated across rsID, A1, and A2.")),file=log.file,sep="\n",append=TRUE)
       
-      
-      # Compute N as N cases and N control if reported:
-      if("N_CAS" %in% colnames(files2) & "N_CON" %in% colnames(files2)){
-        files2$N <- files2$N_CAS + files2$N_CON
-        cat(print(paste("As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the total sample size")),file=log.file,sep="\n",append=TRUE)
-      }
-      
-      if("N" %in% colnames(files2) & !(is.null(N))){
-        if(!(is.na(N[i]))){
-          cat(print(paste("As the summary statistics file includes a sample size column, this is being used in place of the user provided sample size. If the user wishes to still use the provided sample size, as opposed to the sample size listed in the summary statistics file, please change the sample size column header to N2. However, we note that sample size is only used for LPM and OLS conversions.")),file=log.file,sep="\n",append=TRUE)
-        }}
-      
-      if(!(is.null(N)) & !("N" %in% colnames(files2))){
+      if(!(is.null(N))){
         if(!(is.na(N[i]))){
           files2$N<-N[i]
+          if(OLS[i] == FALSE){
+            cat(print(paste("Using user provided N of ", N[i], " for ", filenames[i], " . Please note that this should reflect the sum of effective sample sizes if the linprob argument is being used to back out logistic betas.")),file=log.file,sep="\n",append=TRUE)
+          }
+          if(OLS[i] == TRUE){
+            cat(print(paste("Using user provided N of ", N[i], " for ", filenames[i], " . Please note that this should reflect the total sample size.")),file=log.file,sep="\n",append=TRUE)
+          }
         }}
       
-      ##make sure all alleles are upper case for matching
-      files2$A1 <- factor(toupper(files2$A1), c("A", "C", "G", "T"))
-      files2$A2 <- factor(toupper(files2$A2), c("A", "C", "G", "T"))
+      if(keep.indel == TRUE){
+        files2$A1 <- factor(toupper(files2$A1))
+        files2$A2 <- factor(toupper(files2$A2))
+        cat(print(paste0("Keeping variants other than SNPs, this may cause problems when alligning allle's across traits and the reference file")),file=log.file,sep="\n",append=TRUE)
+      }
+      
+      if(keep.indel == FALSE){
+        ##make sure all alleles are upper case for matching
+        files2$A1 <- factor(toupper(files2$A1), c("A", "C", "G", "T"))
+        files2$A2 <- factor(toupper(files2$A2), c("A", "C", "G", "T"))
+      }
       
       ##merge with ref file
       cat(print(paste("Merging file:", filenames[i], "with the reference file:", ref2)),file=log.file,sep="\n",append=TRUE)
@@ -520,7 +518,6 @@ if(int > length){
       if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.")),file=log.file,sep="\n",append=TRUE)
       if(a1 == a2) cat(print(paste("The effect column was determined NOT to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file based on the median of the effect column being close to 0.")),file=log.file,sep="\n",append=TRUE)
       
-      
       ##remove any rows printed as exactly 0
       b<-nrow(files2)
       if("effect" %in% colnames(files2)){
@@ -528,23 +525,31 @@ if(int > length){
       }
       if(b-nrow(files2) > 0) cat(print(paste(b-nrow(files2), "rows were removed from the", filenames[i], "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.")),file=log.file,sep="\n",append=TRUE)
       
-      if(OLS[i] == T){
-        cat(print(paste("An OLS transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        files2$Z <- sign(files2$effect) * sqrt(qchisq(files2$P,1,lower=F))
-        
-        if("N" %in% colnames(files2)){
-          files2$effect <- files2$Z/ sqrt(files2$N * 2 * (files2$MAF *(1-files2$MAF)))}else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
+      #use sample specific MAF for later conversions when possible; otherwise use ref MAF
+      if("MAF.y" %in% colnames(files2)){
+        files2$MAF.y<-ifelse(files2$MAF.y > .5, 1-files2$MAF.y, files2$MAF.y)
+        files2$varSNP<-2*files2$MAF.y*(1-files2$MAF.y)
+      }else{files2$varSNP<-2*files2$MAF*(1-files2$MAF)}
       
+      files2$Z <- sign(files2$effect) * sqrt(qchisq(files2$P,1,lower=F))
+      
+      if(OLS[i] == T & betas[[i]] == TRUE){
+        cat(print(paste("User provided arguments indicate that a GWAS of a continuous trait with already standardized betas is being provided for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
+      }
+      
+      if(OLS[i] == T & betas[[i]] == FALSE){
+        if("N" %in% colnames(files2)){
+          files2$effect <- files2$Z/sqrt(files2$N * files2$SNPvar)
+        }else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}
+      }
       
       if(linprob[i] == T){
-        cat(print(paste("An LPM transformation is being used for file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-        
-        files2$Z <- sign(files2$effect) * sqrt(qchisq(files2$P,1,lower=F))
+        cat(print(paste("An transformation used to back out logistic betas for binary traits is being applied for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
         
         if("N" %in% colnames(files2)){
-          files2$effect <- files2$Z/sqrt((prop[i]*(1-prop[i])*(2*files2$N*files2$MAF*(1-files2$MAF))))
-          files2$SE<-1/sqrt((prop[i]*(1-prop[i])*(2*files2$N*files2$MAF*(1-files2$MAF))))}else{cat(print("ERROR: A Sample Size (N) is needed for LPM Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}}
+          files2$effect <- files2$Z/sqrt((files2$N/4)*files2$varSNP)
+          files2$SE<-1/sqrt((files2$N/4)*files2$varSNP)
+        }else{cat(print("ERROR: An effective sample Size (N) is needed for backing out betas for binary traits. Please provide the sum of effective sample sizes to the N argument."),file=log.file,sep="\n",append=TRUE)}}
       
       # Flip effect to match ordering in ref file
       files2$effect <-  ifelse(files2$A1.x != (files2$A1.y) & files2$A1.x == (files2$A2.y),files2$effect*-1,files2$effect)
@@ -569,8 +574,6 @@ if(int > length){
         cat(print(paste(b-nrow(files2), "rows were removed from the", filenames[i], "summary statistics file due to INFO values below the designated threshold of", info.filter)),file=log.file,sep="\n",append=TRUE)
       }else{cat(print("No INFO column, cannot filter on INFO, which may influence results"),file=log.file,sep="\n",append=TRUE)}
       
-      varSNP<-2*files2$MAF*(1-files2$MAF)  
-      
       if(OLS[i] == T){
         output <- cbind.data.frame(files2$SNP,
                                    files2$effect,
@@ -581,8 +584,8 @@ if(int > length){
       
       if(linprob[i] == T){
         output<-cbind.data.frame(files2$SNP,
-                                 (files2$effect)/((files2$effect^2) * varSNP + (pi^2)/3)^.5,
-                                 (files2$SE)/(((files2$effect)^2) * varSNP + (pi^2)/3)^.5)  
+                                 (files2$effect)/((files2$effect^2) * files2$varSNP + (pi^2)/3)^.5,
+                                 (files2$SE)/(((files2$effect)^2) * files2$varSNP + (pi^2)/3)^.5)  
         output<-na.omit(output)
         output<-output[apply(output!=0, 1, all),]
         colnames(output) <- c("SNP",names.beta[i],names.se[i])                                         
@@ -597,8 +600,8 @@ if(int > length){
             if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
             
             output <- cbind.data.frame(files2$SNP,
-                                       (files2$effect)/((files2$effect^2) * varSNP + (pi^2)/3)^.5,
-                                       (files2$SE/exp(files2$effect))/(((files2$effect)^2 * varSNP + (pi^2)/3)^.5))
+                                       (files2$effect)/((files2$effect^2) * files2$varSNP + (pi^2)/3)^.5,
+                                       (files2$SE/exp(files2$effect))/(((files2$effect)^2 * files2$varSNP + (pi^2)/3)^.5))
             output<-na.omit(output)  
             colnames(output) <- c("SNP",names.beta[i],names.se[i])}}}
       
@@ -609,8 +612,8 @@ if(int > length){
         if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.names[i]))
         
         output <- cbind.data.frame(files2$SNP,
-                                   (files2$effect)/((files2$effect^2) * varSNP + (pi^2)/3)^.5,
-                                   (files2$SE)/(((files2$effect)^2) * varSNP + (pi^2)/3)^.5)  
+                                   (files2$effect)/((files2$effect^2) * files2$varSNP + (pi^2)/3)^.5,
+                                   (files2$SE)/(((files2$effect)^2) * files2$varSNP + (pi^2)/3)^.5)  
         output<-na.omit(output)  
         colnames(output) <- c("SNP",names.beta[i],names.se[i])}
       
@@ -660,8 +663,6 @@ if(int > length){
     print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = "")
     print(paste0("Please check the log files to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files."))
   }
-
-
   
   data.frame.out
   
