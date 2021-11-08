@@ -237,7 +237,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
       
         if(OLS[i] == T & betas[[i]] == FALSE){
         if("N" %in% colnames(files[[i]])){
-          files[[i]]$effect <- files[[i]]$Z/sqrt(files[[i]]$N * files[[i]]$SNPvar)
+          files[[i]]$effect <- files[[i]]$Z/sqrt(files[[i]]$N * files[[i]]$varSNP)
           }else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}
         }
       
@@ -539,7 +539,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
       
       if(OLS[i] == T & betas[[i]] == FALSE){
         if("N" %in% colnames(files2)){
-          files2$effect <- files2$Z/sqrt(files2$N * files2$SNPvar)
+          files2$effect <- files2$Z/sqrt(files2$N * files2$varSNP)
         }else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}
       }
       
