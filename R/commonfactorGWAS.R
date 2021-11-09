@@ -1,6 +1,8 @@
 
 commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,TWAS=FALSE,smooth_check=FALSE){ 
   time<-proc.time()
+  Operating<-Sys.info()[['sysname']]
+  # Set toler to machine precision to enable passing this to solve() directly
   if (!toler) toler <- .Machine$double.eps
   if(exists("Output")){
     stop("Please note that an update was made to commonfactorGWAS on 4/1/21 so that addSNPs output CANNOT be fed directly to the function. It now expects the 
@@ -22,33 +24,30 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     }
   }
   
-  
-  Operating<-Sys.info()[['sysname']]
-  
   ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
   SNPs<-data.frame(SNPs)
   
   if (TWAS) {
     SNPs$Gene<-as.character(SNPs$Gene)
     SNPs$Panel<-as.character(SNPs$Panel)
-    varSNP=SNPs$HSQ
+    varSNP <- SNPs$HSQ
   } else {
     SNPs$A1<-as.character(SNPs$A1)
     SNPs$A2<-as.character(SNPs$A2)
     SNPs$SNP<-as.character(SNPs$SNP)
     
     #SNP variance
-    varSNP=2*SNPs$MAF*(1-SNPs$MAF)
+    varSNP <- 2*SNPs$MAF*(1-SNPs$MAF)
   }
   
 
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
-    varSNPSE2=(.0005)^2
+    varSNPSE2 <- (.0005)^2
   }
   
   if(SNPSE != FALSE){
-    varSNPSE2 = SNPSE^2
+    varSNPSE2 <- SNPSE^2
   }
   
   V_LD<-as.matrix(covstruc[[1]])
@@ -73,7 +72,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   diag(I_LD)<-ifelse(diag(I_LD)<= 1, 1, diag(I_LD))
   
   #f = number of SNPs in dataset
-  f=nrow(beta_SNP) 
+  f <- nrow(beta_SNP)
 
   ##pull the column names specified in the munge function
   traits<-colnames(S_LD)
@@ -171,12 +170,12 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
     
     ##name the columns of the results file
     if(smooth_check==FALSE){
-    results=as.data.frame(matrix(NA,ncol=10,nrow=f))
-    colnames(results)=c("i","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning")
+    results <- as.data.frame(matrix(NA, ncol=10, nrow=f))
+    colnames(results) <- c("i", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning")
     }
     if(smooth_check==TRUE){
-      results=as.data.frame(matrix(NA,ncol=11,nrow=f))
-      colnames(results)=c("i","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning","Z_smooth")
+      results <- as.data.frame(matrix(NA, ncol=11, nrow=f))
+      colnames(results) <- c("i", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning", "Z_smooth")
     }
     
     for (i in 1:f) { 
@@ -647,10 +646,10 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   
     ##name the columns of the results file
     if(smooth_check == FALSE){
-    colnames(results)=c("i","n","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning")
+    colnames(results) <- c("i", "n", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning")
     }
     if(smooth_check == TRUE){
-      colnames(results)=c("i","n","lhs","op","rhs","est","se", "se_c", "Q", "fail", "warning","Z_smooth")
+      colnames(results) <- c("i", "n", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning", "Z_smooth")
     }
     
     ##sort results so it is in order of the output lists provided for the function

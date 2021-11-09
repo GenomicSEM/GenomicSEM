@@ -43,11 +43,6 @@
     return(V_Full)
 }
 
-# Title     : Minor supporting functions of userGWAS.R
-# Objective : Primarily to prevent clutter in userGWAS.R
-# Created by: mze210
-# Created on: 20/08/2021
-
 .get_V_SNP <- function(SE_SNP, I_LD, varSNP, GC, coords, k, i) {
      V_SNP<-diag(k)
     #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
