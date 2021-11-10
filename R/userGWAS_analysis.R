@@ -273,21 +273,14 @@
 
         ##combine results with SNP, CHR, BP, A1, A2 for particular model
         final2 <- cbind(i,n,SNPs2[i,],final,row.names=NULL)
-        if(smooth_check==TRUE){
-            final2 <- cbind(final2,Z_smooth)
-            if (TWAS) {
-                colnames(final2) <- c("i", "n","Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning","Z_smooth")
-
-            } else {
-                colnames(final2) <- c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning","Z_smooth")
-            }
-        }else{
-            if(TWAS){
-                colnames(final2) <- c("i", "n", "SNP", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-            } else {
-                colnames(final2) <- c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-            }
+        if(TWAS){
+            new_names <- c("i", "n", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+        } else {
+            new_names <- c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
         }
+        if(smooth_check==TRUE)
+            new_names <- c(new_names, "Z_smooth")
+        colnames(final2) <- new_names
 
         return(final2)
     }
