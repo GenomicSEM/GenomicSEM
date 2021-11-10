@@ -1,4 +1,4 @@
-.sumstats_per_file <- function(X, filenames, trait.names, N, keep.indel, OLS, betas, linprob, se.logit, names.beta, names.se, ref, ref2, files=NULL, log.file=NULL) {
+.sumstats_main <- function(X, filenames, trait.names, N, keep.indel, OLS, betas, linprob, se.logit, names.beta, names.se, ref, ref2, files=NULL, log.file=NULL) {
   if (!is.null(files)) {
     file <- data.frame(files[[X]])
   } else{

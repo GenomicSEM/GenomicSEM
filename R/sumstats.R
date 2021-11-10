@@ -58,7 +58,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
     cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
     Output <- list()
     for(i in 1:len){
-      Output[[i]] <- .sumstats_per_file(i, filenames, trait.names, N, keep.indel, OLS, betas, linprob, se.logit, names.beta, names.se, ref, ref2, files, log.file)
+      Output[[i]] <- .sumstats_main(i, filenames, trait.names, N, keep.indel, OLS, betas, linprob, se.logit, names.beta, names.se, ref, ref2, files, log.file)
     }
   }
 
@@ -73,7 +73,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
     }
 
     print("Performing conversions of individual summary statistics using parallel processing. Please note this step typically takes 10-20 minutes due to the size of the files.")
-    Output<-mclapply(X=1:len,FUN=.sumstats_per_file,filenames, trait.names, N, keep.indel, OLS, betas, linprob, se.logit, names.beta, names.se, ref, ref2,
+    Output<-mclapply(X=1:len,FUN=.sumstats_main,filenames, trait.names, N, keep.indel, OLS, betas, linprob, se.logit, names.beta, names.se, ref, ref2,
                      mc.cores=int)
   }
   for(i in 1:len){
