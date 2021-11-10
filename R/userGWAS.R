@@ -1,12 +1,3 @@
-# Changed k to n_phenotypes in main code body for clarity
-# Added parallel fucntionality for windows
-# Moved main analysis code to userGWAS_analysis
-# moved tryCatch.W.E and rearrange to utils
-# moved creation of Z_pre, V_SNP and V_full to utils
-# removed argument modelchi as it was unused
-# Changed assignments that used = to <- script-wide for consistency
-# Changed NAMESPACE exportPattern to "^[^\\.]", to keep functions starting with . internal
-
 userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", printwarn=TRUE,
                      sub=FALSE,cores=NULL, toler=FALSE, SNPSE=FALSE, parallel=TRUE, GC="standard", MPI=FALSE,
                      smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
