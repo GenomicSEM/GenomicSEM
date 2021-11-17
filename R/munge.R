@@ -18,7 +18,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01,
   
   begin.time <- Sys.time()
   
-  .LOG("The munging of ", length(trait.names), " summary statistics started at ",begin.time,file=log.file)
+  .LOG("The munging of ", length(trait.names), " summary statistics started at ", begin.time, file=log.file)
   if (overwrite) {
     existing_files <- c()
     for (trait.name in trait.names) {
@@ -28,10 +28,10 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01,
     if (length(existing_files) > 0)
       .LOG("File(s) ", paste0(existing_files, collapse = ", "), " already exist and will be overwritten", file=log.file)
   }
-  .LOG("Reading summary statistics for", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.",file=log.file)
+  .LOG("Reading summary statistics for", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.", file=log.file)
   
   ##note that fread is not used here due to formatting differences across summary statistic files
-  files = lapply(files, read.table,header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
+  files <- lapply(files, read.table, header=T, quote="\"", fill=T, na.string=c(".", NA, "NA", ""))
   .LOG("Reading in reference file",file=log.file)
   ref <- fread(hm3,header=T,data.table=F)
   .LOG("All files loaded into R!",file=log.file)
@@ -114,7 +114,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01,
     if("INFO" %in% colnames(files[[i]])) {
       b<-nrow(files[[i]])
       files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
-      .LOG(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to INFO values below the designated threshold of", info.filter,file=log.file)
+      .LOG(b-nrow(files[[i]]), " rows were removed from the ", filenames[i], " summary statistics file due to INFO values below the designated threshold of", info.filter,file=log.file)
     }else{.LOG("No INFO column, cannot filter on INFO, which may influence results",file=log.file)}
     
     ##filter on MAF filter at designated threshold provided for the maf.filter argument (default = 0.01)
@@ -123,7 +123,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01,
       b<-nrow(files[[i]])
       files[[i]] <- files[[i]][files[[i]]$MAF >= maf.filter,]
       files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$MAF)))
-      .LOG(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing MAF information or MAFs below the designated threshold of", maf.filter,file=log.file)
+      .LOG(b-nrow(files[[i]]), " rows were removed from the ", filenames[i], " summary statistics file due to missing MAF information or MAFs below the designated threshold of", maf.filter,file=log.file)
     }else{
       .LOG("No MAF column, cannot filter on MAF, which may influence results",file=log.file)
 }
