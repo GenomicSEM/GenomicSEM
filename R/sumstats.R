@@ -45,7 +45,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
     
     cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
     ref <- fread(ref,header=T,data.table=F)
- 
+    
     ##filter ref file on user provided maf.filter
     cat(print(paste("Applying MAF filer of", maf.filter, "to the reference file.")),file=log.file,sep="\n",append=TRUE)
     ref<-subset(ref, ref$MAF >= maf.filter)
@@ -56,7 +56,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
     
     ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
     files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
-   
+    
     cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
     
     for(i in 1:length){
@@ -91,10 +91,10 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
         }}
       
       if(betas[[i]] == FALSE){
-      names1<-hold_names
-      if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-      hold_names[hold_names %in%c("OR","B","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Z","ZSCORE","EST","ZSTAT","ZSTATISTIC", "BETA1" ,"LOGOR")] <- "effect"
-      if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column.")),file=log.file,sep="\n",append=TRUE)
+        names1<-hold_names
+        if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
+        hold_names[hold_names %in%c("OR","B","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Z","ZSCORE","EST","ZSTAT","ZSTATISTIC", "BETA1" ,"LOGOR")] <- "effect"
+        if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column.")),file=log.file,sep="\n",append=TRUE)
       }else{
         hold_names[hold_names %in% betas[[i]]] <- "effect"
         if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column. As this was directly supplied to the betas argument, the assumption is being made that this reflects a beta for a continuous trait that is standardized with respect to the trait variance.")),file=log.file,sep="\n",append=TRUE)
@@ -119,7 +119,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
       if("N" %in% hold_names) cat(print(paste("Interpreting the N column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("N","WEIGHT","NCOMPLETESAMPLES", "TOTALSAMPLESIZE", "TOTALN", "TOTAL_N","N_COMPLETE_SAMPLES", "SAMPLESIZE", "NEFF", "NEFFSUM")] <- "N"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
-  
+      
       if("NEFF" %in% names1 & is.null(N)){
         cat(print(paste("Using the NEFF column for sample size. 
                       Please note that this is likely effective sample size and should only be used for backing out logistic betas and standard errors for binary traits and that it should reflect the sum of effective sample sizes across cohorts. 
@@ -211,8 +211,11 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
       
       #use sample specific MAF for later conversions when possible; otherwise use ref MAF
       if("MAF.y" %in% colnames(files[[i]])){
-      files[[i]]$MAF.y<-ifelse(files[[i]]$MAF.y > .5, 1-files[[i]]$MAF.y, files[[i]]$MAF.y)
-      files[[i]]$varSNP<-2*files[[i]]$MAF.y*(1-files[[i]]$MAF.y)
+        files[[i]]$MAF.y<-ifelse(files[[i]]$MAF.y > .5, 1-files[[i]]$MAF.y, files[[i]]$MAF.y)
+        b<-nrow(files[[i]])
+        files[[i]]<-subset(files[[i]], files[[i]]$MAF.y != 0 & files[[i]]$MAF.y != 1)
+        if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to allele frequencies printed as exactly 1 or 0")),file=log.file,sep="\n",append=TRUE)
+        files[[i]]$varSNP<-2*files[[i]]$MAF.y*(1-files[[i]]$MAF.y)
       }else{files[[i]]$varSNP<-2*files[[i]]$MAF*(1-files[[i]]$MAF)}
       
       ##determine whether it is OR or logistic/continuous effect based on median effect size 
@@ -235,11 +238,11 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
         cat(print(paste("User provided arguments indicate that a GWAS of a continuous trait with already standardized betas is being provided for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
       }
       
-        if(OLS[i] == T & betas[[i]] == FALSE){
+      if(OLS[i] == T & betas[[i]] == FALSE){
         if("N" %in% colnames(files[[i]])){
           files[[i]]$effect <- files[[i]]$Z/sqrt(files[[i]]$N * files[[i]]$varSNP)
-          }else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}
-        }
+        }else{cat(print("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N."),file=log.file,sep="\n",append=TRUE)}
+      }
       
       if(linprob[i] == T){
         cat(print(paste("An transformation used to back out logistic betas for binary traits is being applied for:", filenames[i])),file=log.file,sep="\n",append=TRUE)
@@ -247,7 +250,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
         if("N" %in% colnames(files[[i]])){
           files[[i]]$effect <- files[[i]]$Z/sqrt((files[[i]]$N/4)*files[[i]]$varSNP)
           files[[i]]$SE<-1/sqrt((files[[i]]$N/4)*files[[i]]$varSNP)
-          }else{cat(print("ERROR: An effective sample Size (N) is needed for backing out betas for binary traits. Please provide the sum of effective sample sizes to the N argument."),file=log.file,sep="\n",append=TRUE)}}
+        }else{cat(print("ERROR: An effective sample Size (N) is needed for backing out betas for binary traits. Please provide the sum of effective sample sizes to the N argument."),file=log.file,sep="\n",append=TRUE)}}
       
       # Flip effect to match ordering in ref file
       files[[i]]$effect <-  ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
@@ -316,8 +319,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
         colnames(output) <- c("SNP",names.beta[i],names.se[i])}
       
       cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC and merging with the reference file.")),file=log.file,sep="\n",append=TRUE)
-      
-      if(mean(abs(output[,2]/output[,3])) > 5){
+
+     if(mean(abs(output[,2]/output[,3])) > 5){
         cat(print(paste0('WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were misspecified. Please post on the google group if you are unable to figure out the issue.")),file=log.file,sep="\n",append=TRUE)
         warning(paste0('The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.names[i], ". This suggests a column was misinterpreted or arguments were misspecified. Please post on the google group if you are unable to figure out the issue."))
       }
@@ -460,7 +463,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
       ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
       hold_names[hold_names %in%c("MAF", "CEUAF", "FREQ1", "EAF", "FREQ1.HAPMAP", "FREQALLELE1HAPMAPCEU", "FREQ.ALLELE1.HAPMAPCEU", "EFFECT_ALLELE_FREQ", "FREQ.A1")] <- "MAF"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the MAF column.")),file=log.file,sep="\n",append=TRUE)
-
+      
       names(files2) <- hold_names
       
       b<-nrow(files2)
@@ -528,6 +531,9 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
       #use sample specific MAF for later conversions when possible; otherwise use ref MAF
       if("MAF.y" %in% colnames(files2)){
         files2$MAF.y<-ifelse(files2$MAF.y > .5, 1-files2$MAF.y, files2$MAF.y)
+        b<-nrow(files2)
+        files2<-subset(files2, files2$MAF.y != 0 & files2$MAF.y != 1)
+        if(b-nrow(files2) > 0) cat(print(paste(b-nrow(files2), "rows were removed from the", filenames[i], "summary statistics file due to allele frequencies printed as exactly 1 or 0")),file=log.file,sep="\n",append=TRUE)
         files2$varSNP<-2*files2$MAF.y*(1-files2$MAF.y)
       }else{files2$varSNP<-2*files2$MAF*(1-files2$MAF)}
       
