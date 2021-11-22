@@ -156,6 +156,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
       
       
       ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
+      names1<-hold_names
+      if("MAF" %in% hold_names) cat(print(paste("Interpreting the MAF column as the MAF column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("MAF", "CEUAF", "FREQ1", "EAF", "FREQ1.HAPMAP", "FREQALLELE1HAPMAPCEU", "FREQ.ALLELE1.HAPMAPCEU", "EFFECT_ALLELE_FREQ", "FREQ.A1")] <- "MAF"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the MAF column.")),file=log.file,sep="\n",append=TRUE)
       
@@ -461,6 +463,8 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
       
       
       ##rename common MAF labels to MAF_Other so MAF from ref file is used across traits for conversions
+      names1<-hold_names
+      if("MAF" %in% hold_names) cat(print(paste("Interpreting the MAF column as the MAF column.")),file=log.file,sep="\n",append=TRUE)
       hold_names[hold_names %in%c("MAF", "CEUAF", "FREQ1", "EAF", "FREQ1.HAPMAP", "FREQALLELE1HAPMAPCEU", "FREQ.ALLELE1.HAPMAPCEU", "EFFECT_ALLELE_FREQ", "FREQ.A1")] <- "MAF"
       if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the MAF column.")),file=log.file,sep="\n",append=TRUE)
       
