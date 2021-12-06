@@ -28,16 +28,16 @@
   )
   for (col in names(interpreted_names)) {
     if (col %in% names(userprovided)) {
-      .LOG("Interpreting the",column_names[[col]],"column as the ",col, " column, as requested",file=log.file)
-      hold_names[ hold_names == toupper(column_names[[col]]) ] <- col
+      .LOG("Interpreting the ",userprovided[[col]]," column as the ",col, " column, as requested",file=log.file)
+      hold_names[ hold_names == toupper(userprovided[[col]]) ] <- col
     } else if(col %in% hold_names) {
-      .LOG("Interpreting the",col,"column as the ",col, " column.",file=log.file)
+      .LOG("Interpreting the ",col," column as the ",col, " column.",file=log.file)
     } else if (any(interpreted_names[[col]] %in% hold_names)) {
-      .LOG("Interpreting the", hold_names[ hold_names %in% interpreted_names[[col]] ], "column as the ",col," column.",file=log.file)
+      .LOG("Interpreting the ", hold_names[ hold_names %in% interpreted_names[[col]] ], " column as the ",col," column.",file=log.file)
       hold_names[ hold_names %in% interpreted_names[[col]] ] <- col
     } else {
       # Print a message for missing columns
-      .LOG('Cannot find ', col, ' column, try renaming it to ', col, ' in the summary statistics file for:',filenames[i],file=log.file)
+      .LOG('Cannot find ', col, ' column, try renaming it to ', col, ' in the summary statistics file for:',filename,file=log.file)
     }
   }
   # Print log and throw warning messages if multiple or no columns were found for those specified in checkforsingle

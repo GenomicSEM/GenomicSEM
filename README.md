@@ -1,4 +1,7 @@
 # GenomicSEM
+**Code Update 06.12.2021**
+- Fixed `object 'filenames' not found”` error when munging summary statistics
+
 **Code Update 17.11.2021**
 - Fixed '}' issue in utils.R
 - Changed assignments with = to <- in munge.R
