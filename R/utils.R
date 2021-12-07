@@ -49,8 +49,8 @@
     .LOG("Interpreting the ",hold_names[ hold_names %in% N_preferred ]," column as the N column.",file=log.file)
     if (any(c("NEFF", "N_EFF", "N_EFFECTIVE") %in% hold_names))
     .LOG("Using the NEFF column for sample size.\n
-          Please note that this is likely effective sample size and should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.
-          Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running munge.",file=log.file)
+  Please note that this is likely effective sample size and should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.\m
+  Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running munge.",file=log.file)
     hold_names[ hold_names %in% N_preferred ] <- "N"
   } else if (!(is.na(N))) {
     .LOG("Interpreting the ",hold_names[ hold_names %in% N_preferred ]," column as the N column.",file=log.file)

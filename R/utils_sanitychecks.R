@@ -14,19 +14,19 @@
   if (length(val) > 1) {
     for (x in val) {.check_range(x, min=min, max=max, allowNA=allowNA, inclusive=inclusive, name=name)}
   } else {
-    if (!(is.numeric(val))) stop(paste("ERROR: Value(s) of", name,"should be numeric"), call.=FALSE)
+    if (!(is.numeric(val))) stop(paste("Value(s) of", name,"should be numeric"), call.=FALSE)
     if (is.na(val)) {
-      if (!(allowNA)) stop(paste("ERROR: Value(s) of", name,"should not be NA"), call.=FALSE)
+      if (!(allowNA)) stop(paste("Value(s) of", name,"should not be NA"), call.=FALSE)
     } else {
       if (inclusive) {
         if (val <= min) {
-          stop(paste("ERROR: Value(s) of", name,"should be above",min), call.=FALSE)
+          stop(paste("Value(s) of", name,"should be above",min), call.=FALSE)
         } else if (val >= max) {
-          stop(paste("ERROR: Value(s) of", name,"should be below",max), call.=FALSE)
+          stop(paste("Value(s) of", name,"should be below",max), call.=FALSE)
         }
       } else {
         if (val < min) {
-          stop(paste("ERROR: Value(s) of", name,"should be above",min), call.=FALSE)
+          stop(paste("Value(s) of", name,"should be above",min), call.=FALSE)
         } else if (val > max) {
           stop(paste("Value(s) of", name,"should be below",max), call.=FALSE)
         }
