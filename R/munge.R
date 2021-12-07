@@ -54,28 +54,20 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
     .LOG("\n\n",file=log.file, print=FALSE)
     
     .LOG("Munging file: ", filenames[i],file=log.file, print=TRUE)
+    if (!is.na(N[i])) {
+      N_provided <- TRUE
+    }
     hold_names <- .get_renamed_colnames(toupper(names(files[[i]])),
-                                        column.names, c("P", "A1", "A2", "effect", "SNP"), filenames[i], N[i], log.file)
-    if ("xUseProvidedN" %in% hold_names) {
-      hold_names <- hold_names[hold_names != "xUseProvidedN"]
-      names(files[[i]]) <- hold_names
+                                        column.names, c("P", "A1", "A2", "effect", "SNP"), filenames[i], N_provided=N_provided, log.file)
+    colnames(files[[i]]) <- hold_names
+    if (N_provided) {
       files[[i]]$N <- N[i]
-    } else {
-      #Replace the original names
-      names(files[[i]]) <- hold_names
+      .LOG("Using provided N (",N,") for file:",filenames[i], file=log.file)
     }
 
     if("MAF" %in% colnames(files[[i]])) {
       ##make sure MAF is actually MAF (i.e., max value is .5 or less)
       files[[i]]$MAF<-ifelse(files[[i]]$MAF <= .5, files[[i]]$MAF, (1-files[[i]]$MAF))
-    }
-    
-    # Compute N is N cases and N control if reported and no other N was provided or found:
-    if (is.na(N[i]) & !("N" %in% colnames(files[[i]]))) {
-      if("N_CAS" %in% colnames(files[[i]])) {
-        files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
-        .LOG("As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the total sample size",file=log.file)
-      }
     }
 
     ##make sure all alleles are upper case for matching to reference file
