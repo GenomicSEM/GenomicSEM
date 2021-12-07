@@ -31,7 +31,7 @@
     if ("NEFF" %in% hold_names) {
       .LOG("Found an NEFF column for sample size. \n
        Please note that this is likely effective sample size and should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.\n
-       Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running munge.")
+       Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running munge.", file=log.file)
     }
   }
   for (col in names(interpreted_names)) {
