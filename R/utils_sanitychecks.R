@@ -4,7 +4,7 @@
   name_right <- deparse(substitute(right))
   if (!(is.null(left)) & !(is.null(right))) {
     if (length(left) != length(right)) {
-      stop(paste("ERROR: Length of", name_left,"and",name_right,"should be equal"), call.=FALSE)
+      stop(paste("Length of", name_left,"and",name_right,"should be equal"), call.=FALSE)
     }
   }
 }
