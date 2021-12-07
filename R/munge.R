@@ -1,14 +1,27 @@
-munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01,log.name=NULL, column.names=list(), overwrite=TRUE){
-  
-  length <- length(files)
-  filenames <- as.vector(files)
+munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=0.01,log.name=NULL, column.names=list(), overwrite=TRUE){
+  # Sanity checks
+  .check_file_exists(files)
+  .check_file_exists(hm3)
+  .check_equal_length(files, trait.names)
+  .check_equal_length(files, N)
+  if (!is.null(N)) {.check_range(N, min=0, max=Inf, allowNA=TRUE)}
+  .check_range(info.filter)
+  .check_range(maf.filter)
+  if (any(!(names(column.names) %in% c("SNP", "A1", "A2", "effect", "INFO", "P", "N", "N_CAS", "N_CON", "MAF", "Z")))) {
+    stop(paste0("ERROR: Names in column.names not recognized. Please use the following keys:\n        ",
+                paste(c("SNP", "A1", "A2", "effect", "INFO", "P", "N", "N_CAS", "N_CON", "MAF", "Z"), collapse=", ")))
+  }
+  .check_boolean(overwrite)
+  # Sanity checks finished
 
+  filenames <- as.vector(files)
+  if (is.null(N))  {
+    N <- rep(NA, length(files))
+  }
   if(is.null(log.name)){
     log2<-paste(trait.names,collapse="_")
-  
       if(nchar(log2) > 200){
       log2<-substr(log2,1,100)}
-  
   log.file <- file(paste0(log2, "_munge.log"),open="wt")
   }
   
@@ -28,7 +41,7 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01,
     if (length(existing_files) > 0)
       .LOG("File(s) ", paste0(existing_files, collapse = ", "), " already exist and will be overwritten", file=log.file)
   }
-  .LOG("Reading summary statistics for", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.", file=log.file)
+  .LOG("Reading summary statistics for ", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.", file=log.file)
   
   ##note that fread is not used here due to formatting differences across summary statistic files
   files <- lapply(files, read.table, header=T, quote="\"", fill=T, na.string=c(".", NA, "NA", ""))
@@ -36,57 +49,65 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01,
   ref <- fread(hm3,header=T,data.table=F)
   .LOG("All files loaded into R!",file=log.file)
  
-  for(i in 1:length){
+  for(i in 1:length(files)){
     
     .LOG("\n\n",file=log.file, print=FALSE)
     
     .LOG("Munging file: ", filenames[i],file=log.file, print=TRUE)
-    hold_names <- .get_renamed_colnames(files[[i]], column.names, c("P", "A1", "A2", "effect", "SNP"), filenames[i], log.file)
-
+    hold_names <- .get_renamed_colnames(toupper(names(files[[i]])),
+                                        column.names, c("P", "A1", "A2", "effect", "SNP"), filenames[i], N[i], log.file)
+    if ("xUseProvidedN" %in% hold_names) {
+      hold_names <- hold_names[hold_names != "xUseProvidedN"]
+      files[[i]]$N <- N[i]
+    }
     #Replace the original names
     names(files[[i]]) <- hold_names
+
 
     if("MAF" %in% colnames(files[[i]])) {
       ##make sure MAF is actually MAF (i.e., max value is .5 or less)
       files[[i]]$MAF<-ifelse(files[[i]]$MAF <= .5, files[[i]]$MAF, (1-files[[i]]$MAF))
     }
     
-    # Compute N is N cases and N control is reported:
-    if("N_CAS" %in% colnames(files[[i]])) {
-      files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
-      .LOG("As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the total sample size",file=log.file)
+    # Compute N is N cases and N control if reported and no other N was provided or found:
+    if (is.na(N[i]) & !("N" %in% colnames(files[[i]]))) {
+      if("N_CAS" %in% colnames(files[[i]])) {
+        files[[i]]$N <- files[[i]]$N_CAS + files[[i]]$N_CON
+        .LOG("As the file includes both N_CAS and N_CON columns, the summation of these two columns will be used as the total sample size",file=log.file)
+      }
     }
+
     
     ##make sure all alleles are upper case for matching to reference file
     files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
     files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
     
     ##merge with ref file
-    .LOG("Merging file:", filenames[i], "with the reference file:", hm3,file=log.file)
+    .LOG("Merging file:", filenames[i], " with the reference file:", hm3,file=log.file)
     b<-nrow(files[[i]])
-    .LOG(b, "rows present in the full", filenames[i], "summary statistics file.",file=log.file)
+    .LOG(b, " rows present in the full ", filenames[i], " summary statistics file.",file=log.file)
     files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
-    .LOG((b-nrow(files[[i]])), "rows were removed from the", filenames[i], "summary statistics file as the rs-ids for these rows were not present in the reference file.",file=log.file)
+    .LOG((b-nrow(files[[i]])), " rows were removed from the ", filenames[i], " summary statistics file as the rs-ids for these rows were not present in the reference file.",file=log.file)
     
     ##remove any rows with missing p-values
     b<-nrow(files[[i]])
     if("P" %in% colnames(files[[i]])) {
       files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
     }
-    if(b-nrow(files[[i]]) > 0) .LOG(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the P-value column",file=log.file)
+    if(b-nrow(files[[i]]) > 0) .LOG(b-nrow(files[[i]]), " rows were removed from the ", filenames[i], " summary statistics file due to missing values in the P-value column",file=log.file)
     
     ##remove any rows with missing effects
     b<-nrow(files[[i]])
     if("effect" %in% colnames(files[[i]])) {
       files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$effect)))
     }
-    if(b-nrow(files[[i]]) > 0) .LOG(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the effect column",file=log.file)
+    if(b-nrow(files[[i]]) > 0) .LOG(b-nrow(files[[i]]), " rows were removed from the ", filenames[i], " summary statistics file due to missing values in the effect column",file=log.file)
     
     ##determine whether it is OR or logistic/continuous effect based on median effect size 
     a1<-files[[i]]$effect[[1]]
     files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect,na.rm=T)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
     a2<-files[[i]]$effect[[1]]
-    if(a1 != a2) .LOG("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file. Please ensure this is correct.",file=log.file)
+    if(a1 != a2) .LOG("The effect column was determined to be coded as an odds ratio (OR) for the ", filenames[i], " summary statistics file. Please ensure this is correct.",file=log.file)
     
     # Flip effect to match ordering in ref file
     files[[i]]$effect<-ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
@@ -94,11 +115,11 @@ munge <- function(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01,
     ##remove SNPs that don't match A1 OR A2 in reference file.
     b<-nrow(files[[i]])
     files[[i]]<-subset(files[[i]], !(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x != (files[[i]]$A2.y)))
-    if(b-nrow(files[[i]]) > 0) .LOG(b-nrow(files[[i]]), "row(s) were removed from the", filenames[i], "summary statistics file due to the effect allele (A1) column not matching A1 or A2 in the reference file.",file=log.file)
+    if(b-nrow(files[[i]]) > 0) .LOG(b-nrow(files[[i]]), " row(s) were removed from the ", filenames[i], " summary statistics file due to the effect allele (A1) column not matching A1 or A2 in the reference file.",file=log.file)
   
     b<-nrow(files[[i]])
     files[[i]]<-subset(files[[i]], !(files[[i]]$A2.x != (files[[i]]$A2.y)  & files[[i]]$A2.x !=  (files[[i]]$A1.y)))
-    if(b-nrow(files[[i]]) > 0) .LOG(b-nrow(files[[i]]), "row(s) were removed from the", filenames[i], "summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.",file=log.file)
+    if(b-nrow(files[[i]]) > 0) .LOG(b-nrow(files[[i]]), " row(s) were removed from the ", filenames[i], " summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.",file=log.file)
     
     ####VALIDITY CHECKS#####
     

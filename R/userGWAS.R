@@ -1,6 +1,22 @@
 userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", printwarn=TRUE,
                      sub=FALSE,cores=NULL, toler=FALSE, SNPSE=FALSE, parallel=TRUE, GC="standard", MPI=FALSE,
                      smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
+  # Sanity checks
+  #TODO: add check for covstruc
+  #TODO: add check for SNPs
+  .check_one_of(estimation, c("DWLS", "ML"))
+  .check_boolean(printwarn)
+  .check_boolean(sub)
+  if (!is.null(cores)) .check_range(cores, min=0, max=Inf, allowNA=FALSE)
+  .check_boolean(toler)
+  .check_boolean(SNPSE)
+  .check_boolean(parallel)
+  .check_one_of(GC, c("standard", "conserv", "none"))
+  .check_boolean(MPI)
+  .check_boolean(smooth_check)
+  .check_boolean(TWAS)
+  .check_boolean(std.lv)
+  # Sanity checks finished
   time <- proc.time()
   Operating <- Sys.info()[['sysname']]
   # Set toler to machine precision to enable passing this to solve() directly

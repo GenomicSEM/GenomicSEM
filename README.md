@@ -1,4 +1,15 @@
 # GenomicSEM
+**TO DO**
+- Unify use of .LOG across all scripts
+- Unify use of sanity checks across all user-accesible functions
+
+**Code Update 07.12.2021**
+- Fixed issue that caused multiple columns to be found in munge.R
+- Merged changes (MAF = 0 check) with main branch in sumstats.R
+- Added basic sanity check functions to utils_sanitychecks.R
+- Added basic sanity checks to `munge()` and `userGWAS()` inputs
+- Sanity checks will be added to other functions in the future, to prevent functions terminating halfway through due to wrong input. 
+
 **Code Update 06.12.2021**
 - Fixed `object 'filenames' not found”` error when munging summary statistics
 
@@ -12,7 +23,7 @@
 - Enabled use of parallel on Windows in userGWAS.
 - Global minor changes to reduce code length where this did not impact readability or performance.
 - NAMESPACE was changed to enable the use of private functions (not accessible to the end-user), these functions will always start with a period (.).
-- Numerous functions (such as LOG, tryCatch.W.E) have been changed to private, and are moved to utils.R to enable access across the whole package. 
+- Numerous functions (such as LOG, tryCatch.W.E) have been changed to private, and are moved to utils.R to enable access from all functions in the package. 
 - Creation of matrices that are used across different GSEM functions such as Z_pre V_SNP and V_full have also been moved to utils.R. 
 - Additionally started replaing cat(print(paste(...))) commands with .LOG to unify its use. 
 - Changed assignments with = to <- script-wide for clarity.
@@ -20,11 +31,11 @@
 - userGWAS and sumstats now have 1 main function each (userGWAS_main and sumstats_main) which is used for both parallel and serial operation, to prevent copy-pasting.
   - userGWAS_main is the full analysis per SNP
   - sumstats_main is the entire parsing per file
-- Enabled user-provided column names in munge.
 - in userGWAS specifically: 
     - Some variable names have been changed (such as k to n_phenotypes) to improve readability. 
     - Removed argument modelchi as it was unused.
 - in munge specifically:
+    - added column.names argument allowing users to manually provide column names (e.g. column.names=list(SNP=mysnpcolumn))
     - added overwrite argument passed to gzip() to prevent halting on already existing files
 
 

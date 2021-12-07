@@ -4,8 +4,7 @@
   cat(msg, file = file, append = TRUE)
 }
 
-.get_renamed_colnames <- function(data, userprovided, checkforsingle=c(), filename, log.file) {
-  hold_names <- toupper(names(data))
+.get_renamed_colnames <- function(hold_names, userprovided, checkforsingle=c(), filename, N, log.file) {
   interpreted_names <- list(
     SNP=c("SNP","SNPID","RSID","RS_NUMBER","RS_NUMBERS", "MARKERNAME", "ID","PREDICTOR","SNP_ID"),
     A1=c("A1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","REF"),
@@ -13,7 +12,7 @@
     effect=c("OR","B","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Z","ZSCORE","EST","ZSTAT","ZSTATISTIC", "BETA1", "LOGOR"),
     INFO=c("INFO", "IMPINFO"),
     P=c("P","PVALUE","PVAL","P_VALUE","P-VALUE","P.VALUE","P_VAL","GC_PVALUE","WALD_P"),
-    N=c("N","WEIGHT","NCOMPLETESAMPLES", "TOTALSAMPLESIZE", "TOTALN", "TOTAL_N","N_COMPLETE_SAMPLES", "SAMPLESIZE"),
+    N=c("N","WEIGHT","NCOMPLETESAMPLES", "TOTALSAMPLESIZE", "TOTALN", "TOTAL_N","N_COMPLETE_SAMPLES", "SAMPLESIZE", "NEFF", "N_EFF", "N_EFFECTIVE"),
     N_CAS=c("NCASE","N_CASE","N_CASES","N_CAS", "NCAS", "NCA"),
     N_CON=c("NCONTROL","N_CONTROL","N_CONTROLS","N_CON","CONTROLS_N", "NCON", "NCO"),
     MAF=c("MAF", "CEUAF", "FREQ1", "EAF", "FREQ1.HAPMAP", "FREQALLELE1HAPMAPCEU", "FREQ.ALLELE1.HAPMAPCEU", "EFFECT_ALLELE_FREQ", "FREQ.A1"),
@@ -26,11 +25,13 @@
     effect="beta or effect",
     SNP="rs-id"
   )
-  for (col in names(interpreted_names)) {
+  # Names in N_preferred are used over user-provided N, for other names user-provided N will be preferred (if provided)
+  N_preferred <- c("NEFF", "N_EFF", "N_EFFECTIVE", "WEIGHT")
+  for (col in names(interpreted_names)[names(interpreted_names) != "N"]) {
     if (col %in% names(userprovided)) {
       .LOG("Interpreting the ",userprovided[[col]]," column as the ",col, " column, as requested",file=log.file)
       hold_names[ hold_names == toupper(userprovided[[col]]) ] <- col
-    } else if(col %in% hold_names) {
+    } else if (col %in% hold_names) {
       .LOG("Interpreting the ",col," column as the ",col, " column.",file=log.file)
     } else if (any(interpreted_names[[col]] %in% hold_names)) {
       .LOG("Interpreting the ", hold_names[ hold_names %in% interpreted_names[[col]] ], " column as the ",col," column.",file=log.file)
@@ -40,6 +41,27 @@
       .LOG('Cannot find ', col, ' column, try renaming it to ', col, ' in the summary statistics file for:',filename,file=log.file)
     }
   }
+  # Special case for sample size column:
+  if ("N" %in% names(userprovided)) {
+    .LOG("Interpreting the ",userprovided[["N"]]," column as the N column, as requested",file=log.file)
+    hold_names[ hold_names == toupper(userprovided[["N"]]) ] <- "N"
+  } else if (any(N_preferred %in% hold_names)) {
+    .LOG("Interpreting the ",hold_names[ hold_names %in% N_preferred ]," column as the N column.",file=log.file)
+    if (any(c("NEFF", "N_EFF", "N_EFFECTIVE") %in% hold_names))
+    .LOG("Using the NEFF column for sample size.\n
+          Please note that this is likely effective sample size and should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.
+          Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running munge.",file=log.file)
+    hold_names[ hold_names %in% N_preferred ] <- "N"
+  } else if (!(is.na(N))) {
+    .LOG("Interpreting the ",hold_names[ hold_names %in% N_preferred ]," column as the N column.",file=log.file)
+    hold_names <- c(hold_names, "xUseProvidedN")  # This is a bit of a hack to tell the main script to use userprovidedN for now
+  } else if (any(interpreted_names[["N"]] %in% hold_names)) {
+    .LOG("Interpreting the ", hold_names[ hold_names %in% interpreted_names[["N"]] ], " column as the N column.",file=log.file)
+    hold_names[ hold_names %in% interpreted_names[["N"]] ] <- "N"
+  } else {
+    # Print a message for missing columns
+    .LOG('Cannot find sample size, try renaming it to N, or providing sample size in the summary statistics file for:',filename,file=log.file)
+  }
   # Print log and throw warning messages if multiple or no columns were found for those specified in checkforsingle
   if (length(checkforsingle) > 0) {
     for (col in checkforsingle) {
@@ -47,7 +69,7 @@
         .LOG('Cannot find ',full_names[[col]],' column, try renaming it ', col, ' in the summary statistics file for:',filename,file=log.file)
         warning(paste0('Cannot find ',full_names[[col]],' column, try renaming it ', col, ' in the summary statistics file for:', filename))
       }
-      if(sum(hold_names == col) > 0) {
+      if(sum(hold_names == col) > 1) {
         .LOG('Multiple columns are being interpreted as the ',full_names[[col]],' column, try renaming the column you dont want interpreted to ', col, '2 in the summary statistics file for:',filename,file=log.file)
         warning(paste0('Multiple columns are being interpreted as the ',full_names[[col]],' column, try renaming the column you dont want interpreted to ', col, '2 in the summary statistics file for:', filename))
       }

@@ -69,9 +69,14 @@
 
   #use sample specific MAF for later conversions when possible; otherwise use ref MAF
   if("MAF.y" %in% colnames(file)){
-  file$MAF.y<-ifelse(file$MAF.y > .5, 1-file$MAF.y, file$MAF.y)
-  file$varSNP<-2*file$MAF.y*(1-file$MAF.y)
-  }else{file$varSNP<-2*file$MAF*(1-file$MAF)}
+    file$MAF.y<-ifelse(file$MAF.y > .5, 1-file$MAF.y, file$MAF.y)
+    b<-nrow(files2)
+    file<-subset(file, file$MAF.y != 0 & file$MAF.y != 1)
+    if(b-nrow(file) > 0) .LOG(b-nrow(file), " rows were removed from the ", filenames[i], " summary statistics file due to allele frequencies printed as exactly 1 or 0",file=log.file)
+    file$varSNP<-2*file$MAF.y*(1-file$MAF.y)
+  }else{
+    file$varSNP<-2*file$MAF*(1-file$MAF)
+  }
 
   ##determine whether it is OR or logistic/continuous effect based on median effect size
   a1<-file$effect[[1]]
