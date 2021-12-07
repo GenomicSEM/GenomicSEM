@@ -1,9 +1,24 @@
 
-commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,GC="standard",MPI=FALSE,TWAS=FALSE,smooth_check=FALSE){ 
-  time<-proc.time()
-  Operating<-Sys.info()[['sysname']]
+commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL,toler=FALSE,SNPSE=FALSE,parallel=TRUE,
+                            GC="standard",MPI=FALSE,TWAS=FALSE,smooth_check=FALSE){
   # Set toler to machine precision to enable passing this to solve() directly
   if (!toler) toler <- .Machine$double.eps
+  # Sanity checks
+  #TODO: add check for covstruc
+  #TODO: add check for SNPs
+  .check_one_of(estimation, c("DWLS", "ML"))
+  if (!is.null(cores)) .check_range(cores, min=0, max=Inf, allowNA=FALSE)
+  .check_range(toler, min=0, max=Inf)
+  .check_boolean(SNPSE)
+  .check_boolean(parallel)
+  .check_one_of(GC, c("standard", "conserv", "none"))
+  .check_boolean(MPI)
+  .check_boolean(TWAS)
+  .check_boolean(smooth_check)
+  # Sanity checks finished
+
+  time<-proc.time()
+  Operating<-Sys.info()[['sysname']]
   if(exists("Output")){
     stop("Please note that an update was made to commonfactorGWAS on 4/1/21 so that addSNPs output CANNOT be fed directly to the function. It now expects the 
             output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments.")

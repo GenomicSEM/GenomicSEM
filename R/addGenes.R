@@ -1,6 +1,6 @@
 
 
-addGenes <-function(covstruc, Genes,GC="standard"){
+addGenes <-function(covstruc, Genes, GC="standard"){
   time<-proc.time()
   
   V_LD<-as.matrix(covstruc[[1]])

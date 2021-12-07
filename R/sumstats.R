@@ -39,14 +39,14 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
 
   log.file <- file(paste0(log2, "_sumstats.log"),open="wt")
 
-  cat(print(paste0("The preparation of ", length(trait.names), " summary statistics for use in Genomic SEM began at: ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste0("Please note that the files should be in the same order that they were listed for the ldsc function"), sep = ""),file=log.file,sep="\n",append=TRUE)
+  .LOG("The preparation of ", length(trait.names), " summary statistics for use in Genomic SEM began at: ",begin.time,file=log.file)
+  .LOG("Please note that the files should be in the same order that they were listed for the ldsc function",file=log.file)
 
-  cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
+  .LOG("Reading in reference file",file=log.file,append=TRUE)
   ref <- fread(ref,header=T,data.table=F)
 
   ##filter ref file on user provided maf.filter
-  cat(print(paste("Applying MAF filer of", maf.filter, "to the reference file.")),file=log.file,sep="\n",append=TRUE)
+  .LOG("Applying MAF filer of", maf.filter, "to the reference file.",file=log.file,append=TRUE)
   ref<-subset(ref, ref$MAF >= maf.filter)
 
   data.frame.out <- ref
@@ -56,7 +56,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
     ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
     files <- lapply(files, read.table, header=T, quote="\"", fill=T, na.string=c(".", NA, "NA", ""))
 
-    cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
+    .LOG("All files loaded into R!",file=log.file,append=TRUE)
     Output <- list()
     for(i in 1:len){
       Output[[i]] <- .sumstats_main(i, filenames, trait.names, N, keep.indel, OLS, betas, info.filter, linprob, se.logit, names.beta, names.se, ref, ref2, files, log.file)
@@ -90,12 +90,12 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
   mins <- floor(floor(total.time)/60)
   secs <- total.time-mins*60
 
-  cat(paste("     "),file=log.file,sep="\n",append=TRUE)
+  .LOG("     ",file=log.file,append=TRUE, print=FALSE)
   #cat(print(paste(b-nrow(data.frame.out), "rows were removed from the final summary statistics file due to duplicated base pair (BP) values")),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste0("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file"), sep = ""),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste0("Sumstats finished running at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste0("Running sumstats for all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste("Please check the log file", paste0(log2, "_sumstats.log"), "to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files.")),file=log.file,sep="\n",append=TRUE)
+  .LOG("After merging across all summary statistics using listwise deletion, performing QC, and merging with the reference file, there are ",nrow(data.frame.out), " SNPs left in the final multivariate summary statistics file",file=log.file,append=TRUE)
+  .LOG("Sumstats finished running at ",end.time,file=log.file,append=TRUE)
+  .LOG("Running sumstats for all files took ",mins," minutes and ",secs," seconds",file=log.file,append=TRUE)
+  .LOG("Please check the log file", paste0(log2, "_sumstats.log"), "to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files.",file=log.file,append=TRUE)
   flush(log.file)
   close(log.file)
 

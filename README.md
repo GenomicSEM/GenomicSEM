@@ -1,8 +1,10 @@
 # GenomicSEM
 **TO DO**
-- Unify use of .LOG across all scripts
 - Unify use of sanity checks across all user-accesible functions
 
+**Code Update 08.12.2021**
+
+  
 **Code Update 07.12.2021**
 - Fixed issue that caused multiple columns to be found in munge.R
 - Merged changes (MAF = 0 check) with main branch in sumstats.R
@@ -10,6 +12,8 @@
 - Added basic sanity checks to `munge()` and `userGWAS()` inputs
 - Sanity checks will be added to other functions in the future, to prevent functions terminating halfway through due to wrong input.
 - Added missing info.filter to .sumstats_main()
+- Unified use of .LOG across all scripts
+- Added sanity checks to `commonfactorGWAS()`
 
 **Code Update 06.12.2021**
 - Fixed `object 'filenames' not found”` error when munging summary statistics

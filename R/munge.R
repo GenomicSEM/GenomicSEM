@@ -65,8 +65,6 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
       names(files[[i]]) <- hold_names
     }
 
-
-
     if("MAF" %in% colnames(files[[i]])) {
       ##make sure MAF is actually MAF (i.e., max value is .5 or less)
       files[[i]]$MAF<-ifelse(files[[i]]$MAF <= .5, files[[i]]$MAF, (1-files[[i]]$MAF))
@@ -80,7 +78,6 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
       }
     }
 
-    
     ##make sure all alleles are upper case for matching to reference file
     files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
     files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
@@ -150,7 +147,7 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
       .LOG(b-nrow(files[[i]]), " rows were removed from the ", filenames[i], " summary statistics file due to missing MAF information or MAFs below the designated threshold of", maf.filter,file=log.file)
     }else{
       .LOG("No MAF column, cannot filter on MAF, which may influence results",file=log.file)
-}
+    }
 
     if("N" %in% colnames(files[[i]])) {
       output <- cbind.data.frame(files[[i]]$SNP,files[[i]]$N,files[[i]]$Z,files[[i]]$A1.x,files[[i]]$A2.x)

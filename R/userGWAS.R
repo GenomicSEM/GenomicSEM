@@ -1,6 +1,8 @@
 userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", printwarn=TRUE,
                      sub=FALSE,cores=NULL, toler=FALSE, SNPSE=FALSE, parallel=TRUE, GC="standard", MPI=FALSE,
                      smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
+  # Set toler to machine precision to enable passing this to solve() directly
+  if (!toler) toler <- .Machine$double.eps
   # Sanity checks
   #TODO: add check for covstruc
   #TODO: add check for SNPs
@@ -8,7 +10,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   .check_boolean(printwarn)
   .check_boolean(sub)
   if (!is.null(cores)) .check_range(cores, min=0, max=Inf, allowNA=FALSE)
-  .check_boolean(toler)
+  .check_range(toler, min=0, max=Inf)
   .check_boolean(SNPSE)
   .check_boolean(parallel)
   .check_one_of(GC, c("standard", "conserv", "none"))
@@ -19,8 +21,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   # Sanity checks finished
   time <- proc.time()
   Operating <- Sys.info()[['sysname']]
-  # Set toler to machine precision to enable passing this to solve() directly
-  if (!toler) toler <- .Machine$double.eps
+
   if(MPI == TRUE & Operating == "Windows"){
     stop("MPI is not currently available for Windows operating systems. Please set the MPI argument to FALSE, or switch to a Linux or Mac operating system.")
   }
