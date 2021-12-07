@@ -8,7 +8,8 @@
 - Merged changes (MAF = 0 check) with main branch in sumstats.R
 - Added basic sanity check functions to utils_sanitychecks.R
 - Added basic sanity checks to `munge()` and `userGWAS()` inputs
-- Sanity checks will be added to other functions in the future, to prevent functions terminating halfway through due to wrong input. 
+- Sanity checks will be added to other functions in the future, to prevent functions terminating halfway through due to wrong input.
+- Added missing info.filter to .sumstats_main()
 
 **Code Update 06.12.2021**
 - Fixed `object 'filenames' not found”` error when munging summary statistics
