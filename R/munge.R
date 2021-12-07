@@ -8,7 +8,7 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
   .check_range(info.filter)
   .check_range(maf.filter)
   if (any(!(names(column.names) %in% c("SNP", "A1", "A2", "effect", "INFO", "P", "N", "N_CAS", "N_CON", "MAF", "Z")))) {
-    stop(paste0("ERROR: Names in column.names not recognized. Please use the following keys:\n        ",
+    stop(paste0("Names in column.names not recognized. Please use the following keys:\n        ",
                 paste(c("SNP", "A1", "A2", "effect", "INFO", "P", "N", "N_CAS", "N_CON", "MAF", "Z"), collapse=", ")))
   }
   .check_boolean(overwrite)
@@ -58,10 +58,13 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
                                         column.names, c("P", "A1", "A2", "effect", "SNP"), filenames[i], N[i], log.file)
     if ("xUseProvidedN" %in% hold_names) {
       hold_names <- hold_names[hold_names != "xUseProvidedN"]
+      names(files[[i]]) <- hold_names
       files[[i]]$N <- N[i]
+    } else {
+      #Replace the original names
+      names(files[[i]]) <- hold_names
     }
-    #Replace the original names
-    names(files[[i]]) <- hold_names
+
 
 
     if("MAF" %in% colnames(files[[i]])) {
