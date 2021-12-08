@@ -54,9 +54,7 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
     .LOG("\n\n",file=log.file, print=FALSE)
     
     .LOG("Munging file: ", filenames[i],file=log.file, print=TRUE)
-    if (!is.na(N[i])) {
-      N_provided <- TRUE
-    }
+    N_provided <- (!is.na(N[i]))
     hold_names <- .get_renamed_colnames(toupper(names(files[[i]])),
                                         column.names, c("P", "A1", "A2", "effect", "SNP"), filenames[i], N_provided=N_provided, log.file)
     colnames(files[[i]]) <- hold_names

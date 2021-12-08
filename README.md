@@ -3,7 +3,7 @@
 - Unify use of sanity checks across all user-accesible functions
 
 **Code Update 08.12.2021**
-
+- Fixed `NA_provided not found` error.
   
 **Code Update 07.12.2021**
 - Fixed issue that caused multiple columns to be found in munge.R
