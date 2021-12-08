@@ -451,7 +451,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         .LOG("Mean Z*Z: ", round(mean(merged$ZZ), 4), file=log.file)
         .LOG("Cross trait Intercept: ", round(intercept, 4), " (", round(intercept.se, 4), ")", file=log.file)
         .LOG("Total Observed Scale Genetic Covariance (g_cov): ", round(reg.tot, 4), " (", round(tot.se, 4), ")", file=log.file)
-        .LOG("g_cov Z: ", format(reg.tot / tot.se, digits = 3),, file=log.file)
+        .LOG("g_cov Z: ", format(reg.tot / tot.se, digits = 3), file=log.file)
         .LOG("g_cov P-value: ", format(2 * pnorm(abs(reg.tot / tot.se), lower.tail = FALSE), digits = 5), file=log.file)
       }
 

@@ -4,7 +4,7 @@
   cat(msg, file = file, append = TRUE)
 }
 
-.get_renamed_colnames <- function(hold_names, userprovided, checkforsingle=c(), filename, N_provided, log.file) {
+.get_renamed_colnames <- function(hold_names, userprovided, checkforsingle=c(), filename, N_provided, log.file, utilfuncs=NULL) {
   interpreted_names <- list(
     SNP=c("SNP","SNPID","RSID","RS_NUMBER","RS_NUMBERS", "MARKERNAME", "ID","PREDICTOR","SNP_ID"),
     A1=c("A1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","REF"),
@@ -25,6 +25,11 @@
     effect="beta or effect",
     SNP="rs-id"
   )
+  if (!is.null(utilfuncs)) {
+    for (j in names(utilfuncs)) {
+        assign(j, utilfuncs[[j]], envir=environment())
+    }
+  }
   if (N_provided) {
     interpreted_names[["N"]] <- NULL
   } else {

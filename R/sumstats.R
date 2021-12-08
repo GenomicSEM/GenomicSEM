@@ -1,25 +1,38 @@
 sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N=NULL,betas=NULL,
                      info.filter = .6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL){
+  len <- length(files)
+  if (is.null(N)) N <- rep(NA, len)
+  if(is.null(OLS)){
+    OLS<-rep(FALSE,len)
+  }
+  if(is.null(linprob)){
+    linprob<-rep(FALSE,len)
+  }
+  if(is.null(betas)){
+    betas<-rep(FALSE,len)
+  }
+  # Sanity checks
+  .check_file_exists(files)
+  .check_file_exists(ref)
+  .check_equal_length(files, trait.names)
+  .check_equal_length(files, OLS)
+  .check_equal_length(files, linprob)
+  .check_equal_length(files, N)
+  .check_equal_length(files, betas)
+  .check_range(info.filter)
+  .check_range(maf.filter)
+  if (!is.null(N)) {.check_range(N, min=0, max=Inf, allowNA=TRUE)}
+  .check_boolean(keep.indel)
+  .check_boolean(parallel)
+  .check_range(cores, min=0, max=Inf)
+  # Sanity checks finished
+
 
   begin.time <- Sys.time()
-
-  len <- length(files)
 
   filenames <- as.vector(files)
 
   ref2<-ref
-
-  if(is.null(OLS)){
-    OLS<-rep(FALSE,len)
-  }
-
-  if(is.null(linprob)){
-    linprob<-rep(FALSE,len)
-  }
-
-  if(is.null(betas)){
-    betas<-rep(FALSE,len)
-  }
 
   if(is.null(trait.names)){
     names.beta <- paste0("beta.",1:len)

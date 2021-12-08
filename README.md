@@ -2,12 +2,53 @@
 **TO DO**
 - Unify use of sanity checks across all user-accesible functions
 
+**Changes for users**
+- Functions where sanity checks were added will now produce an error when provided wrong input before proceeding to the analyses. 
+  This prevents later termination as a result of incorrect input.
+- Parallel for Windows enabled for `userGWAS()`
+- Added parallel functionality to `munge()` (use of `parallel` and `cores` arguments identical to other functions)
+
 **Code Update 08.12.2021**
-- Fixed `NA_provided not found` error.
+- Added 'Changes for users' to README.md to keep track of changes users (may) notice
+- Fixed `NA_provided not found` error
+- Changed `sumstats()` to be compliant with changes made to munge
+- Fixed `,,` issue as a result of transitioning to `.LOG()` that caused `ldsc()` to crash
+- Moved body of sumtats munging code to `.munge_main()`
+- Added arguments `parallel`, and `cores` to `munge()`
+- Added arguments `parallel`, and `cores` to `munge()` documentation
+- Enabled parallel munging of sumstats, some initial test results below
+- Parallel munging will store log files separately to prevent clutter
+
+Systems:  
+HomePC: Windows 10, Ryzen7 3700X @ 3.60-4.4GHz, 48GB RAM, 970 EvoPlus 1TB  
+Server: Linux Ubuntu, 2xEPYC 7H12 @ 2.25-3.3GHz, 512GB RAM, storage device unknown  
+Sumstats: approximately 4M SNPs * 17 columns per file (12 neuroticism items from UKB)
+
+|N(files)|parallel|cores | HomePC<br>runtime (s) | Server<br>runtime (s) |
+|--------|--------|------|-----------------------|-----------------------|
+| 4      |  FALSE |  1   |    313                |   207                 |
+| 4      |  TRUE  |  2   |    204                |   195                 |
+| 4      |  TRUE  |  4   |    158                |   127                 |
+
+|N(files)|parallel|cores | HomePC<br>runtime (s) | Server<br>runtime (s) |
+|--------|--------|------|-----------------------|-----------------------|
+| 8      |  FALSE |  1   |    454                |   401                 |
+| 8      |  TRUE  |  2   |    354                |   330                 |
+| 8      |  TRUE  |  4   |    245                |   199                 |
+| 8      |  TRUE  |  8   |    206                |   135                 |
+
+|N(files)|parallel|cores | HomePC<br>runtime (s) | Server<br>runtime (s) |
+|--------|--------|------|-----------------------|-----------------------|
+| 12     |  FALSE |  1   |   755                 |   772                 |
+| 12     |  TRUE  |  2   |   505                 |   472                 |
+| 12     |  TRUE  |  4   |   332                 |   273                 |
+| 12     |  TRUE  |  8   |   282                 |   209                 |
+| 12     |  TRUE  |  12  |   256                 |   147                 |
+
   
 **Code Update 07.12.2021**
 - Fixed issue that caused multiple columns to be found in munge.R
-- Merged changes (MAF = 0 check) with main branch in sumstats.R
+- Merged changes (MAF=0 check) from main branch in sumstats.R
 - Added basic sanity check functions to utils_sanitychecks.R
 - Added basic sanity checks to `munge()` and `userGWAS()` inputs
 - Sanity checks will be added to other functions in the future, to prevent functions terminating halfway through due to wrong input.

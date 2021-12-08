@@ -4,15 +4,27 @@
   } else{
     file <- data.frame(read.table(filenames[X], header = T, quote="\"",fill=T,na.string=c(".",NA,"NA","")))
   }
+
   if (is.null(log.file)) {
     log.file <- file(paste0(trait.names[X], "_sumstats.log"),open="wt")
+  } else {
+    .LOG("\n\n",file=log.file, print=FALSE)
   }
-  .LOG("\n\n",file=log.file, print=FALSE)
 
-  .LOG("Preparing summary statistics for file: ", filenames[X],file=log.fil)
-
-  hold_names <- .get_renamed_colnames(file, userprovided=list(), checkforsingle=c("P", "A1", "A2", "effect", "SNP"), filenames[X], log.file)
-
+  .LOG("Preparing summary statistics for file: ", filenames[X],file=log.file)
+  N_provided <- (!is.na(N[X]))
+  hold_names <- .get_renamed_colnames(toupper(names(file)),
+                                      userprovided=list(), checkforsingle=c("P", "A1", "A2", "effect", "SNP"),
+                                      N_provided=FALSE, filenames[X], log.file)
+  colnames(file) <- hold_names
+  if (N_provided) {
+    file$N <- N[X]
+      if(OLS[X]){
+        .LOG("Using user provided N of ", N[X], " for ", filenames[X], " . Please note that this should reflect the total sample size.",file=log.file)
+      } else {
+        .LOG("Using user provided N of ", N[X], " for ", filenames[X], " . Please note that this should reflect the sum of effective sample sizes if the linprob argument is being used to back out logistic betas.",file=log.file)
+      }
+  }
   if ((!linprob[X]) & (!OLS[X]) & ("Z" %in% hold_names)){
     warning(paste0("There appears to be a Z-statistic column in the summary statistic file for ", trait.names[X], ". Please set linprob to TRUE for binary traits or OLS to true for continuous traits in order to back out the betas or if betas are already available remove this column."))
   }
@@ -23,24 +35,11 @@
   file<-file[!duplicated(file[c("SNP","A1","A2")]),]
   .LOG((b-nrow(file)), " rows were removed from the ", filenames[X], " summary statistics file due to entries that were duplicated across rsID, A1, and A2.",file=log.file)
 
-  if(!(is.null(N))){
-    if(!(is.na(N[X]))){
-      file$N<-N[X]
-      if(OLS[X] == FALSE){
-        .LOG("Using user provided N of ", N[X], " for ", filenames[X], " . Please note that this should reflect the sum of effective sample sizes if the linprob argument is being used to back out logistic betas.",file=log.file)
-      }
-      if(OLS[X] == TRUE){
-        .LOG("Using user provided N of ", N[X], " for ", filenames[X], " . Please note that this should reflect the total sample size.",file=log.file)
-      }
-    }}
-
-  if(keep.indel == TRUE){
+  if(keep.indel){
     file$A1 <- factor(toupper(file$A1))
     file$A2 <- factor(toupper(file$A2))
     .LOG("Keeping variants other than SNPs, this may cause problems when alligning alleles across traits and the reference file",file=log.file)
-  }
-
-  if(keep.indel == FALSE){
+  } else {
     ##make sure all alleles are upper case for matching
     file$A1 <- factor(toupper(file$A1), c("A", "C", "G", "T"))
     file$A2 <- factor(toupper(file$A2), c("A", "C", "G", "T"))
