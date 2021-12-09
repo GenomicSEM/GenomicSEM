@@ -5,11 +5,20 @@
 **Changes for users**
 - Functions where sanity checks were added will now produce an error when provided wrong input before proceeding to the analyses. 
   This prevents later termination as a result of incorrect input.
+- The input to the `files` argument for `munge()` and `sumstats()` is changed to a vector, where previously both a list or vector were accepted.
+  For now if a list is passed it is automatically changed to a vector and a deprecationwarning is printed, as this functionality will be removed in a future version. *pending approval*
 - Parallel for Windows enabled for `userGWAS()`
+- Parallel for Windows enabled for `sumstats()`
 - Added parallel functionality to `munge()` (use of `parallel` and `cores` arguments identical to other functions)
 
 **Code Update 09.12.2021**
 - Fixed 'N should be numeric' issue when NULL or NA is passed.
+- Fixed issue in `.check_one_of()`.
+- Changed parallel function used in sumstats from `mclapply` to `foreach()` with PSOCK cluster to (a) be in line with other parallel functions, and (b) enable parallel functionality on Windows.
+- Changed `.sumstats_main()` input to single file and single values to (a) be in line with other main functions and (b) ensure the loop only works with the required data and nothing extra
+- Enforced vector as input for `files` argument in both `munge()` and `sumstats()` *pending approval*
+- Enabled parallel for `sumstats()` on Windows
+
 
 **Code Update 08.12.2021**
 - Added 'Changes for users' to README.md to keep track of changes users (may) notice

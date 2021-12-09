@@ -59,7 +59,7 @@
 
 .check_one_of <- function(val, one_of) {
   name <- deparse(substitute(val))
-  if (sum(val %in% one_of) == 1) {
+  if (sum(one_of == val) != 1) {
     stop(paste(name, "should be one of the following values:\n",paste(one_of, collapse=", ")))
   }
 }

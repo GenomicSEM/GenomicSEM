@@ -9,7 +9,7 @@ sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N=NULL,betas=
          keep.indel=FALSE,parallel=FALSE,cores=NULL, \dots)
 }
 \arguments{
-   \item{files}{a list of file names, fuiles must be located in the working directory, or a path must be provided.}
+   \item{files}{a vector of file names, files must be located in the working directory, or a path must be provided.}
    \item{ref}{A reference file of SNPs to keep in your GWAS, one based on 1000 genomes phase 3 is provided. }
    \item{trait.names}{ a vector of trait names which will be used as names for the munged files}
    \item{se.logit}{ a logical vector indicating whether the standard errors in each set of summary statistics is on the logit scale}

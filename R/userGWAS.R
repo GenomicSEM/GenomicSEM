@@ -6,9 +6,9 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   # Sanity checks
   #TODO: add check for covstruc
   #TODO: add check for SNPs
+  #TODO: add check for sub
   .check_one_of(estimation, c("DWLS", "ML"))
   .check_boolean(printwarn)
-  .check_boolean(sub)
   if (!is.null(cores)) .check_range(cores, min=0, max=Inf, allowNA=FALSE)
   .check_range(toler, min=0, max=Inf)
   .check_boolean(SNPSE)
@@ -282,7 +282,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       utilfuncs[[".get_V_full"]] <- .get_V_full
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
       foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
-      .export=c(".userGWAS_analysis")) %dopar% {
+      .export=c(".userGWAS_main")) %dopar% {
         .userGWAS_main(i, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order,
         SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC, coords,
         smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,

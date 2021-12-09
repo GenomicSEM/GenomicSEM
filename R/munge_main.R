@@ -1,10 +1,10 @@
 .munge_main <- function(i, utilfuncs, file, filename, trait.name, N, ref, hm3, info.filter, maf.filter, column.names, overwrite, log.file=NULL) {
   if (is.null(log.file)) {
     log.file <- file(paste0(trait.name, "_munge.log"),open="wt")
-    close_log <- TRUE
+    on.exit(flush(log.file))
+    on.exit(close(log.file))
   } else {
     .LOG("\n\n",file=log.file, print=FALSE)
-    close_log <- FALSE
   }
   if (!is.null(utilfuncs)) {
     for (j in names(utilfuncs)) {
@@ -118,9 +118,5 @@
   gzip(paste0(trait.name,".sumstats"), overwrite=overwrite)
   .LOG("I am done munging file: ", filename,file=log.file)
   .LOG("The file is saved as ", paste0(trait.name,".sumstats.gz"), " in the current working directory.",file=log.file)
-  if (close_log) {
-    flush(log.file)
-    close(log.file)
-  }
   return()
 }

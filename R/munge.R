@@ -1,5 +1,15 @@
 munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=0.01,log.name=NULL, column.names=list(),
                   parallel=FALSE, cores=NULL, overwrite=TRUE){
+  if (is.list(files)) {
+    wrn <- paste0("DeprecationWarning: In future versions a list of filenames will no longer be accepted.\n",
+                  "                    Please change files to a vector to ensure future compatibility.")
+    warning(wrn)
+    files_ <- c()
+    for (i in 1:length(files)) {
+      files_ <- c(files_, files[[i]])
+    }
+    files <- files_
+  }
   if (is.null(N))  {
     N <- rep(NA, length(files))
   }
@@ -46,13 +56,12 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
     if (length(existing_files) > 0)
       .LOG("File(s) ", paste0(existing_files, collapse = ", "), " already exist and will be overwritten", file=log.file)
   }
-
+  .LOG("Reading in reference file",file=log.file)
+  ref <- fread(hm3,header=T,data.table=F)
   if (!parallel) {
     .LOG("Reading summary statistics for ", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.", file=log.file)
     ##note that fread is not used here due to formatting differences across summary statistic files
     files <- lapply(files, read.table, header=T, quote="\"", fill=T, na.string=c(".", NA, "NA", ""))
-    .LOG("Reading in reference file",file=log.file)
-    ref <- fread(hm3,header=T,data.table=F)
     .LOG("All files loaded into R!",file=log.file)
     for(i in 1:length(files)){
       .munge_main(i, NULL, files[[i]], filenames[i], trait.names[i], N[i], ref, hm3, info.filter, maf.filter, column.names, overwrite, log.file)
@@ -78,8 +87,6 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
     utilfuncs[[".get_renamed_colnames"]] <- .get_renamed_colnames
     utilfuncs[[".LOG"]] <- .LOG
     utilfuncs[["gzip"]] <- gzip
-    .LOG("Reading in reference file",file=log.file)
-    ref <- fread(hm3,header=T,data.table=F)
     .LOG("As parallel munging was requested, logs of each sumstats file will be saved separately",file=log.file)
     foreach (i=1:length(filenames), .export=c(".munge_main"), .packages=c("stringr")) %dopar% {
       .munge_main(i, utilfuncs, NULL, filenames[i], trait.names[i], N[i], ref, hm3, info.filter, maf.filter, column.names, overwrite, NULL)
