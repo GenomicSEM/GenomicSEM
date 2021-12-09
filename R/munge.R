@@ -26,7 +26,7 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
                 paste(c("SNP", "A1", "A2", "effect", "INFO", "P", "N", "N_CAS", "N_CON", "MAF", "Z"), collapse=", ")))
   }
   .check_boolean(parallel)
-  .check_range(cores, min=0, max=Inf)
+  if (!is.null(cores)) .check_range(cores, min=0, max=Inf)
   .check_boolean(overwrite)
   # Sanity checks finished
 

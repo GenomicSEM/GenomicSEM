@@ -9,7 +9,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   #TODO: add check for sub
   .check_one_of(estimation, c("DWLS", "ML"))
   .check_boolean(printwarn)
-  if (!is.null(cores)) .check_range(cores, min=0, max=Inf, allowNA=FALSE)
+  if (!is.null(cores)) .check_range(cores, min=0, max=Inf)
   .check_range(toler, min=0, max=Inf)
   .check_boolean(SNPSE)
   .check_boolean(parallel)
@@ -252,6 +252,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       } else {
         cl <- makeCluster(int, type="PSOCK")
       }
+      on.exit(stopCluster(cl))
     }
 
     SNPs2 <- suppressWarnings(split(SNPs2,1:int))
@@ -288,9 +289,6 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
         smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
         df, npar, utilfuncs)
       }
-    }
-    if (!MPI) {
-      stopCluster(cl)
     }
 
     ##sort results so it is in order of the output lists provided for the function

@@ -18,6 +18,7 @@
 - Changed `.sumstats_main()` input to single file and single values to (a) be in line with other main functions and (b) ensure the loop only works with the required data and nothing extra
 - Enforced vector as input for `files` argument in both `munge()` and `sumstats()` *pending approval*
 - Enabled parallel for `sumstats()` on Windows
+- Moved stopCluster in userGWAS to `on.exit` straight after creation to ensure cluster closes when the script terminates early for whatever reason.
 
 
 **Code Update 08.12.2021**
