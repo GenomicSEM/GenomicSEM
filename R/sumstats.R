@@ -21,7 +21,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
   .check_equal_length(files, betas)
   .check_range(info.filter)
   .check_range(maf.filter)
-  if (!is.null(N)) {.check_range(N, min=0, max=Inf, allowNA=TRUE)}
+  .check_range(N, min=0, max=Inf, allowNA=TRUE)
   .check_boolean(keep.indel)
   .check_boolean(parallel)
   .check_range(cores, min=0, max=Inf)

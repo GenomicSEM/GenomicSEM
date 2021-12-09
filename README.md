@@ -8,6 +8,9 @@
 - Parallel for Windows enabled for `userGWAS()`
 - Added parallel functionality to `munge()` (use of `parallel` and `cores` arguments identical to other functions)
 
+**Code Update 09.12.2021**
+- Fixed 'N should be numeric' issue when NULL or NA is passed.
+
 **Code Update 08.12.2021**
 - Added 'Changes for users' to README.md to keep track of changes users (may) notice
 - Fixed `NA_provided not found` error

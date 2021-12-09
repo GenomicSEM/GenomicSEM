@@ -14,10 +14,10 @@
   if (length(val) > 1) {
     for (x in val) {.check_range(x, min=min, max=max, allowNA=allowNA, inclusive=inclusive, name=name)}
   } else {
-    if (!(is.numeric(val))) stop(paste("Value(s) of", name,"should be numeric"), call.=FALSE)
     if (is.na(val)) {
       if (!(allowNA)) stop(paste("Value(s) of", name,"should not be NA"), call.=FALSE)
     } else {
+      if (!(is.numeric(val))) stop(paste("Value(s) of", name,"should be numeric"), call.=FALSE)
       if (inclusive) {
         if (val <= min) {
           stop(paste("Value(s) of", name,"should be above",min), call.=FALSE)
