@@ -28,7 +28,9 @@
   }
   hold_names <- .get_renamed_colnames(toupper(names(file)),
                                       userprovided=list(), checkforsingle=c("P", "A1", "A2", "effect", "SNP"),
-                                      N_provided=FALSE, filename, log.file, warnZ=((!linprob) & (!OLS)),utilfuncs)
+                                      N_provided=FALSE, filename, log.file, warnZ=((!linprob) & (!OLS)),
+                                      warn_for_missing=c("P", "A1", "A2", "effect", "SNP", "N"),
+                                      utilfuncs)
   colnames(file) <- hold_names
   if (N_provided) {
     file$N <- N

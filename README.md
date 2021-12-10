@@ -15,6 +15,7 @@
 - Fixed `files2 not found` issue in sumstats
 - Changed recognizing column names such that for `munge()` any beta or logOR column is preferred over Z, for `sumstats` if linprob and OLS is set to FALSE, Z will never be interpreted as effect
 - Removed N_Cases and N_Controls from recognized columns
+- Added warn_for_missing argument to `get_renamed_colnames()` to modify which missing columns should produce a warning
 
 **Code Update 09.12.2021**
 - Fixed 'N should be numeric' issue when NULL or NA is passed.

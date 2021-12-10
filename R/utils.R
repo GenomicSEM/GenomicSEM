@@ -5,7 +5,7 @@
 }
 
 .get_renamed_colnames <- function(hold_names, userprovided, checkforsingle=c(), filename, N_provided, log.file,
-                                  warnz=FALSE, utilfuncs=NULL) {
+                                  warnz=FALSE, warn_for_missing=c(), utilfuncs=NULL) {
   interpreted_names <- list(
     SNP=c("SNP","SNPID","RSID","RS_NUMBER","RS_NUMBERS", "MARKERNAME", "ID","PREDICTOR","SNP_ID"),
     A1=c("A1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","REF"),
@@ -58,7 +58,9 @@
         }
       }
     } else {
-      .LOG('Cannot find ', col, ' column, try renaming it to ', col, ' in the summary statistics file for:',filename,file=log.file)
+      if (col %in% warn_for_missing) {
+        .LOG('Cannot find ', col, ' column, try renaming it to ', col, ' in the summary statistics file for:',filename,file=log.file)
+      }
     }
   }
   # Print log and throw warning messages if multiple or no columns were found for those specified in checkforsingle
