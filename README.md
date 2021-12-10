@@ -11,6 +11,11 @@
 - Parallel for Windows enabled for `sumstats()`
 - Added parallel functionality to `munge()` (use of `parallel` and `cores` arguments identical to other functions)
 
+**Code Update 10.12.2021**
+- Fixed `files2 not found` issue in sumstats
+- Changed recognizing column names such that for `munge()` any beta or logOR column is preferred over Z, for `sumstats` if linprob and OLS is set to FALSE, Z will never be interpreted as effect
+- Removed N_Cases and N_Controls from recognized columns
+
 **Code Update 09.12.2021**
 - Fixed 'N should be numeric' issue when NULL or NA is passed.
 - Fixed issue in `.check_one_of()`.

@@ -20,9 +20,15 @@
 
   .LOG("Preparing summary statistics for file: ", filename,file=log.file)
   N_provided <- (!is.na(N))
+  names1 <- toupper(names(file))
+  if((!linprob) & (!OLS)){
+    if("Z" %in% names1 | "ZSCORE" %in% names1 | "Z-SCORE" %in% names1 | "ZSTATISTIC" %in% names1 | "Z-STATISTIC" %in% names1){
+
+  }
+  }
   hold_names <- .get_renamed_colnames(toupper(names(file)),
                                       userprovided=list(), checkforsingle=c("P", "A1", "A2", "effect", "SNP"),
-                                      N_provided=FALSE, filename, log.file, utilfuncs)
+                                      N_provided=FALSE, filename, log.file, warnZ=((!linprob) & (!OLS)),utilfuncs)
   colnames(file) <- hold_names
   if (N_provided) {
     file$N <- N
@@ -31,9 +37,6 @@
       } else {
         .LOG("Using user provided N of ", N, " for ", filename, " . Please note that this should reflect the sum of effective sample sizes if the linprob argument is being used to back out logistic betas.",file=log.file)
       }
-  }
-  if ((!linprob) & (!OLS) & ("Z" %in% hold_names)){
-    warning(paste0("There appears to be a Z-statistic column in the summary statistic file for ", trait.name, ". Please set linprob to TRUE for binary traits or OLS to true for continuous traits in order to back out the betas or if betas are already available remove this column."))
   }
 
   names(file) <- hold_names
@@ -76,7 +79,7 @@
   #use sample specific MAF for later conversions when possible; otherwise use ref MAF
   if("MAF.y" %in% colnames(file)){
     file$MAF.y<-ifelse(file$MAF.y > .5, 1-file$MAF.y, file$MAF.y)
-    b<-nrow(files2)
+    b<-nrow(file)
     file<-subset(file, file$MAF.y != 0 & file$MAF.y != 1)
     if(b-nrow(file) > 0) .LOG(b-nrow(file), " rows were removed from the ", filenames[i], " summary statistics file due to allele frequencies printed as exactly 1 or 0",file=log.file)
     file$varSNP<-2*file$MAF.y*(1-file$MAF.y)
@@ -187,7 +190,7 @@
   .LOG(nrow(output), " SNPs are left in the summary statistics file ", filename, " after QC and merging with the reference file.",file=log.file)
 
   if(mean(abs(output[,2]/output[,3])) > 5){
-    .LOG('WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.name, ". This suggests a column was misinterpreted or arguments were misspecified. Please post on the google group if you are unable to figure out the issue.",file=log.file)
+    .LOG('WARNING: The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.name, ". This suggests a column was misinterpreted or arguments were misspecified. Please post on the google group if you are unable to figure out the issue.",file=log.file, print=FALSE)
     warning(paste0('The average value of estimate over standard error (i.e., Z) is > 5 for ',trait.name, ". This suggests a column was misinterpreted or arguments were misspecified. Please post on the google group if you are unable to figure out the issue."))
   }
   return(output)

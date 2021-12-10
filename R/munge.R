@@ -21,9 +21,9 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
   .check_range(N, min=0, max=Inf, allowNA=TRUE)
   .check_range(info.filter)
   .check_range(maf.filter)
-  if (any(!(names(column.names) %in% c("SNP", "A1", "A2", "effect", "INFO", "P", "N", "N_CAS", "N_CON", "MAF", "Z")))) {
+  if (any(!(names(column.names) %in% c("SNP", "A1", "A2", "effect", "INFO", "P", "N",  "MAF", "Z")))) {
     stop(paste0("Names in column.names not recognized. Please use the following keys:\n        ",
-                paste(c("SNP", "A1", "A2", "effect", "INFO", "P", "N", "N_CAS", "N_CON", "MAF", "Z"), collapse=", ")))
+                paste(c("SNP", "A1", "A2", "effect", "INFO", "P", "N", "MAF", "Z"), collapse=", ")))
   }
   .check_boolean(parallel)
   if (!is.null(cores)) .check_range(cores, min=0, max=Inf)

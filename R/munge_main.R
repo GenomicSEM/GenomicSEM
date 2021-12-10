@@ -19,7 +19,7 @@
   N_provided <- (!is.na(N))
   hold_names <- .get_renamed_colnames(toupper(names(file)),
                                       column.names, c("P", "A1", "A2", "effect", "SNP"), filename,
-                                      N_provided=N_provided, log.file, utilfuncs)
+                                      N_provided=N_provided, log.file=log.file, utilfuncs=utilfuncs)
   colnames(file) <- hold_names
   if (N_provided) {
     file$N <- N
