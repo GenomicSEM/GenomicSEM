@@ -5,7 +5,7 @@
 }
 
 .get_renamed_colnames <- function(hold_names, userprovided, checkforsingle=c(), filename, N_provided, log.file,
-                                  warnz=FALSE, warn_for_missing=c(), utilfuncs=NULL) {
+                                  warnz=FALSE, warn_for_missing=c(), stop_on_missing=c(), utilfuncs=NULL) {
   interpreted_names <- list(
     SNP=c("SNP","SNPID","RSID","RS_NUMBER","RS_NUMBERS", "MARKERNAME", "ID","PREDICTOR","SNP_ID"),
     A1=c("A1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","REF"),
@@ -15,14 +15,16 @@
     P=c("P","PVALUE","PVAL","P_VALUE","P-VALUE","P.VALUE","P_VAL","GC_PVALUE","WALD_P"),
     N=c("N","WEIGHT","NCOMPLETESAMPLES", "TOTALSAMPLESIZE", "TOTALN", "TOTAL_N","N_COMPLETE_SAMPLES", "SAMPLESIZE", "NEFF", "N_EFF", "N_EFFECTIVE"),
     MAF=c("MAF", "CEUAF", "FREQ1", "EAF", "FREQ1.HAPMAP", "FREQALLELE1HAPMAPCEU", "FREQ.ALLELE1.HAPMAPCEU", "EFFECT_ALLELE_FREQ", "FREQ.A1"),
-    Z=c("Z", "ZSCORE", "Z-SCORE", "ZSTATISTIC", "ZSTAT", "Z-STATISTIC")
+    Z=c("Z", "ZSCORE", "Z-SCORE", "ZSTATISTIC", "ZSTAT", "Z-STATISTIC"),
+    SE=c("STDERR", "SE", "STDERRLOGOR")
   )
   full_names <- list(
     P="P-value",
     A1="effect allele",
     A2="other allele",
     effect="beta or effect",
-    SNP="rs-id"
+    SNP="rs-id",
+    SE="standard error"
   )
   if (!is.null(utilfuncs)) {
     for (j in names(utilfuncs)) {
@@ -34,8 +36,8 @@
   } else {
     if ("NEFF" %in% hold_names) {
       .LOG("Found an NEFF column for sample size. \n
-       Please note that this is likely effective sample size and should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.\n
-       Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running munge.", file=log.file)
+Please note that this is likely effective sample size and should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.\n
+Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running munge.", file=log.file)
     }
   }
   for (col in names(interpreted_names)) {
@@ -50,8 +52,8 @@
     } else if ((col == "effect")){
       if (any(interpreted_names[["Z"]] %in% hold_names)) {
         if (!warnz) {
-          .LOG("Interpreting the ", hold_names[ hold_names %in% interpreted_names[[col]] ], " column as the ",col," column.",file=log.file)
-          hold_names[ hold_names %in% interpreted_names[[col]] ] <- col
+          .LOG("Interpreting the ", hold_names[hold_names %in% interpreted_names[["Z"]] ] , " column as the ",col," column.",file=log.file)
+          hold_names[hold_names %in% interpreted_names[["Z"]] ] <- col
         } else {
           .LOG("There appears to be a Z-statistic column in the summary statistic file ", filename, ". Please set linprob to TRUE for binary traits or OLS to true for continuous traits in order to back out the betas or if betas are already available remove this column.", print=FALSE, file=log.file)
           warning(paste0("There appears to be a Z-statistic column in the summary statistic file ", filename, ". Please set linprob to TRUE for binary traits or OLS to true for continuous traits in order to back out the betas or if betas are already available remove this column."))
@@ -60,6 +62,8 @@
     } else {
       if (col %in% warn_for_missing) {
         .LOG('Cannot find ', col, ' column, try renaming it to ', col, ' in the summary statistics file for:',filename,file=log.file)
+      } else if (col %in% stop_on_missing) {
+        stop(paste0('Cannot find ', col, ' column, try renaming it to ', col, ' in the summary statistics file for:',filename))
       }
     }
   }

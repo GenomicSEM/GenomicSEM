@@ -16,8 +16,8 @@ munge(files,hm3,trait.names=NULL,N,info.filter = .9,maf.filter=0.01, column.name
    \item{info.filter}{Numeric value which is used as a lower bound for inputation quality (INFO)}
    \item{maf.filter}{Numeric value used as a lower bound for minor allel frequency}
    \item{column.names}{Optional list detailing which columns represent, SNP, MAF, etc. e.g. list(SNP=my_snp_column)}
-   \item{parallel}{Indicates whether sumstats should process the summary statistics files in parallel or serial fashion. Default is TRUE, indicating that it will run in parallel.}
-   \item{cores}{Indicates how many cores to use when running in parallel. The default is NULL, in which case sumstats will use 1 less than the total number of cores available in the local environment.}
+   \item{parallel}{Indicates whether munge should process the summary statistics files in parallel or serial fashion. Default is TRUE, indicating that it will run in parallel.}
+   \item{cores}{Indicates how many cores to use when running in parallel. The default is NULL, in which case munge will use 1 less than the total number of cores available in the local environment.}
    \item{overwrite}{Indicates whether existing .sumstats.gz files should be overwritten}
 }
 

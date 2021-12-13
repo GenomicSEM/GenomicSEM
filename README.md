@@ -1,15 +1,27 @@
 # GenomicSEM
 **TO DO**
-- Unify use of sanity checks across all user-accesible functions
+- Unify use of sanity checks across all user-accessible functions
 
 **Changes for users**
-- Functions where sanity checks were added will now produce an error when provided wrong input before proceeding to the analyses. 
+- Functions where sanity checks have been added will now produce an error when provided wrong input before proceeding to the analyses. 
   This prevents later termination as a result of incorrect input.
 - The input to the `files` argument for `munge()` and `sumstats()` is changed to a vector, where previously both a list or vector were accepted.
-  For now if a list is passed it is automatically changed to a vector and a deprecationwarning is printed, as this functionality will be removed in a future version. *pending approval*
-- Parallel for Windows enabled for `userGWAS()`
-- Parallel for Windows enabled for `sumstats()`
-- Added parallel functionality to `munge()` (use of `parallel` and `cores` arguments identical to other functions)
+  For now if a list is passed it is automatically changed to a vector and a deprecationwarning is printed, as this functionality will be removed in a future version.
+- Parallel on Windows enabled for `userGWAS()`
+- Parallel on Windows enabled for `commonfactorGWAS()`
+- Parallel on Windows enabled for `sumstats()`
+- Added parallel functionality for all OSes to `munge()` (use of `parallel` and `cores` arguments identical to other functions)
+
+
+**Code Update 13.12.2021**
+- Fixed issue caused by typo in `.sumstats_main()`
+- Changed warning for missing SE column in `sumstats()` to early breaking error as it would cause rest of the code to fail.
+- Fixed issue caused by typo in `commonfactorGWAS()`
+- Created commonfactorGWAS_main.R
+- Moved main body of analysis code of `commonfactorGWAS()` to `.commonfactorGWAS_main()` in line with other functions
+- Moved stopCluster in commonfactorGWAS to `on.exit` straight after creation to ensure cluster closes when the script terminates early for whatever reason.
+- Enabled parallel for Windows for `commonfactorGWAS()` using PSOCK cluster, same as `userGWAS`.
+- Global change: Moving from `if (X == TRUE)` and `if (X == FALSE)` to `if (X)` and `if (!X)` for readability.
 
 **Code Update 10.12.2021**
 - Fixed `files2 not found` issue in sumstats
@@ -22,7 +34,7 @@
 - Fixed issue in `.check_one_of()`.
 - Changed parallel function used in sumstats from `mclapply` to `foreach()` with PSOCK cluster to (a) be in line with other parallel functions, and (b) enable parallel functionality on Windows.
 - Changed `.sumstats_main()` input to single file and single values to (a) be in line with other main functions and (b) ensure the loop only works with the required data and nothing extra
-- Enforced vector as input for `files` argument in both `munge()` and `sumstats()` *pending approval*
+- Enforced vector as input for `files` argument in both `munge()` and `sumstats()`
 - Enabled parallel for `sumstats()` on Windows
 - Moved stopCluster in userGWAS to `on.exit` straight after creation to ensure cluster closes when the script terminates early for whatever reason.
 
@@ -97,7 +109,7 @@ Sumstats: approximately 4M SNPs * 17 columns per file (12 neuroticism items from
   - userGWAS_main is the full analysis per SNP
   - sumstats_main is the entire parsing per file
 - in userGWAS specifically: 
-    - Some variable names have been changed (such as k to n_phenotypes) to improve readability. 
+    - Some local variable names have been changed (such as k to n_phenotypes) to improve readability. 
     - Removed argument modelchi as it was unused.
 - in munge specifically:
     - added column.names argument allowing users to manually provide column names (e.g. column.names=list(SNP=mysnpcolumn))

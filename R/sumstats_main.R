@@ -1,4 +1,4 @@
-.sumstats_main <- function(X, utilfuncs, filename, trait.name, N, keep.indel, OLS, beta, info.filter, linprob, 
+.sumstats_main <- function(X, utilfuncs, filename, trait.name, N, keep.indel, OLS, beta, info.filter, linprob,
                            se.logit, name.beta, name.se, ref, ref2, file=NULL, log.file=NULL) {
   if (!is.null(file)) {
     file <- data.frame(file)
@@ -7,7 +7,7 @@
   }
   if (!is.null(utilfuncs)) {
     for (j in names(utilfuncs)) {
-        assign(j, utilfuncs[[j]], envir=environment())
+      assign(j, utilfuncs[[j]], envir=environment())
     }
   }
   if (is.null(log.file)) {
@@ -20,28 +20,27 @@
 
   .LOG("Preparing summary statistics for file: ", filename,file=log.file)
   N_provided <- (!is.na(N))
-  names1 <- toupper(names(file))
-  if((!linprob) & (!OLS)){
-    if("Z" %in% names1 | "ZSCORE" %in% names1 | "Z-SCORE" %in% names1 | "ZSTATISTIC" %in% names1 | "Z-STATISTIC" %in% names1){
-
-  }
+  if ((se.logit) | (all(!(c(linprob, OLS, se.logit))))) {
+    # if se.logit == T, or linprob,OLS,se.logit are all FALSE, SE is required.
+    stop_on_missing <- c("effect", "SNP", "SE")
+  } else {
+    stop_on_missing <- c("effect", "SNP")
   }
   hold_names <- .get_renamed_colnames(toupper(names(file)),
                                       userprovided=list(), checkforsingle=c("P", "A1", "A2", "effect", "SNP"),
-                                      N_provided=FALSE, filename, log.file, warnZ=((!linprob) & (!OLS)),
-                                      warn_for_missing=c("P", "A1", "A2", "effect", "SNP", "N"),
+                                      N_provided=FALSE, filename, log.file, warnz=((!linprob) & (!OLS)),
+                                      warn_for_missing = c("P", "A1", "A2", "N"),
+                                      stop_on_missing = stop_on_missing,
                                       utilfuncs)
   colnames(file) <- hold_names
   if (N_provided) {
     file$N <- N
-      if(OLS){
-        .LOG("Using user provided N of ", N, " for ", filename, " . Please note that this should reflect the total sample size.",file=log.file)
-      } else {
-        .LOG("Using user provided N of ", N, " for ", filename, " . Please note that this should reflect the sum of effective sample sizes if the linprob argument is being used to back out logistic betas.",file=log.file)
-      }
+    if(OLS){
+      .LOG("Using user provided N of ", N, " for ", filename, " . Please note that this should reflect the total sample size.",file=log.file)
+    } else {
+      .LOG("Using user provided N of ", N, " for ", filename, " . Please note that this should reflect the sum of effective sample sizes if the linprob argument is being used to back out logistic betas.",file=log.file)
+    }
   }
-
-  names(file) <- hold_names
 
   b<-nrow(file)
   file<-file[!duplicated(file[c("SNP","A1","A2")]),]
@@ -58,7 +57,7 @@
   }
 
   ##merge with ref file
-  .LOG("Merging file: ", filename, "with the reference file: ", ref2,file=log.file)
+  .LOG("Merging file: ", filename, " with the reference file: ", ref2,file=log.file)
   b<-nrow(file)
   .LOG(b, " rows present in the full ", filename, " summary statistics file.",file=log.file)
   file <- suppressWarnings(inner_join(ref,file,by="SNP",all.x=F,all.y=F))
@@ -105,23 +104,23 @@
 
   file$Z <- sign(file$effect) * sqrt(qchisq(file$P,1,lower=F))
 
-  if(OLS == T & beta == TRUE){
+  if(OLS & beta){
     .LOG("User provided arguments indicate that a GWAS of a continuous trait with already standardized betas is being provided for: ", filename,file=log.file)
   }
 
-    if(OLS == T & beta == FALSE){
+  if(OLS & !beta){
     if("N" %in% colnames(file)){
       file$effect <- file$Z/sqrt(file$N * file$varSNP)
-      }else{.LOG("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N.",file=log.file, print=FALSE)}
-    }
+    }else{.LOG("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N.",file=log.file, print=FALSE)}
+  }
 
-  if(linprob == T){
+  if(linprob){
     .LOG("An transformation used to back out logistic betas for binary traits is being applied for: ", filename,file=log.file)
 
     if("N" %in% colnames(file)){
       file$effect <- file$Z/sqrt((file$N/4)*file$varSNP)
       file$SE<-1/sqrt((file$N/4)*file$varSNP)
-      }else{.LOG("ERROR: An effective sample Size (N) is needed for backing out betas for binary traits. Please provide the sum of effective sample sizes to the N argument.",file=log.file)}}
+    }else{.LOG("ERROR: An effective sample Size (N) is needed for backing out betas for binary traits. Please provide the sum of effective sample sizes to the N argument.",file=log.file)}}
 
   # Flip effect to match ordering in ref file
   file$effect <-  ifelse(file$A1.x != (file$A1.y) & file$A1.x == (file$A2.y),file$effect*-1,file$effect)
@@ -143,10 +142,10 @@
   if("INFO" %in% colnames(file)) {
     b<-nrow(file)
     file <- file[file$INFO >= info.filter,]
-   .LOG(b-nrow(file), "rows were removed from the ", filename, " summary statistics file due to INFO values below the designated threshold of ", info.filter,file=log.file)
+    .LOG(b-nrow(file), "rows were removed from the ", filename, " summary statistics file due to INFO values below the designated threshold of ", info.filter,file=log.file)
   }else{.LOG("No INFO column, cannot filter on INFO, which may influence results",file=log.file)}
 
-  if(OLS == T){
+  if(OLS){
     output <- cbind.data.frame(file$SNP,
                                file$effect,
                                abs(file$effect/file$Z))
@@ -154,7 +153,7 @@
     colnames(output) <- c("SNP",name.beta,name.se)
   }
 
-  if(linprob == T){
+  if(linprob){
     output<-cbind.data.frame(file$SNP,
                              (file$effect)/((file$effect^2) * file$varSNP + (pi^2)/3)^.5,
                              (file$SE)/(((file$effect)^2) * file$varSNP + (pi^2)/3)^.5)
@@ -163,31 +162,24 @@
     colnames(output) <- c("SNP",name.beta,name.se)
   }
 
-  if(linprob == F){
-    if(OLS == F){
-      if(se.logit == F){
-        .LOG("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filename,file=log.file)
+  if(!linprob & !OLS & !se.logit){
+    .LOG("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is the SE of the odds ratio (i.e., NOT on the logistic scale) for:", filename,file=log.file)
 
-        if(sum(hold_names %in% "SE") == 0) .LOG('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.name,file=log.file)
-        if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for:',trait.name))
-
-        output <- cbind.data.frame(file$SNP,
-                                   (file$effect)/((file$effect^2) * file$varSNP + (pi^2)/3)^.5,
-                                   (file$SE/exp(file$effect))/(((file$effect)^2 * file$varSNP + (pi^2)/3)^.5))
-        output<-na.omit(output)
-        colnames(output) <- c("SNP",name.beta,name.se)}}}
-
-  if(se.logit== T){
+    output <- cbind.data.frame(file$SNP,
+                               (file$effect)/((file$effect^2) * file$varSNP + (pi^2)/3)^.5,
+                               (file$SE/exp(file$effect))/(((file$effect)^2 * file$varSNP + (pi^2)/3)^.5))
+    output<-na.omit(output)
+    colnames(output) <- c("SNP",name.beta,name.se)
+  }
+  if(se.logit){
     .LOG("Performing transformation under the assumption that the effect column is either an odds ratio or logistic beta (please see output above to determine whether it was interpreted as an odds ratio) and the SE column is a logistic SE (i.e., NOT the SE of the odds ratio) for:", filename,file=log.file)
-
-    if(sum(hold_names %in% "SE") == 0) .LOG('Cannot find SE column, try renaming it SE in the summary statistics file for: ',trait.name,file=log.file)
-    if(sum(hold_names %in% "SE") == 0) warning(paste0('Cannot find SE column, try renaming it SE in the summary statistics file for: ',trait.name))
 
     output <- cbind.data.frame(file$SNP,
                                (file$effect)/((file$effect^2) * file$varSNP + (pi^2)/3)^.5,
                                (file$SE)/(((file$effect)^2) * file$varSNP + (pi^2)/3)^.5)
     output<-na.omit(output)
-    colnames(output) <- c("SNP",name.beta,name.se)}
+    colnames(output) <- c("SNP",name.beta,name.se)
+  }
 
   .LOG(nrow(output), " SNPs are left in the summary statistics file ", filename, " after QC and merging with the reference file.",file=log.file)
 

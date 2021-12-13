@@ -181,7 +181,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
 
   rm(SNPs)
   f <- nrow(beta_SNP)
-  if(parallel==FALSE){
+  if(!parallel){
     #make empty list object for model results if not saving specific model parameter
     if(sub[[1]]==FALSE){
       Results_List <- vector(mode="list",length=nrow(beta_SNP))
@@ -229,10 +229,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
 
     return(Results_List)
 
-  }
-
-  if(parallel == TRUE){
-
+  } else {
     if(is.null(cores)){
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
       int <- detectCores() - 1
@@ -255,8 +252,8 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       on.exit(stopCluster(cl))
     }
 
-    SNPs2 <- suppressWarnings(split(SNPs2,1:int))
     #split the V_SNP and S_SNP matrices into as many (cores - 1) as are aviailable on the local computer
+    SNPs2 <- suppressWarnings(split(SNPs2,1:int))
     beta_SNP <- suppressWarnings(split(beta_SNP,1:int))
     SE_SNP <- suppressWarnings(split(SE_SNP,1:int))
     varSNP <- suppressWarnings(split(varSNP,1:int))
@@ -292,11 +289,9 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     }
 
     ##sort results so it is in order of the output lists provided for the function
-    results <-  results[order(results$i, results$n),]
-    results$n <- NULL
-
+    results <-  results[order(results$i),]
+    results$i <- NULL
     if(sub[[1]] != FALSE){
-      results$i <- NULL
       Results_List <- vector(mode="list", length=length(sub))
       for(y in 1:length(sub)){
         Results_List[[y]] <- as.data.frame(matrix(NA,ncol=ncol(results),nrow=nrow(results)/length(sub)))
