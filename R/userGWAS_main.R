@@ -82,8 +82,7 @@
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error.
     if(estimation == "DWLS"){
         test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,std.lv=std.lv))
-    }
-    if(estimation == "ML"){
+    } else if(estimation == "ML"){
         test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE,std.lv=std.lv))
     }
 
@@ -241,7 +240,7 @@
             final$AIC <- rep(NA, nrow(final))}
 
         ##add in error and warning messages
-        if(printwarn == TRUE){
+        if(printwarn){
             final$error <- ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
             final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]
         }
@@ -249,7 +248,7 @@
         ##combine with rs-id, BP, CHR, etc.
         final2 <- cbind(i,n,SNPs2[i,],final,row.names=NULL)
 
-        if(smooth_check==TRUE){
+        if(smooth_check){
             final2 <- cbind(final2,Z_smooth)
         }
 
@@ -262,7 +261,6 @@
         return(final2)
 
     }else{
-
         final <- data.frame(t(rep(NA, 13)))
         if(printwarn){
             final$error <- ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
@@ -279,7 +277,7 @@
         } else {
             new_names <- c("i", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
         }
-        if(smooth_check==TRUE)
+        if(smooth_check)
             new_names <- c(new_names, "Z_smooth")
         colnames(final2) <- new_names
 

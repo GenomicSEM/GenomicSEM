@@ -173,10 +173,10 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
 
   }
 
-  if(!(TWAS)){
-    SNPs2 <- SNPs[,1:6]
-  } else {
+  if(TWAS){
     SNPs2 <- SNPs[,1:3]
+  } else {
+    SNPs2 <- SNPs[,1:6]
   }
 
   rm(SNPs)

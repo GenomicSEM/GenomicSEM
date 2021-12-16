@@ -82,6 +82,7 @@ Be aware that some NEFF columns reflect half of the effective sample size, in wh
   }
   return(hold_names)
 }
+
 #function to rearrange the sampling covariance matrix from original order to lavaan's order:
 #'k' is the number of variables in the model
 #'fit' is the fit function of the regression model

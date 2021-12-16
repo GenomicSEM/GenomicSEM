@@ -99,6 +99,5 @@ read_fusion <- function(files,trait.names=NULL,OLS=NULL,linprob=NULL,prop=NULL,N
 
   }
   data.frame.out <- unique(data.frame.out)
-  data.frame.out
-
+  return(data.frame.out)
 }

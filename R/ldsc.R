@@ -17,7 +17,6 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   
   .LOG("Multivariate ld-score regression of ", length(traits), " traits ", "(", paste(traits, collapse = " "), ")", " began at: ", begin.time, file=log.file)
   
-  
   if(select == "ODD" | select == "EVEN"){
     odd<-seq(1,chr,2)
     even<-seq(2,chr,2)

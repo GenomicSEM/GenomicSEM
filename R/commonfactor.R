@@ -1,5 +1,4 @@
-
-commonfactor <-function(covstruc,estimation="DWLS"){ 
+commonfactor <-function(covstruc,estimation="DWLS"){
   time<-proc.time()
   
   #function to create lavaan syntax for a 1 factor model given k phenotypes

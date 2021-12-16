@@ -1,12 +1,5 @@
 s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait.names=NULL,n.blocks=200){
   
-  ##create log file
-  LOG <- function(..., print = TRUE) {
-    msg <- paste0(...)
-    if (print) print(msg)
-    cat(msg, file = log.file, sep = "\n", append = TRUE)
-  }
-  
   log2<-paste(traits,collapse="_")
   
   logtraits<-gsub(".*/","",traits)
@@ -21,15 +14,15 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   Operating<-Sys.info()[['sysname']]
   
   ##print start time
-  LOG(paste("Analysis started at",begin.time),"\n")
+  .LOG("Analysis started at",begin.time, file=log.file)
   #print("If function stops without producing desired s_ldsc object please check the end of the .error file")
   
   if(!is.null(traits)){
-    LOG("The following traits are being analyzed analyzed:",trait.names,"\n")
+    .LOG("The following traits are being analyzed analyzed:",trait.names,"\n", file=log.file)
   }
   
-  LOG("The following annotations were added to the model: ")
-  LOG(ld,sep=",")
+  .LOG("The following annotations were added to the model: ", file=log.file)
+  .LOG(paste(ld,sep=","), file=log.file)
   
   ld2 <- NULL
   if(length(grep(pattern="baseline$",x=ld,perl=T))==1){
@@ -44,7 +37,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     }
   }
   
-  LOG("\n","Reading in LD scores from ",paste0(ld1,".[1-22]"),"\n",sep="")
+  .LOG("\n","Reading in LD scores from ",paste0(ld1,".[1-22]"),"\n", file=log.file)
   
   ##determine name of LD score files
   x.files <- sort(Sys.glob(paste0(ld1,"*l2.ldscore*")))
@@ -53,25 +46,25 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   if(Operating == "Darwin"){
     readLdFunc <- function(LD.in){
       if(substr(x=LD.in,start=nchar(LD.in)-1,stop=nchar(LD.in))=="gz"){
-        dum=fread(input=paste("gzcat",LD.in),header=T,showProgress=F,data.table=F)
+        dum <- fread(input=paste("gzcat", LD.in), header=T, showProgress=F, data.table=F)
       }else{
-        dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
+        dum <- fread(input=LD.in, header=T, showProgress=F, data.table=F)
       }
     }}
 
   if(Operating == "Linux"){
     readLdFunc <- function(LD.in){
       if(substr(x=LD.in,start=nchar(LD.in)-1,stop=nchar(LD.in))=="gz"){
-        dum=fread(input=paste("zcat",LD.in),header=T,showProgress=F,data.table=F)
+        dum <- fread(input=paste("zcat", LD.in), header=T, showProgress=F, data.table=F)
       }else{
-        dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
+        dum <- fread(input=LD.in, header=T, showProgress=F, data.table=F)
       } 
     }}
   
   
   if(Operating == "Windows"){
     readLdFunc <- function(LD.in){
-        dum=fread(input=LD.in,header=T,showProgress=F,data.table=F)
+        dum <- fread(input=LD.in, header=T, showProgress=F, data.table=F)
       }
     }
   
@@ -81,13 +74,13 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   
   ##read in the M_5_50 files (number of SNPs in annotation by chromosome)
   m.files <- sort(Sys.glob(paste0(ld1,"*M_5_50")))
-  readMFunc <- function(x){dum=read.table(file=x,header=F)}
+  readMFunc <- function(x){dum <- read.table(file=x, header=F)}
   m <- ldply(.data=m.files,.fun=readMFunc)
   
   ##read in additional annotations on top of baseline if relevant
   if(!is.null(ld2)){
     for(i in 1:length(ld2)){
-      LOG("Reading in LD scores from ",paste0(ld2[i],".[1-22]"),"\n",sep="")
+      .LOG("Reading in LD scores from ",paste0(ld2[i],".[1-22]"),"\n", file=log.file)
       extra.x.files <- sort(Sys.glob(paste0(ld2[i],"*l2.ldscore*")))
       extra.ldscore <- suppressMessages(ldply(.data=extra.x.files,.fun=readLdFunc))
       extra.ldscore$CHR <- NULL
@@ -110,18 +103,18 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   }
   
   if(ncol(m)!=(ncol(x)-3)){
-    LOG("ERROR:number of annotations does not match between LD scores and .M_5_50 files")
+    .LOG("ERROR:number of annotations does not match between LD scores and .M_5_50 files", file=log.file)
     sink()
     stop()
   }
   
   n.annot <- ncol(m)
   if(n.annot < 1){
-    LOG("ERROR:The files do not contain any annotations")
+    .LOG("ERROR:The files do not contain any annotations", file=log.file)
     sink()
     stop()
   }else if(n.annot==1){
-    LOG("ERROR:The function cannot handle single annotation LDSR yet")
+    .LOG("ERROR:The function cannot handle single annotation LDSR yet", file=log.file)
     sink()
     stop()
   }
@@ -131,9 +124,9 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   M.tot <- sum(m)
   Prop<-m
   
-  LOG("LD scores contain",nrow(x),"SNPs and",n.annot,"annotations","\n")
+  .LOG("LD scores contain",nrow(x),"SNPs and",n.annot,"annotations","\n", file=log.file)
   
-  LOG("Reading in weighted LD scores from",paste0(wld,".[1-22]"),"\n")
+  .LOG("Reading in weighted LD scores from",paste0(wld,".[1-22]"),"\n", file=log.file)
   
   w.files <- sort(Sys.glob(paste0(wld,"*l2.ldscor*")))
   w <- suppressMessages(ldply(w.files,readLdFunc))
@@ -141,7 +134,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   w$MAF <- NULL
   colnames(w)[ncol(w)] <- "wLD"
   
-  LOG("Weighted LD scores contain ",nrow(w)," SNPs","\n",sep=" ")
+  .LOG("Weighted LD scores contain ",nrow(w)," SNPs","\n",sep=" ", file=log.file)
   
   ##ADDED FOR COVARIANCE [AG]
   n.traits <- length(traits)
@@ -153,8 +146,8 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   Tau_List<-vector(mode="list",length=n.annot)
   
   for (i in 1:n.annot) { 
-    S_List[[i]] = matrix(NA,nrow=n.traits,ncol=n.traits)
-    Tau_List[[i]] = matrix(NA,nrow=n.traits,ncol=n.traits)
+    S_List[[i]] <- matrix(NA, nrow=n.traits, ncol=n.traits)
+    Tau_List[[i]] <- matrix(NA, nrow=n.traits, ncol=n.traits)
   } 
   
   total_pseudo<-matrix(NA,nrow=200,ncol=n.V*n.annot)
@@ -177,7 +170,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   replace.annot.from <- seq(from=1,to=nrow(first.annot.matrix),by=n.annot)
   replace.annot.to <- seq(from=n.annot,to=nrow(first.annot.matrix),by=n.annot)
   
-  LOG("Reading in annotation files. This step may take a few minutes.")
+  .LOG("Reading in annotation files. This step may take a few minutes.", file=log.file)
   
   for(i in 1:length(annot.files)){
     header <- suppressMessages(read.table(annot.files[i], header = TRUE, nrow = 1))
@@ -258,7 +251,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
       y1 <- suppressMessages(na.omit(fread(chi1,header=T,showProgress=F,data.table=F)))
     }
     
-    LOG("Read in summary statistics [", s <<- s + 1, "/", n.traits, "] from: ", chi1)
+    .LOG("Read in summary statistics [", s <<- s + 1, "/", n.traits, "] from: ", chi1, file=log.file)
     
     ## Merge files
     merged <- merge(y1[, c("SNP", "N", "Z", "A1")], w[, c("SNP", "wLD")], by = "SNP", sort = FALSE)
@@ -266,14 +259,14 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     merged <- merge(merged, x, by = "SNP", sort = FALSE)
     merged <- merged[with(merged, order(CHR, BP)), ]
     
-    LOG("Out of ", nrow(y1), " SNPs, ", nrow(merged), " remain after merging with LD-score files")
+    .LOG("Out of ", nrow(y1), " SNPs, ", nrow(merged), " remain after merging with LD-score files", file=log.file)
     
     ## REMOVE SNPS with excess chi-square:
     chisq.max <- max(0.001 * max(merged$N), 80)
     rm <- (merged$Z^2 > chisq.max)
     merged <- merged[!rm, ]
     
-    LOG("Removing ", sum(rm), " SNPs with Chi^2 > ", chisq.max, "; ", nrow(merged), " remain")
+    .LOG("Removing ", sum(rm), " SNPs with Chi^2 > ", chisq.max, "; ", nrow(merged), " remain", file=log.file)
     
     merged
   })
@@ -377,7 +370,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         intercept.se <- jackknife.se[length(jackknife.se)]
         coef.cov <- jackknife.cov[1:n.annot,1:n.annot]/(N.bar^2)
         
-        Coefficient.std.error=data.frame(sqrt(diag(coef.cov)))
+        Coefficient.std.error <- data.frame(sqrt(diag(coef.cov)))
         Coefficient.Z<-data.frame(coefs/sqrt(diag(coef.cov)))
         
         cat.cov <- coef.cov*(m %*% t(m))
@@ -387,14 +380,14 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         
         ##for overall heritability
         if((is.na(pop.prev*samp.prev))){
-          LOG("h2:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
+          .LOG("h2:",round(reg.tot,4),"(",round(tot.se,4),")","\n", file=log.file)
         }else if(!is.na(pop.prev*samp.prev)){
           conversion.factor <- pop.prev^2*(1-pop.prev)^2/(samp.prev*(1-samp.prev)* dnorm(qnorm(1-pop.prev))^2)
           h2.liab <- reg.tot*conversion.factor
           h2.liab.se <- tot.se*conversion.factor
-          LOG("Liability h2:",round(h2.liab,4),"(",round(h2.liab.se,4),")","\n")
+          .LOG("Liability h2:",round(h2.liab,4),"(",round(h2.liab.se,4),")","\n", file=log.file)
         }else{
-          LOG("ERROR:one of the prevalence values was not supplied")
+          .LOG("ERROR:one of the prevalence values was not supplied", file=log.file)
           sink()
           stop()
         }
@@ -404,12 +397,12 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         ratio <- (intercept-1)/(mean(merged$chi)-1)
         ratio.se <- intercept.se/(mean(merged$chi)-1)
         
-        LOG("Lambda GC:",round(lambda.gc,4),"\n")
-        LOG("Mean Chi^2:",round(mean.Chi,4),"\n")
-        LOG("Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n",sep="")
-        LOG("Ratio: ",round(ratio,4),"(",round(ratio.se,4),")","\n",sep="")
+        .LOG("Lambda GC:",round(lambda.gc,4), file=log.file)
+        .LOG("Mean Chi^2:",round(mean.Chi,4), file=log.file)
+        .LOG("Intercept: ",round(intercept,4),"(",round(intercept.se,4),")", file=log.file)
+        .LOG("Ratio: ",round(ratio,4),"(",round(ratio.se,4),")", file=log.file)
         
-        LOG("Partitioning the heritability over the annotations","\n")
+        .LOG("Partitioning the heritability over the annotations", file=log.file)
         
         ##Added code for standard heritability
         HSQ.TOT <- overlap.matrix %*% cats
@@ -479,7 +472,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         
         n.snps <- nrow(merged)
         
-        LOG(n.snps, " SNPs remain after merging ", chi1, " and ", chi2, " summary statistics", "\n")
+        .LOG(n.snps, " SNPs remain after merging ", chi1, " and ", chi2, " summary statistics", file=log.file)
         
         ## ADD INTERCEPT:
         merged$intercept <- 1
@@ -574,16 +567,16 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         tot.se <- sqrt(tot.cov)
         
         ##Added
-        Coefficient.std.error=data.frame(sqrt(diag(coef.cov)))
+        Coefficient.std.error <- data.frame(sqrt(diag(coef.cov)))
         Coefficient.Z<-data.frame(coefs/sqrt(diag(coef.cov)))
         
         mean.ZZ <- mean(merged$ZZ)
-        LOG("Results for covariance between:",chi1,"and",chi2,"\n")
-        LOG("Mean Z*Z:",round(mean.ZZ,4),"\n")
-        LOG("Cross trait Intercept: ",round(intercept,4),"(",round(intercept.se,4),")","\n",sep="")
-        LOG("cov_g:",round(reg.tot,4),"(",round(tot.se,4),")","\n")
+        .LOG("Results for covariance between:",chi1,"and",chi2, file=log.file)
+        .LOG("Mean Z*Z:",round(mean.ZZ,4), file=log.file)
+        .LOG("Cross trait Intercept: ",round(intercept,4),"(",round(intercept.se,4),")", file=log.file)
+        .LOG("cov_g:",round(reg.tot,4),"(",round(tot.se,4),")", file=log.file)
         
-        LOG("Partitioning the genetic covariance over the annotations","\n")
+        .LOG("Partitioning the genetic covariance over the annotations", file=log.file)
         
         COV.TOT <- overlap.matrix %*% cats
         
@@ -639,19 +632,19 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   v.out_Tau<-vector(mode="list",length=n.annot)
   
   for (i in 1:n.annot) { 
-    S[[i]] = matrix(NA,nrow=n.traits,ncol=n.traits)
-    S_Tau[[i]] = matrix(NA,nrow=n.traits,ncol=n.traits)
-    V[[i]] = matrix(NA, nrow=n.V,ncol=n.V)
-    V_Tau[[i]] = matrix(NA, nrow=n.V,ncol=n.V)
-    v.out[[i]] = matrix(NA, nrow=n.V,ncol=n.V)
-    v.out_Tau[[i]] = matrix(NA, nrow=n.V,ncol=n.V)
+    S[[i]] <- matrix(NA, nrow=n.traits, ncol=n.traits)
+    S_Tau[[i]] <- matrix(NA, nrow=n.traits, ncol=n.traits)
+    V[[i]] <- matrix(NA, nrow=n.V, ncol=n.V)
+    V_Tau[[i]] <- matrix(NA, nrow=n.V, ncol=n.V)
+    v.out[[i]] <- matrix(NA, nrow=n.V, ncol=n.V)
+    v.out_Tau[[i]] <- matrix(NA, nrow=n.V, ncol=n.V)
   } 
   
   total_pseudo2<-(cov(total_pseudo)/n.blocks)
   Small_V<-vector(mode="list",length=n.V*n.V)
   
   for (i in 1:length(Small_V)) { 
-    Small_V[[i]] = matrix(NA,nrow=n.annot,ncol=n.annot)
+    Small_V[[i]] <- matrix(NA, nrow=n.annot, ncol=n.annot)
   } 
   
   #loop pulling chunks of total_pseudo2 
@@ -686,8 +679,8 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   SampleVar<-vector(mode="list",length=n.V*n.V)
   SampleVar_Tau<-vector(mode="list",length=n.V*n.V)
   for (i in 1:length(SampleVar)){ 
-    SampleVar[[i]] = matrix(NA,nrow=n.annot,ncol=1)
-    SampleVar_Tau[[i]] = matrix(NA,nrow=n.annot,ncol=1)
+    SampleVar[[i]] <- matrix(NA, nrow=n.annot, ncol=1)
+    SampleVar_Tau[[i]] <- matrix(NA, nrow=n.annot, ncol=1)
   } 
   
   for(i in 1:length(Small_V)){
@@ -719,10 +712,10 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     S_Tau[[f]]<-diag(as.vector(sqrt(Liab.S))) %*% Tau_List[[f]] %*% diag(as.vector(sqrt(Liab.S)))
     
     #calculate the ratio of the rescaled and original S matrices
-    scaleO=as.vector(lowerTriangle((S[[f]]/S_List[[f]]),diag=T))
+    scaleO <- as.vector(lowerTriangle((S[[f]]/S_List[[f]]), diag=T))
     
     #calculate the ratio of the rescaled and original S_Tau matrices
-    scaleO_Tau=as.vector(lowerTriangle((S_Tau[[f]]/Tau_List[[f]]),diag=T))
+    scaleO_Tau <- as.vector(lowerTriangle((S_Tau[[f]]/Tau_List[[f]]), diag=T))
     
     #obtain diagonals of the original V matrix and take their sqrt to get SE's
     Dvcov<-sqrt(diag(v.out[[f]]))
@@ -764,7 +757,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     names(V_Tau)[[f]]<-names(SampleVar[[1]][f])
   }
   
-  Tau_Flag = matrix(NA,nrow=length(S_Tau),ncol=1)
+  Tau_Flag <- matrix(NA, nrow=length(S_Tau), ncol=1)
   for(i in 1:length(S_Tau)){
     if(any(diag(S_Tau[[i]]) < 0)==TRUE){
       Tau_Flag[[i,1]]<-1
@@ -773,7 +766,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   rownames(Tau_Flag)<-names(S_Tau)
   
   ##flag non-binary annotations
-  binary_annot=as.data.frame(matrix(NA,ncol=2))
+  binary_annot <- as.data.frame(matrix(NA, ncol=2))
   tt<-1
   for(v in 6:ncol(selected.annot)){
     binary_annot[tt,1]<-colnames(selected.annot[v])
@@ -791,8 +784,8 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
   mins <- floor(floor(total.time)/60)
   secs <- total.time-mins*60
-  LOG(paste("Analysis ended at",end.time),"\n")
-  LOG("Analysis took ",mins," minutes and ",secs," seconds","\n")
+  .LOG(paste("Analysis ended at",end.time), file=log.file)
+  .LOG("Analysis took ",mins," minutes and ",secs," seconds", file=log.file)
   
   return(list(S=S,V=V,S_Tau=S_Tau,V_Tau=V_Tau,I=I,N=N.vec,m=m,Prop=Prop,Select=binary_annot))
   

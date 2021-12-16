@@ -20,13 +20,10 @@
 
   ##create shell of full sampling covariance matrix
   V_Full<-diag(((k+1)*(k+2))/2)
-
   ##input the ld-score regression region of sampling covariance from ld-score regression SEs
   V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
-
   ##add in SE of SNP variance as first observation in sampling covariance matrix
   V_Full[1,1]<-varSNPSE2
-
   ##add in SNP region of sampling covariance matrix
   V_Full[2:(k+1),2:(k+1)]<-V_SNP
 

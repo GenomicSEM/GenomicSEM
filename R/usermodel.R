@@ -49,6 +49,9 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       remove2[w]<-i
       V_LD <- V_LD[-grep(pattern=remove[1],row.names(V_LD)),-grep(pattern=remove[1],colnames(V_LD))]
       w<-w+1
+      if (!(is.matrix(V_LD))) {
+        stop("None of the trait names in the LDSC output match names in the model")
+      }
     }else{}
   }
   
@@ -150,14 +153,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     W_CFI<-solve(W_CFI)
 
   }
-  
-  if(std.lv == FALSE){
+
+  if(std.lv){
+    empty3<-.tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
+  } else {
     empty3<-.tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
   }
   
-  if(std.lv == TRUE){
-    empty3<-.tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
-  }
+
   
   r<-nrow(lavInspect(ReorderModel, "cor.lv"))
   

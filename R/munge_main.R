@@ -77,7 +77,6 @@
   if(b-nrow(file) > 0) .LOG(b-nrow(file), " row(s) were removed from the ", filename, " summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.",file=log.file)
   
   ####VALIDITY CHECKS#####
-  
   #Check that p-value column does not contain an excess of 1s/0s
   if((sum(file$P > 1) + sum(file$P < 0)) > 100){
     .LOG("In excess of 100 SNPs have P val above 1 or below 0. The P column may be mislabled!",file=log.file)

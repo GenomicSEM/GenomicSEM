@@ -72,8 +72,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
 
   data.frame.out <- ref
 
-
-  if(parallel == FALSE){
+  if(!parallel){
     ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
     files <- lapply(files, read.table, header=T, quote="\"", fill=T, na.string=c(".", NA, "NA", ""))
 
@@ -83,9 +82,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
       Output[[i]] <- .sumstats_main(i, utilfuncs=NULL, filenames[i], trait.names[i], N[i], keep.indel, OLS[i], betas[i],
                                     info.filter, linprob[i], se.logit[i], names.beta[i], names.se[i], ref, ref2, files[[i]], log.file)
     }
-  }
-
-  if(parallel == TRUE){
+  }else {
     if(is.null(cores)){
       # if no default provided use 1 less than the total number of cores available so your computer will still function
       int <- detectCores() - 1
@@ -116,7 +113,6 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
     data.frame.out <- suppressWarnings(inner_join(data.frame.out,Output[[i]],by="SNP",all.x=F,all.y=F))
   }
 
-
   end.time <- Sys.time()
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
   mins <- floor(floor(total.time)/60)
@@ -133,6 +129,5 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
   flush(log.file)
   close(log.file)
 
-  data.frame.out
-
+  return(data.frame.out)
 }

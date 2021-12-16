@@ -188,7 +188,7 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
     results <- as.data.frame(matrix(NA, ncol=10, nrow=f))
     colnames(results) <- c("i", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning")
   }
-  if(parallel==FALSE){
+  if(!parallel){
     for (i in 1:f) {
       results[i, ] <- .commonfactorGWAS_main(i, 1, S_LD, V_LD, I_LD, beta_SNP, SE_SNP, varSNP, varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order)
     }

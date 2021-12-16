@@ -111,16 +111,20 @@
   if(OLS & !beta){
     if("N" %in% colnames(file)){
       file$effect <- file$Z/sqrt(file$N * file$varSNP)
-    }else{.LOG("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N.",file=log.file, print=FALSE)}
+    }else{
+      .LOG("ERROR: A Sample Size (N) is needed for OLS Standardization. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N.",file=log.file, print=FALSE)
+    }
   }
 
   if(linprob){
     .LOG("An transformation used to back out logistic betas for binary traits is being applied for: ", filename,file=log.file)
-
     if("N" %in% colnames(file)){
       file$effect <- file$Z/sqrt((file$N/4)*file$varSNP)
       file$SE<-1/sqrt((file$N/4)*file$varSNP)
-    }else{.LOG("ERROR: An effective sample Size (N) is needed for backing out betas for binary traits. Please provide the sum of effective sample sizes to the N argument.",file=log.file)}}
+    }else{
+      .LOG("ERROR: An effective sample Size (N) is needed for backing out betas for binary traits. Please provide the sum of effective sample sizes to the N argument.",file=log.file)
+    }
+  }
 
   # Flip effect to match ordering in ref file
   file$effect <-  ifelse(file$A1.x != (file$A1.y) & file$A1.x == (file$A2.y),file$effect*-1,file$effect)
