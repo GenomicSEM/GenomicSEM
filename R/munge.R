@@ -1,219 +1,109 @@
-munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=0.01,log.name=NULL){
-  
-  length <- length(files)
+munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=0.01,log.name=NULL, column.names=list(),
+                  parallel=FALSE, cores=NULL, overwrite=TRUE){
+  if (is.list(files)) {
+    wrn <- paste0("DeprecationWarning: In future versions a list of filenames will no longer be accepted.\n",
+                  "                    Please change files to a vector to ensure future compatibility.")
+    warning(wrn)
+    files_ <- c()
+    for (i in 1:length(files)) {
+      files_ <- c(files_, files[[i]])
+    }
+    files <- files_
+  }
+  if (is.null(N))  {
+    N <- rep(NA, length(files))
+  }
+  # Sanity checks
+  .check_file_exists(files)
+  .check_file_exists(hm3)
+  .check_equal_length(files, trait.names)
+  .check_equal_length(files, N)
+  .check_range(N, min=0, max=Inf, allowNA=TRUE)
+  .check_range(info.filter)
+  .check_range(maf.filter)
+  if (any(!(names(column.names) %in% c("SNP", "A1", "A2", "effect", "INFO", "P", "N",  "MAF", "Z")))) {
+    stop(paste0("Names in column.names not recognized. Please use the following keys:\n        ",
+                paste(c("SNP", "A1", "A2", "effect", "INFO", "P", "N", "MAF", "Z"), collapse=", ")))
+  }
+  .check_boolean(parallel)
+  if (!is.null(cores)) .check_range(cores, min=0, max=Inf)
+  .check_boolean(overwrite)
+  # Sanity checks finished
+
   filenames <- as.vector(files)
-  
   if(is.null(log.name)){
     log2<-paste(trait.names,collapse="_")
-    
-    if(nchar(log2) > 200){
-      log2<-substr(log2,1,100)}
-    
-    log.file <- file(paste0(log2, "_munge.log"),open="wt")
+      if(nchar(log2) > 200){
+        log2<-substr(log2,1,100)
+      }
+      log.file <- file(paste0(log2, "_munge.log"),open="wt")
   }
   
   if(!is.null(log.name)){ 
-    log.file <- file(paste0(log.name, "_munge.log"),open="wt") 
+   log.file <- file(paste0(log.name, "_munge.log"),open="wt") 
   }
-  
+  if (parallel & (length(files) == 1)) {
+    .LOG("Parallel munging requested for a single file.\nParallel munging only has benefits for munging multiple files.\nParallel disabled", file=log.file)
+    parallel <- FALSE
+  }
   begin.time <- Sys.time()
-  
-  cat(print(paste0("The munging of ", length(trait.names), " summary statistics started at ",begin.time), sep = ""),file=log.file,sep="\n",append=TRUE)
-  
-  cat(print(paste("Reading summary statistics for", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.")),file=log.file,sep="\n",append=TRUE)
-  
-  ##note that fread is not used here due to formatting differences across summary statistic files
-  files = lapply(files, read.table,header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
-  cat(print("Reading in reference file"),file=log.file,sep="\n",append=TRUE)
+  .LOG("The munging of ", length(trait.names), " summary statistics started at ", begin.time, file=log.file)
+  if (overwrite) {
+    existing_files <- c()
+    for (trait.name in trait.names) {
+      if (file.exists(paste0(trait.name, ".sumstats")))
+        existing_files <- c(existing_files, paste0(trait.name, ".sumstats"))
+    }
+    if (length(existing_files) > 0)
+      .LOG("File(s) ", paste0(existing_files, collapse = ", "), " already exist and will be overwritten", file=log.file)
+  }
+  .LOG("Reading in reference file",file=log.file)
   ref <- fread(hm3,header=T,data.table=F)
-  cat(print("All files loaded into R!"),file=log.file,sep="\n",append=TRUE)
-  
-  for(i in 1:length){
-    
-    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-    cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-    
-    cat(print(paste("Munging file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-    hold_names <- toupper(names(files[[i]]))
-    
-    names1<-hold_names
-    if("SNP" %in% hold_names) cat(print(paste("Interpreting the SNP column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in% c("SNP","SNPID","RSID","RS_NUMBER","RS_NUMBERS", "MARKERNAME", "ID","PREDICTOR","SNP_ID")] <- "SNP"
-    if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the SNP column.")),file=log.file,sep="\n",append=TRUE)
-    
-    names1<-hold_names
-    if("A1" %in% hold_names) cat(print(paste("Interpreting the A1 column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("A1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","REF")] <- "A1"
-    if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A1 column.")),file=log.file,sep="\n",append=TRUE)
-    
-    names1<-hold_names
-    if("A2" %in% hold_names) cat(print(paste("Interpreting the A2 column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("A2","ALLELE2","ALLELE0","OTHER_ALLELE","REF","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA", "ALT")]  <- "A2"
-    if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the A2 column.")),file=log.file,sep="\n",append=TRUE)
-    
-    names1<-hold_names
-    if("effect" %in% hold_names) cat(print(paste("Interpreting the effect column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("OR","B","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT", "Z","ZSCORE","EST","ZSTAT","ZSTATISTIC", "BETA1", "LOGOR")] <- "effect"
-    if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the effect column.")),file=log.file,sep="\n",append=TRUE)
-    
-    names1<-hold_names
-    if("INFO" %in% hold_names) cat(print(paste("Interpreting the INFO column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("INFO", "IMPINFO")] <- "INFO"
-    if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the INFO column.")),file=log.file,sep="\n",append=TRUE)
-    
-    names1<-hold_names
-    if("P" %in% hold_names) cat(print(paste("Interpreting the P column as the P column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("P","PVALUE","PVAL","P_VALUE","P-VALUE","P.VALUE","P_VAL","GC_PVALUE","WALD_P")] <- "P"
-    if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the", setdiff(names1, hold_names), "column as the P column.")),file=log.file,sep="\n",append=TRUE)
-    
-    names1<-hold_names
-    if("N" %in% hold_names) cat(print(paste("Interpreting the N column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in%c("N","WEIGHT","NCOMPLETESAMPLES", "TOTALSAMPLESIZE", "TOTALN", "TOTAL_N","N_COMPLETE_SAMPLES", "SAMPLESIZE", "NEFF")] <- "N"
-    if(length(base::setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the N (sample size) column.")),file=log.file,sep="\n",append=TRUE)
-    
-    if("NEFF" %in% names1 & is.null(N)){
-      cat(print(paste("Using the NEFF column for sample size. 
-                      Please note that this is likely effective sample size and should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts. 
-                      Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running munge.")),file=log.file,sep="\n",append=TRUE)
+  if (!parallel) {
+    .LOG("Reading summary statistics for ", paste(files,collapse=" "), ". Please note that this step usually takes a few minutes due to the size of summary statistic files.", file=log.file)
+    ##note that fread is not used here due to formatting differences across summary statistic files
+    files <- lapply(files, read.table, header=T, quote="\"", fill=T, na.string=c(".", NA, "NA", ""))
+    .LOG("All files loaded into R!",file=log.file)
+    for(i in 1:length(files)){
+      .munge_main(i, NULL, files[[i]], filenames[i], trait.names[i], N[i], ref, hm3, info.filter, maf.filter, column.names, overwrite, log.file)
     }
-     
-    # Print a message for misisng P value, rs, effect or allele columns
-    if(sum(hold_names %in% "P") == 0) cat(print(paste0('Cannot find P-value column, try renaming it to P in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    if(sum(hold_names %in% "A1") == 0) cat(print(paste0('Cannot find effect allele column, try renaming it to A1 in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    if(sum(hold_names %in% "A2") == 0) cat(print(paste0('Cannot find other allele column, try renaming it to A2 in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    if(sum(hold_names %in% "effect") == 0) cat(print(paste0('Cannot find beta or effect column, try renaming it to effect in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    if(sum(hold_names %in% "SNP") == 0) cat(print(paste0('Cannot find rs-id column, try renaming it to SNP in the summary statistics file for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    
-    # Print a warning message when multiple columns interprets as P value, rs, effect or allele columns
-    if(sum(hold_names %in% "P") > 1) cat(print(paste0('Multiple columns are being interpreted as the P-value column. Try renaming the column you dont want interpreted as P to P2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    if(sum(hold_names %in% "A1") > 1) cat(print(paste0('Multiple columns are being interpreted as the effect allele column. Try renaming the column you dont want interpreted as effect allele column to A1_2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    if(sum(hold_names %in% "A2") > 1) cat(print(paste0('Multiple columns are being interpreted as the other allele column. Try renaming the column you dont want interpreted as the other allele column to A2_2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    if(sum(hold_names %in% "effect") > 1) cat(print(paste0('Multiple columns are being interpreted as the beta or effect column. Try renaming the column you dont want interpreted as the beta or effect column to effect2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    if(sum(hold_names %in% "SNP") > 1) cat(print(paste0('Multiple columns are being interpreted as the rs-id column. Try renaming the column you dont want interpreted as rs-id to SNP2 for:',filenames[i])),file=log.file,sep="\n",append=TRUE)
-    
-    # Throw warnings for misisng P valuue, rs, effect or allele columns
-    if(sum(hold_names %in% "P") == 0) warning(paste0('Cannot find P-value column, try renaming it P in the summary statistics file for:',filenames[i]))
-    if(sum(hold_names %in% "A1") == 0) warning(paste0('Cannot find effect allele column, try renaming it A1 in the summary statistics file for:',filenames[i]))
-    if(sum(hold_names %in% "A2") == 0) warning(paste0('Cannot find other allele column, try renaming it A2 in the summary statistics file for:',filenames[i]))
-    if(sum(hold_names %in% "effect") == 0) warning(paste0('Cannot find beta or effect column, try renaming it effect in the summary statistics file for:',filenames[i]))
-    if(sum(hold_names %in% "SNP") == 0) warning(paste0('Cannot rs-id column, try renaming it SNP in the summary statistics file for:',filenames[i]))
-    
-    ##rename common MAF labels
-    names1<-hold_names
-    if("MAF" %in% hold_names) cat(print(paste("Interpreting the MAF column as the MAF (minor allele frequency) column.")),file=log.file,sep="\n",append=TRUE)
-    hold_names[hold_names %in% c("MAF", "CEUAF", "FREQ1", "EAF", "FREQ1.HAPMAP", "FREQALLELE1HAPMAPCEU", "FREQ.ALLELE1.HAPMAPCEU", "EFFECT_ALLELE_FREQ", "FREQ.A1")] <- "MAF"
-    if(length(setdiff(names1,hold_names)) > 0) cat(print(paste("Interpreting the ", setdiff(names1, hold_names), " column as the MAF (minor allele frequency) column.")),file=log.file,sep="\n",append=TRUE)
-    
-    #Replace the origonal names
-    names(files[[i]]) <- hold_names
-    
-    if("MAF" %in% colnames(files[[i]])) {
-      ##make sure MAF is actually MAF (i.e., max value is .5 or less)
-      files[[i]]$MAF<-ifelse(files[[i]]$MAF <= .5, files[[i]]$MAF, (1-files[[i]]$MAF))
+  } else {
+    if(is.null(cores)){
+    ##if no default provided use 1 less than the total number of cores available so your computer will still function
+      int <- detectCores() - 1
+    }else{
+      int <- cores
     }
-    
-    ##make sure all alleles are upper case for matching to reference file
-    files[[i]]$A1 <- factor(toupper(files[[i]]$A1), c("A", "C", "G", "T"))
-    files[[i]]$A2 <- factor(toupper(files[[i]]$A2), c("A", "C", "G", "T"))
-    
-    ##merge with ref file
-    cat(print(paste("Merging file:", filenames[i], "with the reference file:", hm3)),file=log.file,sep="\n",append=TRUE)
-    b<-nrow(files[[i]])
-    cat(print(paste(b, "rows present in the full", filenames[i], "summary statistics file.")),file=log.file,sep="\n",append=TRUE)
-    files[[i]] <- merge(ref,files[[i]],by="SNP",all.x=F,all.y=F)
-    cat(print(paste((b-nrow(files[[i]])), "rows were removed from the", filenames[i], "summary statistics file as the rs-ids for these rows were not present in the reference file.")),file=log.file,sep="\n",append=TRUE)
-    
-    ##remove any rows with missing p-values
-    b<-nrow(files[[i]])
-    if("P" %in% colnames(files[[i]])) {
-      files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$P)))
+    if (int > length(filenames)) {
+      .LOG("Number of requested cores(", int,") greater than the number of files (",length(filenames),"). Deferring to the lowest number",file=log.file)
+      int <- length(filenames)
     }
-    if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the P-value column")),file=log.file,sep="\n",append=TRUE)
-    
-    ##remove any rows with missing effects
-    b<-nrow(files[[i]])
-    if("effect" %in% colnames(files[[i]])) {
-      files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$effect)))
+    # Defaulting to PSOCK cluster as it should work on both Linux and Windows,
+    # and from my experience it's faster when not copying large ammounts of data
+    cl <- makeCluster(int, type="PSOCK")
+    registerDoParallel(cl)
+    on.exit(stopCluster(cl))
+    #Util-functions have to be explicitly passed to the analysis function in PSOCK cluster
+    utilfuncs <- list()
+    utilfuncs[[".get_renamed_colnames"]] <- .get_renamed_colnames
+    utilfuncs[[".LOG"]] <- .LOG
+    utilfuncs[["gzip"]] <- gzip
+    .LOG("As parallel munging was requested, logs of each sumstats file will be saved separately",file=log.file)
+    foreach (i=1:length(filenames), .export=c(".munge_main"), .packages=c("stringr")) %dopar% {
+      .munge_main(i, utilfuncs, NULL, filenames[i], trait.names[i], N[i], ref, hm3, info.filter, maf.filter, column.names, overwrite, NULL)
     }
-    if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing values in the effect column")),file=log.file,sep="\n",append=TRUE)
-    
-    ##determine whether it is OR or logistic/continuous effect based on median effect size 
-    a1<-files[[i]]$effect[[1]]
-    files[[i]]$effect<-ifelse(rep(round(median(files[[i]]$effect,na.rm=T)) == 1,nrow(files[[i]])), log(files[[i]]$effect),files[[i]]$effect)
-    a2<-files[[i]]$effect[[1]]
-    if(a1 != a2) cat(print(paste("The effect column was determined to be coded as an odds ratio (OR) for the", filenames[i], "summary statistics file. Please ensure this is correct.")),file=log.file,sep="\n",append=TRUE)
-    
-    # Flip effect to match ordering in ref file
-    files[[i]]$effect<-ifelse(files[[i]]$A1.x != (files[[i]]$A1.y) & files[[i]]$A1.x == (files[[i]]$A2.y),files[[i]]$effect*-1,files[[i]]$effect)
-    
-    ##remove SNPs that don't match A1 OR A2 in reference file.
-    b<-nrow(files[[i]])
-    files[[i]]<-subset(files[[i]], !(files[[i]]$A1.x != (files[[i]]$A1.y)  & files[[i]]$A1.x != (files[[i]]$A2.y)))
-    if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "row(s) were removed from the", filenames[i], "summary statistics file due to the effect allele (A1) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
-    
-    b<-nrow(files[[i]])
-    files[[i]]<-subset(files[[i]], !(files[[i]]$A2.x != (files[[i]]$A2.y)  & files[[i]]$A2.x !=  (files[[i]]$A1.y)))
-    if(b-nrow(files[[i]]) > 0) cat(print(paste(b-nrow(files[[i]]), "row(s) were removed from the", filenames[i], "summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.")),file=log.file,sep="\n",append=TRUE)
-    
-    ####VALIDITY CHECKS#####
-    
-    #Check that p-value column does not contain an excess of 1s/0s
-    if((sum(files[[i]]$P > 1) + sum(files[[i]]$P < 0)) > 100){
-      cat(print("In excess of 100 SNPs have P val above 1 or below 0. The P column may be mislabled!"),file=log.file,sep="\n",append=TRUE)
-    }
-    
-    #Compute Z score
-    files[[i]]$Z <- sign(files[[i]]$effect) * sqrt(qchisq(files[[i]]$P,1,lower=F))
-    
-    ##filter on INFO column at designated threshold provided for the info.filter argument (default = 0.9)
-    if("INFO" %in% colnames(files[[i]])) {
-      b<-nrow(files[[i]])
-      files[[i]] <- files[[i]][files[[i]]$INFO >= info.filter,]
-      cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to INFO values below the designated threshold of", info.filter)),file=log.file,sep="\n",append=TRUE)
-    }else{cat(print("No INFO column, cannot filter on INFO, which may influence results"),file=log.file,sep="\n",append=TRUE)}
-    
-    ##filter on MAF filter at designated threshold provided for the maf.filter argument (default = 0.01)
-    if("MAF" %in% colnames(files[[i]])) {
-      files[[i]]$MAF<-as.numeric(as.character(files[[i]]$MAF))
-      b<-nrow(files[[i]])
-      files[[i]] <- files[[i]][files[[i]]$MAF >= maf.filter,]
-      files[[i]]<-subset(files[[i]], !(is.na(files[[i]]$MAF)))
-      cat(print(paste(b-nrow(files[[i]]), "rows were removed from the", filenames[i], "summary statistics file due to missing MAF information or MAFs below the designated threshold of", maf.filter)),file=log.file,sep="\n",append=TRUE)
-    }else{cat(print("No MAF column, cannot filter on MAF, which may influence results"),file=log.file,sep="\n",append=TRUE)}
-    
-    if(!("N" %in% names(files[[i]])) & is.null(N)) cat(warning(paste0('Cannot find sample size column for',filenames[i], " and a sample size was not provided for the N argument. Please either provide a total sample size to the N argument or try changing the name of the sample size column to N.")),file=log.file,sep="\n",append=TRUE)
-
-    if(is.null(N)){
-      output <- cbind.data.frame(files[[i]]$SNP,files[[i]]$N,files[[i]]$Z,files[[i]]$A1.x,files[[i]]$A2.x)
-    }else{ 
-      cat(print(paste("Using user provided N of ", N[i], " for ", filenames[i], " . Please note that this reflect the sum of effective sample sizes in order to appropriately perform the liability conversion for binary traits.")),file=log.file,sep="\n",append=TRUE)
-      output <- cbind.data.frame(files[[i]]$SNP,N[i],files[[i]]$Z,files[[i]]$A1.x,files[[i]]$A2.x)}
-
-    colnames(output) <- c("SNP","N","Z","A1","A2")
-    cat(print(paste(nrow(output), "SNPs are left in the summary statistics file", filenames[i], "after QC.")),file=log.file,sep="\n",append=TRUE)
-
-    #remove spaces in trait.names file to avoid errors with fread functionality used for s_ldsc
-    trait.names[i]<-str_replace_all(trait.names[i], fixed(" "), "") 
-    
-    write.table(x = output,file = paste0(trait.names[i],".sumstats"),sep="\t", quote = FALSE, row.names = F)
-    gzip(paste0(trait.names[i],".sumstats"))
-    cat(print(paste("I am done munging file:", filenames[i])),file=log.file,sep="\n",append=TRUE)
-    cat(print(paste("The file is saved as", paste0(trait.names[i],".sumstats.gz"), "in the current working directory.")),file=log.file,sep="\n",append=TRUE)
   }
   
   end.time <- Sys.time()
-  
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
   mins <- floor(floor(total.time)/60)
   secs <- total.time-mins*60
   
-  cat(paste("     "),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste0("Munging was completed at ",end.time), sep = ""),file=log.file,sep="\n",append=TRUE)
-  
-  cat(print(paste0("The munging of all files took ",mins," minutes and ",secs," seconds"), sep = ""),file=log.file,sep="\n",append=TRUE)
-  cat(print(paste("Please check the .log file to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files")),file=log.file,sep="\n",append=TRUE)
-  
+  .LOG("     ",file=log.file)
+  .LOG("Munging was completed at ",end.time,file=log.file)
+  .LOG("The munging of all files took ",mins," minutes and ",secs," seconds",file=log.file)
+  .LOG("Please check the .log file(s) to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files",file=log.file)
+    
   flush(log.file)
   close(log.file)
-  
 }

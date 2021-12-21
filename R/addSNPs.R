@@ -93,16 +93,7 @@ addSNPs <-function(covstruc, SNPs, SNPSE = FALSE,parallel=FALSE,cores=NULL,GC="s
       }
       
       ##create shell of full sampling covariance matrix
-      V_Full<-diag(((k+1)*(k+2))/2)
-      
-      ##input the ld-score regression region of sampling covariance from ld-score regression SEs
-      V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
-      
-      ##add in SE of SNP variance as first observation in sampling covariance matrix
-      V_Full[1,1]<-varSNPSE2
-      
-      ##add in SNP region of sampling covariance matrix
-      V_Full[2:(k+1),2:(k+1)]<-V_SNP
+      V_Full<-.get_V_full(k, V_LD, varSNPSE2, V_SNP)
       
       k2<-nrow(V_Full)
       smooth2<-ifelse(eigen(V_Full)$values[k2] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)

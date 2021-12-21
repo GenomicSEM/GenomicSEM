@@ -1,4 +1,4 @@
-exportPattern("^[[:alpha:]]+")
+exportPattern("^[^\\.]")
 import(plyr)
 import(e1071)
 import(readr)

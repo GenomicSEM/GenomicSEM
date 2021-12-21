@@ -1,25 +1,5 @@
-
-commonfactor <-function(covstruc,estimation="DWLS"){ 
+commonfactor <-function(covstruc,estimation="DWLS"){
   time<-proc.time()
-  
-  #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-  #'k' is the number of variables in the model
-  #'fit' is the fit function of the regression model
-  #'names' is a vector of variable names in the order you used
-  rearrange <- function (k, fit, names) {
-    order1 <- names
-    order2 <- rownames(inspect(fit)[[1]]) #order of variables
-    kst <- k*(k+1)/2
-    covA <- matrix(NA, k, k)
-    covA[lower.tri(covA, diag = TRUE)] <- 1:kst
-    covA <- t(covA)
-    covA[lower.tri(covA, diag = TRUE)] <- 1:kst 
-    colnames(covA) <- rownames(covA) <- order1 #give A actual variable order from lavaan output
-    #reorder A by order2
-    covA <- covA[order2, order2] #rearrange rows/columns
-    vec2 <- lav_matrix_vech(covA) #grab new vectorized order
-    return(vec2)
-  }
   
   #function to create lavaan syntax for a 1 factor model given k phenotypes
   write.Model1 <- function(k) {  
@@ -83,19 +63,6 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     modelCFI<-paste(Model3, Model2, ModelsatF, Modelsat, Model4)
     return(modelCFI)
   }
-  
-  tryCatch.W.E <- function(expr)
-  {
-    W <- NULL
-    w.handler <- function(w){ # warning handler
-      W <<- w
-      invokeRestart("muffleWarning")
-    }
-    list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
-                                     warning = w.handler),
-         warning = W)
-  }
-  
   
   ##read in the LD portion of the V (sampling covariance) matrix
   V_LD<-as.matrix(covstruc[[1]])
@@ -172,11 +139,11 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     print("Running Model")    
     if(estimation == "DWLS"){
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-    empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
+    empty<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
     }
     
     if(estimation == "ML"){
-      empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+      empty<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
     }
    
     empty$warning$message[1]<-ifelse(is.null(empty$warning$message), empty$warning$message[1]<-0, empty$warning$message[1])
@@ -196,11 +163,11 @@ commonfactor <-function(covstruc,estimation="DWLS"){
       Model1<-paste(Model1,Model3)
       
       if(estimation == "DWLS"){
-      empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
+      empty<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
       }
       
       if(estimation == "ML"){
-        empty<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+        empty<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
       }
       
     }else{}
@@ -250,11 +217,11 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     print("Calculating CFI")
     ##run independence model
     if(estimation == "DWLS"){
-      testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
+      testCFI<-.tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
     }
     
     if(estimation == "ML"){
-      testCFI<-tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML",sample.nobs=200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+      testCFI<-.tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov =  S_LD, estimator = "ML",sample.nobs=200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
     }
     testCFI$warning$message[1]<-ifelse(is.null(testCFI$warning$message), testCFI$warning$message[1]<-"Safe", testCFI$warning$message[1])
     testCFI$warning$message[1]<-ifelse(is.na(inspect(fitCFI, "se")$theta[1,2]) == TRUE, testCFI$warning$message[1]<-"lavaan WARNING: model has NOT converged!", testCFI$warning$message[1])
@@ -271,11 +238,11 @@ commonfactor <-function(covstruc,estimation="DWLS"){
       ModelQ_CFI$ustart <- ModelQ_CFI$est
       
       if(estimation == "DWLS"){
-        testCFI2<-tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
+        testCFI2<-.tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, sample.nobs=2, optim.dx.tol = +Inf))
       }
       
       if(estimation == "ML"){
-        testCFI2<-tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+        testCFI2<-.tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, sample.cov = S_LD, estimator = "ML", sample.nobs=200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
       }
       
       testCFI2$warning$message[1]<-ifelse(is.null(testCFI2$warning$message), testCFI2$warning$message[1]<-"Safe", testCFI2$warning$message[1])
@@ -358,11 +325,11 @@ commonfactor <-function(covstruc,estimation="DWLS"){
     W_stand<-solve(V_stand2[order,order])
     
     if(estimation == "DWLS"){
-        emptystand<-tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2, optim.dx.tol = +Inf)) 
+        emptystand<-.tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, sample.nobs = 2, optim.dx.tol = +Inf)) 
     }
     
     if(estimation == "ML"){
-        emptystand<-tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML",  sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE)) 
+        emptystand<-.tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML",  sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE)) 
     }
     
     ##perform same procedures for sandwich correction as in the unstandardized case

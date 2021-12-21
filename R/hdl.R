@@ -58,34 +58,34 @@ hdl <- function(traits,sample.prev=NA,population.prev=NA,trait.names=NULL,LD.pat
 
 
 llfun <-  function(param, N, M,Nref=1000, lam, bstar, lim=exp(-10)){
-    h2 = param[1]
-    int= param[2]
-    lamh2 = h2/M*lam^2 - h2*lam/Nref + int*lam/N
-    lamh2 = ifelse(lamh2<lim, lim,lamh2)
-    ll = sum(log(lamh2)) + sum(bstar^2/(lamh2))
+    h2 <- param[1]
+    int <- param[2]
+    lamh2 <- h2/M*lam^2 - h2*lam/Nref + int*lam/N
+    lamh2 <- ifelse(lamh2<lim, lim, lamh2)
+    ll <- sum(log(lamh2)) + sum(bstar^2/(lamh2))
     return(ll)
   }
 
 #### Define the liklihood funcrion to be optimized for genetic covariance:
 
-llfun.gcov.part.2 = function(param,h11,h22,rho12, M, N1, N2, N0, Nref, lam0, lam1, lam2, bstar1, bstar2, lim=exp(-10)){
-  h12 = param[1]
-  int = param[2]
+llfun.gcov.part.2 <- function(param, h11, h22, rho12, M, N1, N2, N0, Nref, lam0, lam1, lam2, bstar1, bstar2, lim=exp(-10)){
+  h12 <- param[1]
+  int <- param[2]
   ## sample fractions
-  p1 = N0/N1; p2= N0/N2
+  p1 <- N0/N1; p2 <- N0/N2
   ## must follow the formula for lamh2 used in llfun4
-  lam11 =   h11[1]/M*lam1^2 - h11[1]*lam1/Nref + h11[2]*lam1/N1
-  lam11 = ifelse(lam11<lim, lim,lam11)
-  lam22 = h22[1]/M*lam2^2 - h22[1]*lam2/Nref + h22[2]*lam2/N2
-  lam22 = ifelse(lam22<lim, lim,lam22)
+  lam11 <- h11[1]/M*lam1^2 - h11[1]*lam1/Nref + h11[2]*lam1/N1
+  lam11 <- ifelse(lam11<lim, lim, lam11)
+  lam22 <- h22[1]/M*lam2^2 - h22[1]*lam2/Nref + h22[2]*lam2/N2
+  lam22 <- ifelse(lam22<lim, lim, lam22)
   #lam12 = h12/M*lam1*lam2 - p1*p2*h12*lam1/Nref + p1*p2*int*lam1/N0
-  if (N0>0) lam12 = h12/M*lam1*lam2 + p1*p2*int*lam1/N0  ## key change here
-  if (N0==0) lam12 = h12/M*lam1*lam2
+  if (N0>0) lam12 <- h12/M*lam1*lam2 + p1*p2*int*lam1/N0  ## key change here
+  if (N0==0) lam12 <- h12/M*lam1*lam2
   ##  resid of bstar2 ~bstar1
-  ustar = bstar2 - lam12/lam11*bstar1  ## see note
-  lam22.1 = lam22 - lam12^2/lam11
-  lam22.1 = ifelse(lam22.1<lim, lim,lam22.1)
-  ll = sum(log(lam22.1)) + sum(ustar^2/(lam22.1))
+  ustar <- bstar2 - lam12/lam11*bstar1  ## see note
+  lam22.1 <- lam22 - lam12^2/lam11
+  lam22.1 <- ifelse(lam22.1<lim, lim, lam22.1)
+  ll <- sum(log(lam22.1)) + sum(ustar^2/(lam22.1))
   return(ll)
 }
 
@@ -157,16 +157,16 @@ cat("\n")
         names(bhat1) <- snps.ref
         bhat1[names(bhat1.raw)] <- bhat1.raw
         a11 <- bhat1^2
-        reg = lm(a11 ~ LDsc)
+        reg <- lm(a11 ~ LDsc)
         h11.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N1,  M))
-        h11v = (h11.ols[2] * LDsc/M + 1/N1)^2
-        reg = lm(a11 ~ LDsc, weight = 1/h11v)
+        h11v <- (h11.ols[2] * LDsc/M + 1/N1)^2
+        reg <- lm(a11 ~ LDsc, weight = 1/h11v)
         h11.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N1,  M))
-        bstar1 = crossprod(V, bhat1)
-        opt = optim(c(h11.wls[2], 1), llfun, N = N1, Nref = Nref, 
-                    lam = lam, bstar = bstar1, M = M, lim = exp(-18), 
-                    method = "L-BFGS-B", lower = c(0, 0), upper = c(1,10))
-        h11.hdl = opt$par
+        bstar1 <- crossprod(V, bhat1)
+        opt <- optim(c(h11.wls[2], 1), llfun, N = N1, Nref = Nref,
+                     lam = lam, bstar = bstar1, M = M, lim = exp(-18),
+                     method = "L-BFGS-B", lower = c(0, 0), upper = c(1,10))
+        h11.hdl <- opt$par
         logL <- opt$value
         
         HDL11.df <- rbind(HDL11.df, h11.hdl)
@@ -187,9 +187,9 @@ cat("\n")
       
       M.ref <- sum(unlist(nsnps.list))
       
-      opt = optim(c(sum(HDL11.df[, 1]),1), llfun, N=N1, Nref=Nref, lam=unlist(lam.v), bstar=unlist(bstar1.v), M=M.ref,
-                  lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
-      h11.hdl = opt$par
+      opt <- optim(c(sum(HDL11.df[, 1]), 1), llfun, N=N1, Nref=Nref, lam=unlist(lam.v), bstar=unlist(bstar1.v), M=M.ref,
+                   lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+      h11.hdl <- opt$par
      
       cat("Continuing computing standard error with jackknife \n")
 
@@ -197,9 +197,9 @@ cat("\n")
       message <- ""
        h11.jackknife <- numeric(length(lam.v))
       for(i in 1:length(lam.v)){
-        opt = optim(h11.hdl, llfun, N=N1, Nref=Nref, lam=unlist(lam.v[-i]), bstar=unlist(bstar1.v[-i]), M=M.ref,
-                    lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
-        h11.hdl.jackknife = opt$par
+        opt <- optim(h11.hdl, llfun, N=N1, Nref=Nref, lam=unlist(lam.v[-i]), bstar=unlist(bstar1.v[-i]), M=M.ref,
+                     lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+        h11.hdl.jackknife <- opt$par
         
 
       
@@ -252,7 +252,7 @@ cat("\n")
   gwas2.df$A2 <- as.character(gwas2.df$A2)
   
   
-  N0 = min(gwas1.df$N,gwas2.df$N)
+  N0 <- min(gwas1.df$N, gwas2.df$N)
   
   if (!("Z" %in% colnames(gwas1.df))) {
     if (("b" %in% colnames(gwas1.df)) && ("se" %in% colnames(gwas1.df))) {
@@ -319,47 +319,47 @@ cat("\n")
       a11 <- bhat1^2
       a22 <- bhat2^2
       a12 <- bhat1 * bhat2
-      reg = lm(a11 ~ LDsc)
+      reg <- lm(a11 ~ LDsc)
       h11.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N1,M))
-      reg = lm(a22 ~ LDsc)
+      reg <- lm(a22 ~ LDsc)
       h22.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N2,   M))
-      reg = lm(a12 ~ LDsc)
+      reg <- lm(a12 ~ LDsc)
       if (N0 > 0) 
-        h12.ols = c(summary(reg)$coef[1:2, 1:2] * c((N0/p1/p2),  M))
+        h12.ols <- c(summary(reg)$coef[1:2, 1:2] * c((N0/p1/p2), M))
       if (N0 == 0) 
-        h12.ols = c(summary(reg)$coef[1:2, 1:2] * c(N, M))
-      h11v = (h11.ols[2] * LDsc/M + 1/N1)^2
-      h22v = (h22.ols[2] * LDsc/M + 1/N2)^2
-      reg = lm(a11 ~ LDsc, weight = 1/h11v)
+        h12.ols <- c(summary(reg)$coef[1:2, 1:2] * c(N, M))
+      h11v <- (h11.ols[2] * LDsc/M + 1/N1)^2
+      h22v <- (h22.ols[2] * LDsc/M + 1/N2)^2
+      reg <- lm(a11 ~ LDsc, weight = 1/h11v)
       h11.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N1, M))
-      reg = lm(a22 ~ LDsc, weight = 1/h22v)
+      reg <- lm(a22 ~ LDsc, weight = 1/h22v)
       h22.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N2,M))
       if (N0 > 0) 
-        h12v = sqrt(h11v * h22v) + (h12.ols[2] * LDsc/M + p1 * p2 * rho12/N0)^2
+        h12v <- sqrt(h11v * h22v) + (h12.ols[2] * LDsc/M + p1 * p2 * rho12/N0)^2
       if (N0 == 0) 
-        h12v = sqrt(h11v * h22v) + (h12.ols[2] * LDsc/M)^2
-      reg = lm(a12 ~ LDsc, weight = 1/h12v)
+        h12v <- sqrt(h11v * h22v) + (h12.ols[2] * LDsc/M)^2
+      reg <- lm(a12 ~ LDsc, weight = 1/h12v)
       if (N0 > 0) 
-        h12.wls = c(summary(reg)$coef[1:2, 1:2] * c((N0/p1/p2),M))
+        h12.wls <- c(summary(reg)$coef[1:2, 1:2] * c((N0/p1/p2), M))
       if (N0 == 0) 
-        h12.wls = c(summary(reg)$coef[1:2, 1:2] * c(N,  M))
-      bstar1 = crossprod(V, bhat1)
-      bstar2 = crossprod(V, bhat2)
-      opt = optim(c(h11.wls[2], 1), llfun, N = N1, Nref = Nref, 
-                  lam = lam, bstar = bstar1, M = M, lim = exp(-18), 
-                  method = "L-BFGS-B", lower = c(0, 0), upper = c(1, 10))
-      h11.hdl = opt$par
-      opt = optim(c(h22.wls[2], 1), llfun, N = N2, Nref = Nref, 
-                  lam = lam, bstar = bstar2, M = M, lim = exp(-18), 
-                  method = "L-BFGS-B", lower = c(0, 0), upper = c(1, 10))
-      h22.hdl = opt$par
-      opt = optim(c(h12.wls[2], rho12), llfun.gcov.part.2, 
-                  h11 = h11.hdl, h22 = h22.hdl, rho12 = rho12, 
-                  M = M, N1 = N1, N2 = N2, N0 = N0, Nref = Nref, 
-                  lam0 = lam, lam1 = lam, lam2 = lam, bstar1 = bstar1, 
-                  bstar2 = bstar2, lim = exp(-18), method = "L-BFGS-B", 
-                  lower = c(-1, -10), upper = c(1, 10))
-      h12.hdl = opt$par
+        h12.wls <- c(summary(reg)$coef[1:2, 1:2] * c(N, M))
+      bstar1 <- crossprod(V, bhat1)
+      bstar2 <- crossprod(V, bhat2)
+      opt <- optim(c(h11.wls[2], 1), llfun, N = N1, Nref = Nref,
+                   lam = lam, bstar = bstar1, M = M, lim = exp(-18),
+                   method = "L-BFGS-B", lower = c(0, 0), upper = c(1, 10))
+      h11.hdl <- opt$par
+      opt <- optim(c(h22.wls[2], 1), llfun, N = N2, Nref = Nref,
+                   lam = lam, bstar = bstar2, M = M, lim = exp(-18),
+                   method = "L-BFGS-B", lower = c(0, 0), upper = c(1, 10))
+      h22.hdl <- opt$par
+      opt <- optim(c(h12.wls[2], rho12), llfun.gcov.part.2,
+                   h11 = h11.hdl, h22 = h22.hdl, rho12 = rho12,
+                   M = M, N1 = N1, N2 = N2, N0 = N0, Nref = Nref,
+                   lam0 = lam, lam1 = lam, lam2 = lam, bstar1 = bstar1,
+                   bstar2 = bstar2, lim = exp(-18), method = "L-BFGS-B",
+                   lower = c(-1, -10), upper = c(1, 10))
+      h12.hdl <- opt$par
 
       HDL11.df <- rbind(HDL11.df, h11.hdl)
       HDL22.df <- rbind(HDL22.df, h22.hdl)
@@ -382,37 +382,37 @@ cat("\n")
     
   M.ref <- sum(unlist(nsnps.list))
     
-  opt = optim(c(sum(HDL11.df[, 1]),1), llfun, N=N1, Nref=Nref, lam=unlist(lam.v), bstar=unlist(bstar1.v), M=M.ref,
-              lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
-  h11.hdl = opt$par
-  opt = optim(c(sum(HDL22.df[, 1]),1), llfun, N=N2, Nref=Nref, lam=unlist(lam.v), bstar=unlist(bstar2.v), M=M.ref,
-              lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
-  h22.hdl = opt$par
+  opt <- optim(c(sum(HDL11.df[, 1]), 1), llfun, N=N1, Nref=Nref, lam=unlist(lam.v), bstar=unlist(bstar1.v), M=M.ref,
+               lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+  h11.hdl <- opt$par
+  opt <- optim(c(sum(HDL22.df[, 1]), 1), llfun, N=N2, Nref=Nref, lam=unlist(lam.v), bstar=unlist(bstar2.v), M=M.ref,
+               lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+  h22.hdl <- opt$par
   
   
  
-  opt=  optim(c(sum(HDL12.df[, 1]),rho12), llfun.gcov.part.2, h11=h11.hdl, h22=h22.hdl,
-              rho12=rho12, M=M.ref, N1=N1, N2=N2, N0=N0, Nref=Nref,
-              lam0=unlist(lam.v), lam1=unlist(lam.v), lam2=unlist(lam.v),
-              bstar1=unlist(bstar1.v), bstar2=unlist(bstar2.v),
-              lim=exp(-18), method ='L-BFGS-B', lower=c(-1,-10), upper=c(1,10))
+  opt <- optim(c(sum(HDL12.df[, 1]), rho12), llfun.gcov.part.2, h11=h11.hdl, h22=h22.hdl,
+               rho12=rho12, M=M.ref, N1=N1, N2=N2, N0=N0, Nref=Nref,
+               lam0=unlist(lam.v), lam1=unlist(lam.v), lam2=unlist(lam.v),
+               bstar1=unlist(bstar1.v), bstar2=unlist(bstar2.v),
+               lim=exp(-18), method ='L-BFGS-B', lower=c(-1,-10), upper=c(1,10))
   if(opt$convergence != 0){
     starting.value.v <- c(0,-sqrt(h11*h22)*0.5, sqrt(h11*h22)*0.5)
     k <- 1
     while(opt$convergence != 0){
       starting.value <- starting.value.v[k]
-      opt=  optim(c(starting.value,rho12), llfun.gcov.part.2, h11=h11.hdl, h22=h22.hdl,
-                  rho12=rho12, M=M.ref, N1=N1, N2=N2, N0=N0, Nref=Nref,
-                  lam0=unlist(lam.v), lam1=unlist(lam.v), lam2=unlist(lam.v),
-                  bstar1=unlist(bstar1.v), bstar2=unlist(bstar2.v),
-                  lim=exp(-18), method ='L-BFGS-B', lower=c(-1,-10), upper=c(1,10))
+      opt <- optim(c(starting.value, rho12), llfun.gcov.part.2, h11=h11.hdl, h22=h22.hdl,
+                   rho12=rho12, M=M.ref, N1=N1, N2=N2, N0=N0, Nref=Nref,
+                   lam0=unlist(lam.v), lam1=unlist(lam.v), lam2=unlist(lam.v),
+                   bstar1=unlist(bstar1.v), bstar2=unlist(bstar2.v),
+                   lim=exp(-18), method ='L-BFGS-B', lower=c(-1,-10), upper=c(1,10))
       k <- k + 1
       if(k > length(starting.value.v)){
         error.message <- "Algorithm failed to converge after trying different initial values. \n"
         stop(error.message)
       }
     }}
-  h12.hdl = opt$par
+  h12.hdl <- opt$par
   
   
   cat("Continuing computing standard error with jackknife \n")
@@ -420,21 +420,21 @@ cat("\n")
   message <- ""
   rg.jackknife <- h11.jackknife <- h12.jackknife <- h22.jackknife <- numeric(length(lam.v))
   for(i in 1:length(lam.v)){
-    opt = optim(h11.hdl, llfun, N=N1, Nref=Nref, lam=unlist(lam.v[-i]), bstar=unlist(bstar1.v[-i]), M=M.ref,
-                lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
-    h11.hdl.jackknife = opt$par
+    opt <- optim(h11.hdl, llfun, N=N1, Nref=Nref, lam=unlist(lam.v[-i]), bstar=unlist(bstar1.v[-i]), M=M.ref,
+                 lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+    h11.hdl.jackknife <- opt$par
     
     
-    opt = optim(h22.hdl, llfun, N=N2, Nref=Nref, lam=unlist(lam.v[-i]), bstar=unlist(bstar2.v[-i]), M=M.ref,
-                lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
-    h22.hdl.jackknife = opt$par
+    opt <- optim(h22.hdl, llfun, N=N2, Nref=Nref, lam=unlist(lam.v[-i]), bstar=unlist(bstar2.v[-i]), M=M.ref,
+                 lim=exp(-18), method ='L-BFGS-B', lower=c(0,0), upper=c(1,10))
+    h22.hdl.jackknife <- opt$par
     
-    opt=  optim(h12.hdl, llfun.gcov.part.2, h11=h11.hdl, h22=h22.hdl,
-                rho12=rho12, M=M.ref, N1=N1, N2=N2, N0=N0, Nref=Nref,
-                lam0=unlist(lam.v[-i]), lam1=unlist(lam.v[-i]), lam2=unlist(lam.v[-i]),
-                bstar1=unlist(bstar1.v[-i]), bstar2=unlist(bstar2.v[-i]),
-                lim=exp(-18), method ='L-BFGS-B', lower=c(-1,-10), upper=c(1,10))
-    h12.hdl.jackknife = opt$par
+    opt <- optim(h12.hdl, llfun.gcov.part.2, h11=h11.hdl, h22=h22.hdl,
+                 rho12=rho12, M=M.ref, N1=N1, N2=N2, N0=N0, Nref=Nref,
+                 lam0=unlist(lam.v[-i]), lam1=unlist(lam.v[-i]), lam2=unlist(lam.v[-i]),
+                 bstar1=unlist(bstar1.v[-i]), bstar2=unlist(bstar2.v[-i]),
+                 lim=exp(-18), method ='L-BFGS-B', lower=c(-1,-10), upper=c(1,10))
+    h12.hdl.jackknife <- opt$par
     
     
     
@@ -503,7 +503,7 @@ S2 <- S
 S <- diag(as.vector(sqrt(Liab.S))) %*% S %*% diag(as.vector(sqrt(Liab.S)))
 
 #calculate the ratio of the rescaled and original S matrices
-scaleO=as.vector(lowerTriangle((S/S2),diag=T))
+scaleO <- as.vector(lowerTriangle((S/S2), diag=T))
 
 #obtain diagonals of the original V matrix and take their sqrt to get SE's
 Dvcov<-sqrt(diag(V))

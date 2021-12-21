@@ -1,6 +1,6 @@
 
 
-addGenes <-function(covstruc, Genes,GC="standard"){
+addGenes <-function(covstruc, Genes, GC="standard"){
   time<-proc.time()
   
   V_LD<-as.matrix(covstruc[[1]])
@@ -123,19 +123,8 @@ addGenes <-function(covstruc, Genes,GC="standard"){
       }
     }
     
-    
-    ##create shell of full sampling covariance matrix
-    V_Full<-diag(((k+1)*(k+2))/2)
-    
-    ##input the ld-score regression region of sampling covariance from ld-score regression SEs
-    V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
-    
-    ##add in SE of Gene variance as first observation in sampling covariance matrix
-    V_Full[1,1]<-varGeneSE2
-    
-    ##add in Gene region of sampling covariance matrix
-    V_Full[2:(k+1),2:(k+1)]<-V_Gene
-    
+    V_full <- .get_V_full(k, V_LD, varGeneSE2, V_Gene)
+
     k2<-nrow(V_Full)
     smooth2<-ifelse(eigen(V_Full)$values[k2] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
     

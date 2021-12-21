@@ -6,25 +6,6 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     warning("Your model name may be listed in quotes; please remove the quotes and try re-running if the function has returned an error about not locating the ReorderModel.")
   }
   
-  #function to rearrange the sampling covariance matrix from original order to lavaan's order: 
-  #'k' is the number of variables in the model
-  #'fit' is the fit function of the regression model
-  #'names' is a vector of variable names in the order you used
-  rearrange <- function (k, fit, names) {
-    order1 <- names
-    order2 <- rownames(inspect(fit)[[1]]) #order of variables
-    kst <- k*(k+1)/2
-    covA <- matrix(NA, k, k)
-    covA[lower.tri(covA, diag = TRUE)] <- 1:kst
-    covA <- t(covA)
-    covA[lower.tri(covA, diag = TRUE)] <- 1:kst 
-    colnames(covA) <- rownames(covA) <- order1 #give A actual variable order from lavaan output
-    #reorder A by order2
-    covA <- covA[order2, order2] #rearrange rows/columns
-    vec2 <- lav_matrix_vech(covA) #grab new vectorized order
-    return(vec2)
-  }
-  
   if(tau == FALSE){
     ##read in the LD portion of the V (sampling covariance) matrix for the baseline annotation
     V_LD<-as.matrix(s_covstruc$V[[1]])
@@ -114,26 +95,15 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
-  
-  tryCatch.W.E <- function(expr)
-  {
-    W <- NULL
-    w.handler <- function(w){ # warning handler
-      W <<- w
-      invokeRestart("muffleWarning")
-    }
-    list(value = withCallingHandlers(tryCatch(expr, error = function(e) e),
-                                     warning = w.handler),
-         warning = W)
-  }
+
   
   ##run the model
   if(std.lv == FALSE){
-    empty2<-tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+    empty2<-.tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE))
   }
   
   if(std.lv == TRUE){
-    empty2<-tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = +Inf,optim.force.converged=TRUE)) 
+    empty2<-.tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = +Inf,optim.force.converged=TRUE))
   }
   
   if(class(empty2$value)[1] != "lavaan"){
@@ -145,7 +115,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     }}
   
   ##save the ordering
-  order <- rearrange(k = k, fit = ReorderModel1, names = rownames(S_LD))
+  order <- .rearrange(k = k, fit = ReorderModel1, names = rownames(S_LD))
   
   ##reorder the weight (inverted V_LD) matrix
   V_Reorder<-V_LD[order,order]
@@ -158,11 +128,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   check<-1
   ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
   if(std.lv == FALSE){
-    empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = +Inf))
+    empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = +Inf))
   }
   
   if(std.lv == TRUE){
-    empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
+    empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
   }
   
   empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
@@ -259,11 +229,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     Model1<-write.Model1(k)
     
     if(std.lv == FALSE){
-      empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
+      empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
     }
     
     if(std.lv == TRUE){
-      empty4<-tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
+      empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
     }
   }
   
@@ -287,7 +257,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
       S2.W <- lavInspect(Model1_Results, "WLS.V") 
       
       #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-      bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt)) 
+      bread2<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
       
       lettuce <- S2.W%*%S2.delt
       
@@ -381,11 +351,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     print("Confirming fixed model reproduces estimate from freely estimated model for baseline annotation.")
     
     if(std.lv == FALSE){
-      testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, optim.dx.tol = +Inf))
+      testQ<-.tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, optim.dx.tol = +Inf))
     }
     
     if(std.lv == TRUE){
-      testQ<-tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, std.lv=TRUE, optim.dx.tol = +Inf))
+      testQ<-.tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, std.lv=TRUE, optim.dx.tol = +Inf))
     }
     
     test1<-subset(ModelQ_WLS, ModelQ_WLS$free != 0)
@@ -474,7 +444,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
         diag(V_Reorderb)<-diag(V_Reorder)
         W_Reorder<-solve(V_Reorderb)
         
-        part_warn<-tryCatch.W.E(ModelPart_Results <- sem(ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
+        part_warn<-.tryCatch.W.E(ModelPart_Results <- sem(ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
         
         part_warn$warning$message[1]<-ifelse(is.null(part_warn$warning$message), part_warn$warning$message[1]<-0, part_warn$warning$message[1])
         
@@ -486,7 +456,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
           S2.W <- lavInspect(ModelPart_Results, "WLS.V") 
           
           #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-          bread2<-tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
+          bread2<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
           
           if(class(bread2$value)[1] == "matrix"){
             
