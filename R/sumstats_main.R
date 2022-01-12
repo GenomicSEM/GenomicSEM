@@ -82,7 +82,7 @@
     file$MAF.y<-ifelse(file$MAF.y > .5, 1-file$MAF.y, file$MAF.y)
     b<-nrow(file)
     file<-subset(file, file$MAF.y != 0 & file$MAF.y != 1)
-    if(b-nrow(file) > 0) .LOG(b-nrow(file), " rows were removed from the ", filenames[i], " summary statistics file due to allele frequencies printed as exactly 1 or 0",file=log.file)
+    if(b-nrow(file) > 0) .LOG(b-nrow(file), " rows were removed from the ", filename, " summary statistics file due to allele frequencies printed as exactly 1 or 0",file=log.file)
     file$varSNP<-2*file$MAF.y*(1-file$MAF.y)
   }else{
     file$varSNP<-2*file$MAF*(1-file$MAF)
