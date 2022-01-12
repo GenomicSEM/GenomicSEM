@@ -82,7 +82,7 @@
     file$MAF.y<-ifelse(file$MAF.y > .5, 1-file$MAF.y, file$MAF.y)
     b<-nrow(file)
     file<-subset(file, file$MAF.y != 0 & file$MAF.y != 1)
-    if(b-nrow(file) > 0) .LOG(b-nrow(file), " rows were removed from the ", filename, " summary statistics file due to allele frequencies printed as exactly 1 or 0",file=log.file)
+    if(b-nrow(file) > 0) .LOG(b-nrow(file), " rows were removed from the ", filename, " summary statistics file due to allele frequencies printed as exactly 1 or 0", file=log.file)
     file$varSNP<-2*file$MAF.y*(1-file$MAF.y)
   }else{
     file$varSNP<-2*file$MAF*(1-file$MAF)
@@ -90,7 +90,7 @@
 
   ##determine whether it is OR or logistic/continuous effect based on median effect size
   a1<-file$effect[[1]]
-  file$effect<-ifelse(rep(round(median(file$effect,na.rm=T)) == 1,nrow(file)), log(file$effect),file$effect)
+  file$effect <- ifelse(rep(round(median(file$effect,na.rm=T)) == 1,nrow(file)), log(file$effect),file$effect)
   a2<-file$effect[[1]]
   if(a1 != a2) .LOG("The effect column was determined to be coded as an odds ratio (OR) for the ", filename, " summary statistics file based on the median of the effect column being close to 1. Please ensure the interpretation of this column as an OR is correct.",file=log.file)
   if(a1 == a2) .LOG("The effect column was determined NOT to be coded as an odds ratio (OR) for the ", filename, " summary statistics file based on the median of the effect column being close to 0.",file=log.file)

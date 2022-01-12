@@ -58,7 +58,7 @@
         S_smooth <- 1
     }
 
-    if(smooth_check){
+    if (smooth_check) {
         if(exists("S_smooth") | exists("V_smooth")){
             SE_smooth <- matrix(0, ks, ks)
             SE_smooth[lower.tri(SE_smooth,diag=TRUE)]  <- sqrt(diag(V_full))
