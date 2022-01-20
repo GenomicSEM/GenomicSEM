@@ -1,11 +1,12 @@
 Package: GenomicSEM
 Type: Package
 Title: Structural equation modeling based on GWAS summary statistics
-Version: 0.0.4
+Version: 0.0.5
 Author: Andrew Grotzinger, Matthijs van der Zee, Mijke Rhemtulla, Hill Ip, Michel Nivard, Elliot Tucker-Drob
 Maintainer: Andrew Grotzinger <agrotzin@utexas.edu>
 Description: Later
 License: GPL-3.0
 Encoding: UTF-8
 LazyData: true
-Imports: plyr,e1071,readr,gdata,lavaan,doParallel,parallel,foreach,data.table,stringr,splitstackshape,Matrix,R.utils,dplyr,iterators,Rcpp,utils,mgsub
+Imports: plyr,e1071,readr,gdata,lavaan,doParallel,parallel,foreach,data.table,stringr,splitstackshape,Matrix,R.utils,dplyr,iterators,Rcpp,RcppArmadillo,utils,mgsub
+LinkingTo: Rcpp, RcppArmadillo

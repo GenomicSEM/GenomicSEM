@@ -1,3 +1,6 @@
+# Compiled files
+src/*.o
+
 # History files
 .Rhistory
 .Rapp.history

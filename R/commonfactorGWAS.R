@@ -127,10 +127,8 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
   
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
-    V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, "conserv", coords, k, i)
-    
     ##create shell of full sampling covariance matrix
-    V_Full<-.get_V_full(k, V_LD, varSNPSE2, V_SNP)
+    V_Full <- .get_V_full(k, V_LD, varSNPSE2, SE_SNP, I_LD, varSNP, GC, coords, i)
     
     k2<-nrow(V_Full)
     smooth2<-ifelse(eigen(V_Full)$values[k2] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
@@ -188,7 +186,10 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
     results <- as.data.frame(matrix(NA, ncol=10, nrow=f))
     colnames(results) <- c("i", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning")
   }
+  I_LD <- as.matrix(I_LD) # Conversion to matrix required for C++
+  coords <- as.matrix(coords)
   if(!parallel){
+    SE_SNP <- as.matrix(SE_SNP)
     for (i in 1:f) {
       results[i, ] <- .commonfactorGWAS_main(i, 1, S_LD, V_LD, I_LD, beta_SNP, SE_SNP, varSNP, varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order)
     }
@@ -220,7 +221,9 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
     beta_SNP<-suppressWarnings(split(beta_SNP,1:int))
     SE_SNP<-suppressWarnings(split(SE_SNP,1:int))
     varSNP<-suppressWarnings(split(varSNP,1:int))
-    
+    for (j in 1:int) {
+      SE_SNP[[j]] <- as.matrix(SE_SNP[[j]])
+    }
     ##foreach parallel processing that rbinds results across cores
     if (Operating != "Windows") {
     results<-foreach(n = icount(int), .combine = 'rbind') %:%
@@ -230,7 +233,6 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
     } else {
       utilfuncs <- list()
       utilfuncs[[".tryCatch.W.E"]] <- .tryCatch.W.E
-      utilfuncs[[".get_V_SNP"]] <- .get_V_SNP
       utilfuncs[[".get_V_full"]] <- .get_V_full
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
       foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
