@@ -102,7 +102,7 @@
         S2.delt <- lavInspect(Model1_Results, "delta")
 
         ##weight matrix from stage 2
-        S2.W <- Model1_Results@SampleStats@WLS.V
+        S2.W <- lavInspect(Model1_Results, "WLS.V")
 
         #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
         bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler)
