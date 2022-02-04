@@ -9,7 +9,7 @@ commonfactorGWAS <-function(covstruc=NULL,SNPs=NULL,estimation="DWLS",cores=NULL
   .check_one_of(estimation, c("DWLS", "ML"))
   if (!is.null(cores)) .check_range(cores, min=0, max=Inf, allowNA=FALSE)
   .check_range(toler, min=0, max=Inf)
-  .check_boolean(SNPSE)
+  # .check_boolean(SNPSE)  # Commented out for now, as it can also be numeric
   .check_boolean(parallel)
   .check_one_of(GC, c("standard", "conserv", "none"))
   .check_boolean(MPI)

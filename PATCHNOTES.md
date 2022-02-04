@@ -125,3 +125,8 @@ This update contains minimal changes for users (see Feature updates), but large 
 | 12     |  TRUE  |  4   |   332                 |   273                 |
 | 12     |  TRUE  |  8   |   282                 |   209                 |
 | 12     |  TRUE  |  12  |   256                 |   147                 |
+
+**Code update 04.02.2022**
+- Fixed issue that would couse an early exit if SNPSE was a numeric
+- Fixed issue that forced an SE column when linprob is set to TRUE
+- Fixed issue that caused lack of column naames in the result of userGWAS 

@@ -255,11 +255,8 @@
         if(!(sub[[1]])==FALSE){
             final2 <- subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
         }else{##pull results
-            final2$est <- ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)}
-
-        ##results to be put into the output
-        return(final2)
-
+            final2$est <- ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
+        }
     }else{
         final <- data.frame(t(rep(NA, 13)))
         if(printwarn){
@@ -272,15 +269,15 @@
         i <- i+5+(nrow(beta_SNP)*(n-1))
         ##combine results with SNP, CHR, BP, A1, A2 for particular model
         final2 <- cbind(i,SNPs2[i,],final,row.names=NULL)
-        if(TWAS){
-            new_names <- c("i", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-        } else {
-            new_names <- c("i", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
-        }
-        if(smooth_check)
-            new_names <- c(new_names, "Z_smooth")
-        colnames(final2) <- new_names
-
-        return(final2)
     }
+    if(TWAS){
+        new_names <- c("i", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+    } else {
+        new_names <- c("i", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+    }
+    if(smooth_check)
+        new_names <- c(new_names, "Z_smooth")
+
+    colnames(final2) <- new_names
+    return(final2)
 }

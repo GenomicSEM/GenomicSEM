@@ -23,6 +23,8 @@
   if ((se.logit) | (all(!(c(linprob, OLS, se.logit))))) {
     # if se.logit == T, or linprob,OLS,se.logit are all FALSE, SE is required.
     stop_on_missing <- c("effect", "SNP", "SE")
+  } else if (linprob){
+    stop_on_missing <- c("effect", "SNP")
   } else {
     stop_on_missing <- c("effect", "SNP")
   }
