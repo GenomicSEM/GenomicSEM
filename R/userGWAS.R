@@ -102,20 +102,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   coords <- which(I_LD != 'NA', arr.ind= T)
   i <- 1  # TODO: reason for this?
   #create empty shell of V_SNP matrix
-  V_SNP <- diag(n_phenotypes)
-
-  #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
-  for (p in 1:nrow(coords)) {
-    x <- coords[p,1]
-    y <- coords[p,2]
-    if (x != y) {
-      V_SNP[x,y] <- (SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
-    if (x == y) {
-      V_SNP[x,x] <- (SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
-    }
-  }
-
-  V_full <- .get_V_full(n_phenotypes, V_LD, varSNPSE2, V_SNP)
+  V_full <- .get_V_full(n_phenotypes, V_LD, varSNPSE2, as.matrix(SE_SNP), as.matrix(I_LD), varSNP, "conserv", coords, i)
 
   kv <- nrow(V_full)
   smooth2 <- ifelse(eigen(V_full)$values[kv] <= 0, V_full <- as.matrix((nearPD(V_full, corr = FALSE))$mat), V_full <- V_full)
@@ -181,6 +168,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
 
   rm(SNPs)
   f <- nrow(beta_SNP)
+  I_LD <- as.matrix(I_LD)  # Conversion to matrix required for C++
   if(!parallel){
     #make empty list object for model results if not saving specific model parameter
     if(sub[[1]]==FALSE){
@@ -192,6 +180,8 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     } else {
       print("Starting GWAS Estimation")
     }
+
+    SE_SNP <- as.matrix(SE_SNP)  # Conversion to matrix required for C++
 
     for (i in 1:nrow(beta_SNP)) {
       if(i == 1){
@@ -258,6 +248,10 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     SE_SNP <- suppressWarnings(split(SE_SNP,1:int))
     varSNP <- suppressWarnings(split(varSNP,1:int))
 
+    for (j in 1:int) {
+      SE_SNP[[j]] <- as.matrix(SE_SNP[[j]]) # Conversion to matrix required for C++
+      varSNP[[j]] <- as.matrix(varSNP[[j]]) # Conversion to matrix required for C++
+    }
     if(TWAS){
       print("Starting TWAS Estimation")
     } else {
@@ -275,7 +269,6 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       #Util-functions have to be explicitly passed to the analysis function in PSOCK cluster
       utilfuncs <- list()
       utilfuncs[[".tryCatch.W.E"]] <- .tryCatch.W.E
-      utilfuncs[[".get_V_SNP"]] <- .get_V_SNP
       utilfuncs[[".get_Z_pre"]] <- .get_Z_pre
       utilfuncs[[".get_V_full"]] <- .get_V_full
       results <- foreach(n = icount(int), .combine = 'rbind') %:%

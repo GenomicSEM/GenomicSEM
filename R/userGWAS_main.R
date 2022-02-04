@@ -8,13 +8,11 @@
         }
     }
 
-    V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, GC, coords, k, i)
-
     if (smooth_check) {
         Z_pre <- .get_Z_pre(i, beta_SNP, SE_SNP, I_LD, GC)
     }
 
-    V_full <- .get_V_full(k, V_LD, varSNPSE2, V_SNP)
+    V_full <- .get_V_full(k, V_LD, varSNPSE2, SE_SNP, I_LD, varSNP, GC, coords, i)
     
     if(eigen(V_full)$values[nrow(V_full)] <= 0){
         V_full <- as.matrix((nearPD(V_full, corr = FALSE))$mat)
@@ -93,7 +91,10 @@
 
         resid_var1 <- subset(Model_Output, Model_Output$op == "~~" & Model_Output$free != 0 & Model_Output$lhs == Model_Output$rhs)
 
-        resid_var2 <- min(resid_var1$est)}else{resid_var2 <- -9}
+        resid_var2 <- min(resid_var1$est)
+    }else{
+        resid_var2 <- -9
+    }
 
     if(resid_var2 > 0){
 
