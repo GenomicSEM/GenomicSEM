@@ -8,12 +8,14 @@
         }
     }
 
+    V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, GC, coords, k, i)
+
     if (smooth_check) {
         Z_pre <- .get_Z_pre(i, beta_SNP, SE_SNP, I_LD, GC)
     }
 
-    V_full <- .get_V_full(k, V_LD, varSNPSE2, SE_SNP, I_LD, varSNP, GC, coords, i)
-    
+    V_full <- .get_V_full(k, V_LD, varSNPSE2, V_SNP)
+
     if(eigen(V_full)$values[nrow(V_full)] <= 0){
         V_full <- as.matrix((nearPD(V_full, corr = FALSE))$mat)
         V_smooth <- 1
@@ -91,10 +93,7 @@
 
         resid_var1 <- subset(Model_Output, Model_Output$op == "~~" & Model_Output$free != 0 & Model_Output$lhs == Model_Output$rhs)
 
-        resid_var2 <- min(resid_var1$est)
-    }else{
-        resid_var2 <- -9
-    }
+        resid_var2 <- min(resid_var1$est)}else{resid_var2 <- -9}
 
     if(resid_var2 > 0){
 
@@ -256,8 +255,11 @@
         if(!(sub[[1]])==FALSE){
             final2 <- subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
         }else{##pull results
-            final2$est <- ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
-        }
+            final2$est <- ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)}
+
+        ##results to be put into the output
+        return(final2)
+
     }else{
         final <- data.frame(t(rep(NA, 13)))
         if(printwarn){
@@ -278,7 +280,7 @@
     }
     if(smooth_check)
         new_names <- c(new_names, "Z_smooth")
-
     colnames(final2) <- new_names
+
     return(final2)
 }

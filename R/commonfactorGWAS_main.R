@@ -5,8 +5,8 @@
       assign(j, utilfuncs[[j]], envir=environment())
     }
   }
-  ##create shell of full sampling covariance matrix
-  V_Full <- .get_V_full(k, V_LD, varSNPSE2, SE_SNP, I_LD, varSNP, GC, coords, i)
+  #create empty shell of V_SNP matrix
+  V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, GC, coords, k, i)
 
   if(smooth_check){
     if(GC == "conserv"){
@@ -18,7 +18,14 @@
     }
   }
 
-
+  ##create shell of full sampling covariance matrix
+  V_Full<-diag(((k+1)*(k+2))/2)
+  ##input the ld-score regression region of sampling covariance from ld-score regression SEs
+  V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
+  ##add in SE of SNP variance as first observation in sampling covariance matrix
+  V_Full[1,1]<-varSNPSE2
+  ##add in SNP region of sampling covariance matrix
+  V_Full[2:(k+1),2:(k+1)]<-V_SNP
 
   kv<-nrow(V_Full)
   if(eigen(V_Full)$values[kv] <= 0){
@@ -190,4 +197,3 @@
   }
   return(results)
 }
-

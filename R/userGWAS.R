@@ -11,7 +11,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   .check_boolean(printwarn)
   if (!is.null(cores)) .check_range(cores, min=0, max=Inf)
   .check_range(toler, min=0, max=Inf)
-  # .check_boolean(SNPSE)  # Commented out for now, as it can also be numeric
+  # .check_boolean(SNPSE)
   .check_boolean(parallel)
   .check_one_of(GC, c("standard", "conserv", "none"))
   .check_boolean(MPI)
@@ -27,7 +27,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   }
 
   if(exists("Output")){
-    stop("Please note that an update was made to commonfactorGWAS on 4/1/21 so that addSNPs output CANNOT be fed directly to the function. It now expects the 
+    stop("Please note that an update was made to commonfactorGWAS on 4/1/21 so that addSNPs output CANNOT be fed directly to the function. It now expects the
             output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments.")
   }
 
@@ -40,15 +40,15 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   print("Please note that an update was made to userGWAS on 11/21/19 so that it combines addSNPs and userGWAS.")
 
   if(class(SNPs)[1] == "character"){
-    print("You are likely listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the 
+    print("You are likely listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the
           output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usag")
-    warning("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the 
+    warning("You are likely listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the
             output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usage")
   }else{
     if(is.null(SNPs) | is.null(covstruc)){
-      print("You may be listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS;if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
+      print("You may be listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS;if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the
             output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usag")
-      warning("You may be listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS; ; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the 
+      warning("You may be listing arguments (e.g. Output = ...) in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS; ; if you already did this and the function ran then you can disregard this warning. The current version of the function is faster and saves memory. It expects the
               output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usage")
     }
   }
@@ -102,7 +102,20 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   coords <- which(I_LD != 'NA', arr.ind= T)
   i <- 1  # TODO: reason for this?
   #create empty shell of V_SNP matrix
-  V_full <- .get_V_full(n_phenotypes, V_LD, varSNPSE2, as.matrix(SE_SNP), as.matrix(I_LD), varSNP, "conserv", coords, i)
+  V_SNP <- diag(n_phenotypes)
+
+  #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
+  for (p in 1:nrow(coords)) {
+    x <- coords[p,1]
+    y <- coords[p,2]
+    if (x != y) {
+      V_SNP[x,y] <- (SE_SNP[i,y]*SE_SNP[i,x]*I_LD[x,y]*I_LD[x,x]*I_LD[y,y]*varSNP[i]^2)}
+    if (x == y) {
+      V_SNP[x,x] <- (SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
+    }
+  }
+
+  V_full <- .get_V_full(n_phenotypes, V_LD, varSNPSE2, V_SNP)
 
   kv <- nrow(V_full)
   smooth2 <- ifelse(eigen(V_full)$values[kv] <= 0, V_full <- as.matrix((nearPD(V_full, corr = FALSE))$mat), V_full <- V_full)
@@ -168,7 +181,6 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
 
   rm(SNPs)
   f <- nrow(beta_SNP)
-  I_LD <- as.matrix(I_LD)  # Conversion to matrix required for C++
   if(!parallel){
     #make empty list object for model results if not saving specific model parameter
     if(sub[[1]]==FALSE){
@@ -180,8 +192,6 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     } else {
       print("Starting GWAS Estimation")
     }
-
-    SE_SNP <- as.matrix(SE_SNP)  # Conversion to matrix required for C++
 
     for (i in 1:nrow(beta_SNP)) {
       if(i == 1){
@@ -248,10 +258,6 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     SE_SNP <- suppressWarnings(split(SE_SNP,1:int))
     varSNP <- suppressWarnings(split(varSNP,1:int))
 
-    for (j in 1:int) {
-      SE_SNP[[j]] <- as.matrix(SE_SNP[[j]]) # Conversion to matrix required for C++
-      varSNP[[j]] <- as.matrix(varSNP[[j]]) # Conversion to matrix required for C++
-    }
     if(TWAS){
       print("Starting TWAS Estimation")
     } else {
@@ -269,6 +275,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       #Util-functions have to be explicitly passed to the analysis function in PSOCK cluster
       utilfuncs <- list()
       utilfuncs[[".tryCatch.W.E"]] <- .tryCatch.W.E
+      utilfuncs[[".get_V_SNP"]] <- .get_V_SNP
       utilfuncs[[".get_Z_pre"]] <- .get_Z_pre
       utilfuncs[[".get_V_full"]] <- .get_V_full
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
