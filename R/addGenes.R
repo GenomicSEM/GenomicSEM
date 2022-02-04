@@ -123,7 +123,7 @@ addGenes <-function(covstruc, Genes, GC="standard"){
       }
     }
     
-    V_full <- .get_V_full(k, V_LD, varGeneSE2, V_Gene)
+    V_Full <- .get_V_full(k, V_LD, varGeneSE2, V_Gene)
 
     k2<-nrow(V_Full)
     smooth2<-ifelse(eigen(V_Full)$values[k2] <= 0, V_Full<-as.matrix((nearPD(V_Full, corr = FALSE))$mat), V_Full<-V_Full)
