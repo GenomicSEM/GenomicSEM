@@ -1,5 +1,5 @@
-# Sanity check functions
 
+# Sanity check functions
 .check_equal_length <- function(left, right) {
   name_left <- deparse(substitute(left))
   name_right <- deparse(substitute(right))
@@ -64,5 +64,3 @@
     stop(paste(name, "should be one of the following values:\n",paste(one_of, collapse=", ")))
   }
 }
-
-
