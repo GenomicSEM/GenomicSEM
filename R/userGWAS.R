@@ -206,12 +206,12 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar)
       if(sub[[1]] != FALSE){
         final3 <- as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
-        final3[1:length(sub),] <- final2[1,]
+        final3[1:length(sub),] <- final2[1:length(sub),]
         if(i == 1){
           Results_List <- vector(mode="list",length=length(sub))
           for(y in 1:length(sub)){
             Results_List[[y]] <- as.data.frame(matrix(NA,ncol=ncol(final3),nrow=f))
-            colnames(Results_List[[y]]) <- colnames(final3)
+            colnames(Results_List[[y]]) <- colnames(final2)
             Results_List[[y]][1,] <- final3[y,]
           }
         }else{
