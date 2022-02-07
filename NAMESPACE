@@ -1,5 +1,3 @@
-useDynLib(GenomicSEM, .registration=TRUE)
-importFrom(Rcpp, evalCpp)
 exportPattern("^[^\\.]")
 import(plyr)
 import(e1071)
