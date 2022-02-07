@@ -1,6 +1,6 @@
 .userGWAS_main <- function(i, k, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP,
-                               varSNP, GC, coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
-                               df, npar, utilfuncs=NULL) {
+                           varSNP, GC, coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
+                           df, npar, utilfuncs=NULL) {
     # utilfuncs contains utility functions to enable this code to work on PSOC clusters (for Windows)
     if (!is.null(utilfuncs)) {
         for (j in names(utilfuncs)) {
@@ -279,7 +279,7 @@
         new_names <- c("i", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
     }
     if(smooth_check)
-        new_names <- c(new_names, "Z_smooth")
+      new_names <- c(new_names, "Z_smooth")
     colnames(final2) <- new_names
 
     return(final2)
