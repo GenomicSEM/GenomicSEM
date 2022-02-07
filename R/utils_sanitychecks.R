@@ -64,3 +64,4 @@
     stop(paste(name, "should be one of the following values:\n",paste(one_of, collapse=", ")))
   }
 }
+
