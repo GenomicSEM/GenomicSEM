@@ -1,7 +1,7 @@
 Package: GenomicSEM
 Type: Package
 Title: Structural equation modeling based on GWAS summary statistics
-Version: 0.0.5
+Version: 0.0.4
 Author: Andrew Grotzinger, Matthijs van der Zee, Mijke Rhemtulla, Hill Ip, Michel Nivard, Elliot Tucker-Drob
 Maintainer: Andrew Grotzinger <agrotzin@utexas.edu>
 Description: Later
