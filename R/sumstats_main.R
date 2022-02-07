@@ -20,7 +20,9 @@
 
   .LOG("Preparing summary statistics for file: ", filename,file=log.file)
   N_provided <- (!is.na(N))
-  if ((se.logit) | (all(!(c(linprob, OLS, se.logit))))) {
+  if (linprob){
+    stop_on_missing <- c("effect", "SNP")
+  }  else if ((se.logit) | (all(!(c(linprob, OLS, se.logit))))) {
     # if se.logit == T, or linprob,OLS,se.logit are all FALSE, SE is required.
     stop_on_missing <- c("effect", "SNP", "SE")
   } else {
