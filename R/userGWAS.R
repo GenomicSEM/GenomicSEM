@@ -267,13 +267,10 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     }
     if (Operating != "Windows") {
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
-      foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% {
+      foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% 
         .userGWAS_main(i, n_phenotypes, n, I_LD, V_LD, S_LD,
         std.lv, varSNPSE2, order, SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC,
         coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, basemodel=LavModel1)
-
-
-      }
     } else {
       #Util-functions have to be explicitly passed to the analysis function in PSOCK cluster
       utilfuncs <- list()
