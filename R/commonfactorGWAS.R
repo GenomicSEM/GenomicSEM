@@ -224,7 +224,7 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
     if (Operating != "Windows") {
       results<-foreach(n = icount(int), .combine = 'rbind') %:%
         foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% {
-        .commonfactorGWAS_main(i, 1, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order)
+        .commonfactorGWAS_main(i, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order)
       }
     } else {
       utilfuncs <- list()
@@ -234,10 +234,10 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
         foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
                  .export=c(".commonfactorGWAS_main")) %dopar% {
-        .commonfactorGWAS_main(i, 1, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, utilfuncs)
+        .commonfactorGWAS_main(i, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, utilfuncs)
       }
     }
-    results <- results[order(results$i),]
+    results <- results[order(results[, 1]),]
   }
   results$se <- NULL
   results<-cbind(SNPs2,results)
