@@ -255,11 +255,8 @@
         if(!(sub[[1]])==FALSE){
             final2 <- subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
         }else{##pull results
-            final2$est <- ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)}
-
-        ##results to be put into the output
-        return(final2)
-
+            final2$est <- ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
+        }
     }else{
         final <- data.frame(t(rep(NA, 13)))
         if(printwarn){
