@@ -301,7 +301,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       rm(results)
     }
     if (TWAS) {
-      if(!sub[[1]]){
+      if(sub[[1]] != FALSE){
         names <- unique(results$Panel)
         Results_List <- vector(mode="list", length=length(names))
         for(y in 1:length(names)){

@@ -189,7 +189,7 @@
         Q<-t(eta)%*%P1%*%solve(Eig,tol=toler)%*%t(P1)%*%eta}} else{Q<-"Not Computed"}
 
     # Reassign i to maintain original order in parallel operation
-    i <- i+5+(nrow(beta_SNP)*(n-1))
+    i <- i+12+(nrow(beta_SNP)*(n-1))
 
     ##pull all the results into a single row
     if(smooth_check == TRUE){
@@ -200,6 +200,8 @@
 
 
   }else{
+    # Reassign i to maintain original order in parallel operation
+    i <- i+12+(nrow(beta_SNP)*(n-1))
     if(smooth_check == TRUE){
       results<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),Z_smooth,stringsAsFactors = FALSE)
     } else {

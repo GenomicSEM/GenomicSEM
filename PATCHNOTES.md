@@ -167,4 +167,16 @@ UserGWAS of 100K SNPs from 12 summary statistics
 | TRUE     | 12    |        6,103        |        4,680        |
 Note: max RAM values are obtained running solely the 100K-userGWAS in an isolated test-environment, without any RStudio/IDE overhead or any other data. RAM usage in practical application is likely to be higher.
 
+- Added **Parallel performance on Linux** to `README.md`.
+- Testing shows that on Linux performance is best when OPENBLAST_NUM_THREADS is set to 1, and parallel is purely done through `cores` in GenomicSEM.  
+System: Ubuntu 20.04, 2x EPYC 7H12 @ 2.6-3.3GHz, 2x256GB RAM
+UserGWAS of 100K SNPs from 12 summary statistics, GenomicSEM v0.0.5
 
+|cores | OPENBLAS unlimited  | OPENBLAS limited |
+|------|:-------------------:|:----------------:|
+|  1   |     12,645          |      10,434      |
+|  2   |      7,577          |       5,013      |
+|  4   |      4,214          |       2,559      |
+|  8   |      5,347          |       1,402      |
+| 12   |      6,585          |       1,057      |
+| 24   |      5,170          |       2,042      |
