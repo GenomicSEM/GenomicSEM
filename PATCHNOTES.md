@@ -136,6 +136,7 @@ This update contains minimal changes for users (see Feature updates), but large 
 - Fixed issue that caused parallel=TRUE in userGWAS to not return headers.
 
 **0.0.5** Fourth release. February 15th, 2022
+- Fixed an issue that may cause parallel clusters to not register and close properly.
 - Changes: userGWAS and commonfactorGWAS:
   Now, before starting the main analysis (`*_main()`) both userGWAS and commonfcatorGWAS do a partial run (everything up to and including `lavaan::sem()`) of the first SNP
   The resulting object from this first run is passed to the subsequent per-SNP analyses, and from the object of the first run the following is pased to `lavaan::lavaan()` (the function underneath `lavaan::sem()`):
@@ -147,23 +148,23 @@ This update contains minimal changes for users (see Feature updates), but large 
 System: Windows 10, Ryzen7 3700X @ 3.60-4.4GHz, 48GB RAM, 970 EvoPlus 1TB  
 UserGWAS of 100K SNPs from 12 summary statistics  
   
-|parallel|cores | v0.0.4 runtime (s)    | v0.0.5 runtime (s)    |
-|--------|------|-----------------------|-----------------------|
-|  FALSE |  1   |     27,302            |     25,979            |
-|  TRUE  |  2   |     11,659            |     10,115            |
-|  TRUE  |  4   |      6,199            |      5,505            |
-|  TRUE  |  8   |      4,123            |      3,478            |
-|  TRUE  | 12   |      3,549            |      2,863            |
+| parallel | cores | v0.0.4 runtime (s) | v0.0.5 runtime (s) |
+|----------|-------|:------------------:|:------------------:|
+| FALSE    | 1     |       27,302       |       25,979       |
+| TRUE     | 2     |       11,659       |       10,115       |
+| TRUE     | 4     |       6,199        |       5,505        |
+| TRUE     | 8     |       4,123        |       3,478        |
+| TRUE     | 12    |       3,549        |       2,863        |
 
 - It seems likely that the greater saves in higher core counts are due to less memory IO (due to fewer operations) but I don't know how to test this definitively. Lower RAM usage in v0.0.5 does support this theory.
 
-|parallel|cores | v0.0.4 max RAM (MB)   | v0.0.5 max RAM (MB)   |
-|--------|------|-----------------------|-----------------------|
-|  FALSE |  1   |      1,407            |      1,398            |
-|  TRUE  |  2   |      2,832            |      2,447            |
-|  TRUE  |  4   |      3,497            |      2,837            |
-|  TRUE  |  8   |      4,764            |      3,615            |
-|  TRUE  | 12   |      6,103            |      4,680            |
+| parallel | cores | v0.0.4 max RAM (MB) | v0.0.5 max RAM (MB) |
+|----------|-------|:-------------------:|:-------------------:|
+| FALSE    | 1     |        1,407        |        1,398        |
+| TRUE     | 2     |        2,832        |        2,447        |
+| TRUE     | 4     |        3,497        |        2,837        |
+| TRUE     | 8     |        4,764        |        3,615        |
+| TRUE     | 12    |        6,103        |        4,680        |
 Note: max RAM values are obtained running solely the 100K-userGWAS in an isolated test-environment, without any RStudio/IDE overhead or any other data. RAM usage in practical application is likely to be higher.
 
 

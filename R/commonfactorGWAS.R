@@ -206,13 +206,13 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
       #register cluster; no makecluster as ibrun already starts the MPI process.
       registerDoParallel(cl)
     } else {
-      registerDoParallel(int)
       ##specify the cores should have access to the local environment
       if (Operating != "Windows") {
         cl <- makeCluster(int, type="FORK")
       } else {
         cl <- makeCluster(int, type="PSOCK")
       }
+      registerDoParallel(cl)
       on.exit(stopCluster(cl))
     }
 

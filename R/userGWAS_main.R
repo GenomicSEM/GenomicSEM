@@ -261,9 +261,10 @@
             final$error <- ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
             final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]
         }
-
+        # Reassign i to maintain original order in parallel operation
+        i <- i+12+(nrow(SNPs2)*(n-1))
         ##combine with rs-id, BP, CHR, etc.
-        final2 <- cbind(i,n,SNPs2[i,],final,row.names=NULL)
+        final2 <- cbind(i,SNPs2[i,],final,row.names=NULL)
 
         if(smooth_check){
             final2 <- cbind(final2,Z_smooth)
@@ -286,7 +287,7 @@
             }
             final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
         # Reassign i to maintain original order in parallel operation
-        i <- i+5+(1000000*(n-1))
+        i <- i+12+(nrow(SNPs2)*(n-1))
         ##combine results with SNP, CHR, BP, A1, A2 for particular model
         final2 <- cbind(i,SNPs2[i,],final,row.names=NULL)
     }
