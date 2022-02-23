@@ -135,7 +135,7 @@ This update contains minimal changes for users (see Feature updates), but large 
 - Fixed 'unexpected end of input' error when installing package
 - Fixed issue that caused parallel=TRUE in userGWAS to not return headers.
 
-**0.0.5** Fourth release. February 15th, 2022
+**0.0.5** Fifth release. February 23th, 2022
 - Fixed an issue that may cause parallel clusters to not register and close properly.
 - Changes: userGWAS and commonfactorGWAS:
   Now, before starting the main analysis (`*_main()`) both userGWAS and commonfcatorGWAS do a partial run (everything up to and including `lavaan::sem()`) of the first SNP
@@ -168,15 +168,29 @@ UserGWAS of 100K SNPs from 12 summary statistics
 Note: max RAM values are obtained running solely the 100K-userGWAS in an isolated test-environment, without any RStudio/IDE overhead or any other data. RAM usage in practical application is likely to be higher.
 
 - Added **Parallel performance on Linux** to `README.md`.
-- Testing shows that on Linux performance is best when OPENBLAST_NUM_THREADS is set to 1, and parallel is purely done through `cores` in GenomicSEM.  
+- Testing shows that on Linux performance is best when OPENBLAS_NUM_THREADS is set to 1, and parallel is purely done through `cores` in GenomicSEM. Note the specific argument may vary depending on OS and R build.
+
 System: Ubuntu 20.04, 2x EPYC 7H12 @ 2.6-3.3GHz, 2x256GB RAM
 UserGWAS of 100K SNPs from 12 summary statistics, GenomicSEM v0.0.5
 
-|cores | OPENBLAS unlimited  | OPENBLAS limited |
-|------|:-------------------:|:----------------:|
-|  1   |     12,645          |      10,434      |
-|  2   |      7,577          |       5,013      |
-|  4   |      4,214          |       2,559      |
-|  8   |      5,347          |       1,402      |
-| 12   |      6,585          |       1,057      |
-| 24   |      5,170          |       2,042      |
+| cores | OPENBLAS unlimited | OPENBLAS limited |
+|-------|:------------------:|:----------------:|
+| 1     |       12,645       |      10,434      |
+| 2     |       7,577        |      5,013       |
+| 4     |       4,214        |      2,559       |
+| 8     |       5,347        |      1,402       |
+| 12    |       6,585        |      1,057       |
+| 24    |       5,170        |      2,042       |
+
+- Runtime improvements on Linux are largely comparable, and slightly more consistent than on Windows. Note the following results describe a **full** (1.8M SNPs) GWAS, not the 100K SNPs used in many previous tests.
+
+System: Ubuntu 20.04, 2x EPYC 7H12 @ 2.6-3.3GHz, 2x256GB RAM  
+userGWAS of **1.8M** SNPs from 12 summary statistics  
+
+| cores | v0.0.4 runtime (s) | v0.0.5 runtime (s) |
+|-------|:------------------:|:------------------:|
+| 18    |       14,324       |       11,988       |
+| 24    |       10,916       |       9,157        |
+| 30    |       8,820        |       7,412        |
+| 60    |       5,147        |       4,362        |
+| 120   |       3,708        |       3,304        |
