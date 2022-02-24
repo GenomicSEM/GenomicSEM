@@ -175,12 +175,12 @@ UserGWAS of 100K SNPs from 12 summary statistics, GenomicSEM v0.0.5
 
 | cores | OPENBLAS unlimited | OPENBLAS limited |
 |-------|:------------------:|:----------------:|
-| 1     |       12,645       |      10,434      |
-| 2     |       7,577        |      5,013       |
+| 1     |       12,645       |      10,545      |
+| 2     |       7,577        |      4,489       |
 | 4     |       4,214        |      2,559       |
-| 8     |       5,347        |      1,402       |
-| 12    |       6,585        |      1,057       |
-| 24    |       5,170        |      2,042       |
+| 8     |       5,347        |      1,186       |
+| 12    |       6,585        |       793        |
+| 24    |       5,170        |       458        |
 
 - Runtime improvements on Linux are largely comparable, and slightly more consistent than on Windows. Note the following results describe a **full** (1.8M SNPs) GWAS, not the 100K SNPs used in many previous tests.
 

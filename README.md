@@ -3,8 +3,9 @@
 R-package which allows the user to fit structural equation models 
 based on the summary statistics obtained from genome wide association studies (GWAS). Until explicitly stated otherwise the code on this github is an alpha version (now on version **0.0.5**) and under active development. The code may thus produce undesired results on certain operating systems or when run concurrently with specific packages or R versions. Feel free to raise issues if (or when...) the package produces undesired results, we will attempt to swiftly deal with known issues. Please  **[visit the wiki](https://github.com/MichelNivard/GenomicSEM/wiki)** to get started, or **[check out the paper](https://www.nature.com/articles/s41562-019-0566-x)**. If you are having issues and not finding the answers anywhere on the wiki or FAQs page, we encourage you to post your question on the **[google group](https://groups.google.com/forum/#!forum/genomic-sem-users)**.
 
+**For Linux users** Please read **Parallel performance on Linux** in this readme.  
 **v0.0.5 Patch notes**: This update contains some bug fixes as well as optimizations making `userGWAS()` and `commonfactorGWAS()` 5-20% faster while using slightly less RAM, greater improvement at higher core counts in parallel (see [patchnotes](PATCHNOTES.md)).  
-Added notes on parallel performance on Linux to the readme. 
+ 
 
 **v0.0.4 Patch notes**: This update is the start of a large code restructure and contains minimal changes for users (see below), but large changes for developers (see [patchnotes](PATCHNOTES.md)).  
 **v0.0.4 Feature update**: `userGWAS()`, `commonfactorGWAS()` and `sumstats()` can now be run in parallel on Windows systems, additionally `munge()` can now be run in parallel as well (on both Linux/Mac and Windows). A number of functions now contain checks on input (ideally) preventing the function from stopping halway through analysis due to incorrect input. Input to `files` argument for `munge()` and `sumstats()` should now be a vector (a list will still work for now for backwards compatibility).
@@ -58,11 +59,13 @@ That's it! You  are ready to start using `GenomicSEM`
 **Parallel performance on Linux**
 
 In some instances of R on Linux a parallel backend is automatically configured which by default uses the maximum number of cores (i.e. 1 thread per core).
-It is unclear to me if this is R or some other package that's doing this in the background. 
-In GenomicSEM `parallel` and `foreach` are used to manage parallel operation which seem to work outside this backend. 
-This causes the creation of too many threads, precisely: `cores` argument * number of actual CPU cores. 
+It is unclear to me if this is base R or some other package that's doing this in the background. 
+In GenomicSEM `parallel` and `foreach` are used to manage parallel operation which seem to work outside this scope. 
+Combined, this causes the creation of far too many threads, precisely: `cores` argument * number of actual CPU cores. 
 For example, a 16-core machine, with `cores=15` would spawn `16*15=240` R threads. 
-This in turn causes CPU congestion, and causes a very significant drop in performance, especially in high core-count machines. How to change this may depend on your Linux and/or R build, but as a catch-all you can use the following prior to running R:
+This in turn causes CPU congestion, and causes a very significant drop in performance, especially in high core-count machines. In testing on a 256-core machine, 100K SNP userGWAS took 1,5 hours without limiting this backend, compared to under 10 minutes with limits. 
+
+How to change this may depend on your Linux and/or R build, but as a catch-all you can use the following prior to running R:
 ```
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1
 ```
