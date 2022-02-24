@@ -275,7 +275,6 @@
         }else{##pull results
             final2$est <- ifelse(final2$op == "<" | final2$op == ">" | final2$op == ">=" | final2$op == "<=", final2$est == NA, final2$est)
         }
-
     }else{
         final <- data.frame(t(rep(NA, 13)))
         if(printwarn){
@@ -290,9 +289,9 @@
         final2 <- cbind(i,SNPs2[i,],final,row.names=NULL)
     }
     if(TWAS){
-        new_names <- c("i", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+        new_names <- c("i", "n", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
     } else {
-        new_names <- c("i", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
+        new_names <- c("i", "n", "SNP", "CHR", "BP", "MAF", "A1", "A2", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
     }
     if(smooth_check)
       new_names <- c(new_names, "Z_smooth")
