@@ -1,13 +1,12 @@
 .userGWAS_main <- function(i, k, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP,
                            varSNP, GC, coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
-                           df, npar, utilfuncs=NULL) {
+                           df, npar, utilfuncs=NULL, basemodel=NULL, returnlavmodel=FALSE) {
     # utilfuncs contains utility functions to enable this code to work on PSOC clusters (for Windows)
     if (!is.null(utilfuncs)) {
         for (j in names(utilfuncs)) {
             assign(j, utilfuncs[[j]], envir=environment())
         }
     }
-
     V_SNP <- .get_V_SNP(SE_SNP, I_LD, varSNP, GC, coords, k, i)
 
     if (smooth_check) {
@@ -38,7 +37,7 @@
 
     #enter SNP covariances (standardized beta * SNP variance from refference panel)
     for (p in 1:k) {
-        S_SNP[p+1] <- varSNP[i]*beta_SNP[i,p]
+        S_SNP[p+1] <- varSNP[i]*beta_SNP[i, p]
     }
 
     #create shell of the full S (observed covariance) matrix
@@ -81,9 +80,27 @@
 
     ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error.
     if(estimation == "DWLS"){
-        test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,std.lv=std.lv))
+        if (!is.null(basemodel)) {
+            test <- .tryCatch.W.E(Model1_Results <- lavaan(sample.cov = S_Fullrun, WLS.V=W, ordered=NULL, sampling.weights = NULL,
+                                                           sample.mean=NULL, sample.th=NULL, sample.nobs=2, group=NULL, cluster= NULL, constraints='', NACOV=NULL,
+                                                           slotOptions=basemodel@Options, slotParTable=basemodel@ParTable, slotSampleStats=NULL,
+                                                           slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
+        } else {
+            test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,std.lv=std.lv))
+        }
     } else if(estimation == "ML"){
-        test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE,std.lv=std.lv))
+        if (!is.null(basemodel)) {
+            test <- .tryCatch.W.E(Model1_Results <- lavaan(sample.cov = S_Fullrun, WLS.V=NULL, ordered=NULL, sampling.weights = NULL,
+                                                           sample.mean=NULL, sample.th=NULL, sample.nobs=200, group=NULL, cluster= NULL, constraints='', NACOV=NULL,
+                                                           slotOptions=basemodel@Options, slotParTable=basemodel@ParTable, slotSampleStats=NULL,
+                                                           slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
+        } else {
+            test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE,std.lv=std.lv))
+        }
+
+    }
+    if (returnlavmodel) {
+        return(Model1_Results)
     }
 
     test$warning$message[1] <- ifelse(is.null(test$warning$message), test$warning$message[1] <- 0, test$warning$message[1])
@@ -244,9 +261,10 @@
             final$error <- ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
             final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]
         }
-
+        # Reassign i to maintain original order in parallel operation
+        i <- i+12+(nrow(SNPs2)*(n-1))
         ##combine with rs-id, BP, CHR, etc.
-        final2 <- cbind(i,n,SNPs2[i,],final,row.names=NULL)
+        final2 <- cbind(i,SNPs2[i,],final,row.names=NULL)
 
         if(smooth_check){
             final2 <- cbind(final2,Z_smooth)
@@ -265,9 +283,10 @@
                 final$error <- c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
             }
             final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
-
-      ##combine results with SNP, CHR, BP, A1, A2 for particular model
-        final2 <- cbind(i, n, SNPs2[i,],final,row.names=NULL)
+        # Reassign i to maintain original order in parallel operation
+        i <- i+12+(nrow(SNPs2)*(n-1))
+        ##combine results with SNP, CHR, BP, A1, A2 for particular model
+        final2 <- cbind(i,SNPs2[i,],final,row.names=NULL)
     }
     if(TWAS){
         new_names <- c("i", "n", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")

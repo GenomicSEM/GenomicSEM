@@ -1,5 +1,5 @@
 .commonfactorGWAS_main <- function(i, n, S_LD, V_LD, I_LD, beta_SNP, SE_SNP, varSNP, varSNPSE2, GC, coords, k,
-                                   smooth_check, Model1, toler, estimation, order, utilfuncs=NULL) {
+                                   smooth_check, Model1, toler, estimation, order, utilfuncs=NULL, basemodel=NULL, returnlavmodel=FALSE) {
   if (!is.null(utilfuncs)) {
     for (j in names(utilfuncs)) {
       assign(j, utilfuncs[[j]], envir=environment())
@@ -19,13 +19,7 @@
   }
 
   ##create shell of full sampling covariance matrix
-  V_Full<-diag(((k+1)*(k+2))/2)
-  ##input the ld-score regression region of sampling covariance from ld-score regression SEs
-  V_Full[(k+2):nrow(V_Full),(k+2):nrow(V_Full)]<-V_LD
-  ##add in SE of SNP variance as first observation in sampling covariance matrix
-  V_Full[1,1]<-varSNPSE2
-  ##add in SNP region of sampling covariance matrix
-  V_Full[2:(k+1),2:(k+1)]<-V_SNP
+  V_Full <- .get_V_full(k, V_LD, varSNPSE2, V_SNP)
 
   kv<-nrow(V_Full)
   if(eigen(V_Full)$values[kv] <= 0){
@@ -87,13 +81,31 @@
 
   ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error.
   if(estimation == "DWLS"){
-    test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
+    if (!is.null(basemodel)){
+      test <- .tryCatch.W.E(Model1_Results <- lavaan(sample.cov = S_Fullrun, WLS.V=W, ordered=NULL, sampling.weights = NULL,
+                                                           sample.mean=NULL, sample.th=NULL, sample.nobs=2, group=NULL, cluster= NULL, constraints='', NACOV=NULL,
+                                                           slotOptions=basemodel@Options, slotParTable=basemodel@ParTable, slotSampleStats=NULL,
+                                                           slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
+    }
+    else {
+      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
+    }
   }
 
   if(estimation == "ML"){
-    test<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
-  }
+    if (!is.null(basemodel)){
+      test <- .tryCatch.W.E(Model1_Results <- lavaan(sample.cov = S_Fullrun, WLS.V=NULL, ordered=NULL, sampling.weights = NULL,
+                                                           sample.mean=NULL, sample.th=NULL, sample.nobs=200, group=NULL, cluster= NULL, constraints='', NACOV=NULL,
+                                                           slotOptions=basemodel@Options, slotParTable=basemodel@ParTable, slotSampleStats=NULL,
+                                                           slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
+    } else {
+      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
+    }
 
+  }
+  if (returnlavmodel){
+    return(Model1_Results)
+  }
   test$warning$message[1]<-ifelse(is.null(test$warning$message), test$warning$message[1]<-0, test$warning$message[1])
 
   if(class(test$value)[1] == "lavaan" & grepl("solution has NOT",  as.character(test$warning)) != TRUE){
@@ -177,10 +189,10 @@
         Q<-t(eta)%*%P1%*%solve(Eig,tol=toler)%*%t(P1)%*%eta}} else{Q<-"Not Computed"}
 
     # Reassign i to maintain original order in parallel operation
-    i <- i+5+(nrow(beta_SNP)*(n-1))
+    i <- i+100+(nrow(beta_SNP)*(n-1))
 
     ##pull all the results into a single row
-    if(smooth_check == TRUE){
+    if(smooth_check){
       results<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),Z_smooth,stringsAsFactors = FALSE)
     } else {
       results<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
@@ -188,7 +200,9 @@
 
 
   }else{
-    if(smooth_check == TRUE){
+    # Reassign i to maintain original order in parallel operation
+    i <- i+100+(nrow(beta_SNP)*(n-1))
+    if(smooth_check){
       results<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),Z_smooth,stringsAsFactors = FALSE)
     } else {
       results<-data.frame(i,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
