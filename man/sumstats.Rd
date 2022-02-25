@@ -6,7 +6,7 @@ Function to process GWAS summary statistics files and prepare them for a GWAS in
 }
 \usage{
 sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N=NULL,betas=NULL,info.filter = .6,maf.filter=0.01,
-         keep.indel=FALSE,parallel=FALSE,cores=NULL, \dots)
+         keep.indel=FALSE,parallel=FALSE,cores=NULL,ambig=FALSE,direct.filter=FALSE, \dots)
 }
 \arguments{
    \item{files}{a vector of file names, files must be located in the working directory, or a path must be provided.}
@@ -23,6 +23,8 @@ sumstats(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N=NULL,betas=
    \item{keep.indel}{Indicates whether insertion-deletion mutations (indels) should be included in your summary statistics. The default is FALSE.}
    \item{parallel}{Indicates whether sumstats should process the summary statistics files in parallel or serial fashion. Default is TRUE, indicating that it will run in parallel.}
    \item{cores}{Indicates how many cores to use when running in parallel. The default is NULL, in which case sumstats will use 1 less than the total number of cores available in the local environment.}
+   \item{ambig}{Indicates whether strand ambiguous SNPs should be removed from output. }
+   \item{direct.filter}{Indicates whether SNPs that have missing information for more than half of contributing cohorts, as indicated by missing information in the direction column, should be removed.}        
    
 }
 
