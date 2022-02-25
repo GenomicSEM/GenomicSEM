@@ -1,5 +1,5 @@
 sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N=NULL,betas=NULL,
-                     info.filter = .6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL){
+                     info.filter = .6,maf.filter=0.01,keep.indel=FALSE,parallel=FALSE,cores=NULL,ambig=FALSE,direct.filter=FALSE){
   if (is.list(files)) {
     wrn <- paste0("DeprecationWarning: In future versions a list of filenames will no longer be accepted.\n",
                   "                    Please change files to a vector to ensure future compatibility.")
@@ -36,12 +36,12 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
   .check_boolean(parallel)
   if (!is.null(cores)) .check_range(cores, min=0, max=Inf)
   # Sanity checks finished
-
+  
   begin.time <- Sys.time()
-
+  
   filenames <- files
   ref2<-ref
-
+  
   if(is.null(trait.names)){
     names.beta <- paste0("beta.",1:len)
     names.se <- paste0("se.",1:len)
@@ -49,38 +49,47 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
     names.beta <- paste0("beta.",trait.names)
     names.se <- paste0("se.",trait.names)
   }
-
+  
   log2<-paste(trait.names,collapse="_")
   log2<-str_remove_all(log2, "/")
-
+  
   #subset log name to first 200 characters
   if(object.size(log2) > 200){
     log2<-substr(log2,1,100)
   }
-
+  
   log.file <- file(paste0(log2, "_sumstats.log"),open="wt")
-
+  
   .LOG("The preparation of ", length(trait.names), " summary statistics for use in Genomic SEM began at: ",begin.time,file=log.file)
   .LOG("Please note that the files should be in the same order that they were listed for the ldsc function",file=log.file)
-
+  
   .LOG("Reading in reference file",file=log.file)
   ref <- fread(ref,header=T,data.table=F)
-
+  
   ##filter ref file on user provided maf.filter
   .LOG("Applying MAF filer of ", maf.filter, " to the reference file.",file=log.file)
   ref<-subset(ref, ref$MAF >= maf.filter)
-
+  
+  #remove strand ambiguous SNPs
+  if (ambig) {
+    .LOG("Removing strand ambiguous SNPs.",file=log.file)
+    ref<-subset(ref, (ref$A1 != "T" | ref$A2 != "A"))
+    ref<-subset(ref, (ref$A1 != "A" | ref$A2 != "T"))
+    ref<-subset(ref, (ref$A1 != "C" | ref$A2 != "G"))
+    ref<-subset(ref, (ref$A1 != "G" | ref$A2 != "C"))
+  }
+  
   data.frame.out <- ref
-
+  
   if(!parallel){
     ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
     files <- lapply(files, read.table, header=T, quote="\"", fill=T, na.string=c(".", NA, "NA", ""))
-
+    
     .LOG("All files loaded into R!",file=log.file)
     Output <- list()
     for(i in 1:len){
       Output[[i]] <- .sumstats_main(i, utilfuncs=NULL, filenames[i], trait.names[i], N[i], keep.indel, OLS[i], betas[i],
-                                    info.filter, linprob[i], se.logit[i], names.beta[i], names.se[i], ref, ref2, files[[i]], log.file)
+                                    info.filter, linprob[i], se.logit[i], names.beta[i], names.se[i], ref, ref2, files[[i]], log.file, direct.filter)
     }
   }else {
     if(is.null(cores)){
@@ -106,18 +115,18 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
     .LOG("As parallel sumstats was requested, logs of each file will be saved separately",file=log.file)
     Output <- foreach (i=1:length(filenames), .export=c(".sumstats_main"), .packages=c("stringr")) %dopar% {
       .sumstats_main(i, utilfuncs, filenames[i], trait.names[i], N[i], keep.indel, OLS[i], betas[i],
-                     info.filter, linprob[i], se.logit[i], names.beta[i], names.se[i], ref, ref2, NULL, NULL)
+                     info.filter, linprob[i], se.logit[i], names.beta[i], names.se[i], ref, ref2, NULL, NULL,direct.filter)
     }
   }
   for(i in 1:len){
     data.frame.out <- suppressWarnings(inner_join(data.frame.out,Output[[i]],by="SNP",all.x=F,all.y=F))
   }
-
+  
   end.time <- Sys.time()
   total.time <- difftime(time1=end.time,time2=begin.time,units="sec")
   mins <- floor(floor(total.time)/60)
   secs <- total.time-mins*60
-
+  
   .LOG("     ",file=log.file, print=FALSE)
   # b<-nrow(data.frame.out)
   # data.frame.out<-data.frame.out[!duplicated(data.frame.out$BP),]
@@ -128,6 +137,6 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
   .LOG("Please check the log file ", paste0(log2, "_sumstats.log"), " to ensure that all columns were interpreted correctly and no warnings were issued for any of the summary statistics files.",file=log.file)
   flush(log.file)
   close(log.file)
-
+  
   return(data.frame.out)
 }
