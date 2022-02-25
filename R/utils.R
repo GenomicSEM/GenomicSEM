@@ -25,7 +25,8 @@
     A2="other allele",
     effect="beta or effect",
     SNP="rs-id",
-    SE="standard error"
+    SE="standard error",
+    DIRECTION="direction"
   )
   if (!is.null(utilfuncs)) {
     for (j in names(utilfuncs)) {
