@@ -29,7 +29,7 @@
     stop_on_missing <- c("effect", "SNP")
   }
   hold_names <- .get_renamed_colnames(toupper(names(file)),
-                                      userprovided=list(), checkforsingle=c("P", "A1", "A2", "effect", "SNP"),
+                                      userprovided=list(), checkforsingle=c("P", "A1", "A2", "effect", "SNP", "DIRECTION"),
                                       N_provided=FALSE, filename, log.file, warnz=((!linprob) & (!OLS)),
                                       warn_for_missing = c("P", "A1", "A2", "N"),
                                       stop_on_missing = stop_on_missing,
