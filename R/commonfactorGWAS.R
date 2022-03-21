@@ -265,6 +265,10 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
   time_all <- proc.time()-time
   print(time_all[3])
   # Fix last two column names, these are incorrectly labelled in parallel operation
-  colnames(results)[(length(colnames(results))-1):length(colnames(results))] <- c("fail", "warning")
+  if (smooth_check) {
+    colnames(results)[(length(colnames(results))-2):(length(colnames(results))-1)] <- c("fail", "warning")
+  } else {
+    colnames(results)[(length(colnames(results))-1):length(colnames(results))] <- c("fail", "warning")
+  }
   return(results)
 }
