@@ -165,6 +165,7 @@ UserGWAS of 100K SNPs from 12 summary statistics
 | TRUE     | 4     |        3,497        |        2,837        |
 | TRUE     | 8     |        4,764        |        3,615        |
 | TRUE     | 12    |        6,103        |        4,680        |
+
 Note: max RAM values are obtained running solely the 100K-userGWAS in an isolated test-environment, without any RStudio/IDE overhead or any other data. RAM usage in practical application is likely to be higher.
 
 - Added **Parallel performance on Linux** to `README.md`.
@@ -194,3 +195,6 @@ userGWAS of **1.8M** SNPs from 12 summary statistics
 | 30    |       8,820        |       7,412        |
 | 60    |       5,147        |       4,362        |
 | 120   |       3,708        |       3,304        |
+
+**Code update 21.03.2022**
+- Fixed issue that caused CHR/BP/MAF merges to fail in userGWAS and commonfactorGWAS

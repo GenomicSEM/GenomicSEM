@@ -32,9 +32,9 @@ munge <- function(files,hm3,trait.names=NULL,N=NULL,info.filter = .9,maf.filter=
 
   filenames <- as.vector(files)
   if(is.null(log.name)){
-    log2<-paste(trait.names,collapse="_")
+    log2 <- paste(trait.names,collapse="_")
       if(nchar(log2) > 200){
-        log2<-substr(log2,1,100)
+        log2 <- substr(log2,1,100)
       }
       log.file <- file(paste0(log2, "_munge.log"),open="wt")
   }

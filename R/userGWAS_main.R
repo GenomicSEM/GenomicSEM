@@ -261,10 +261,8 @@
             final$error <- ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
             final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]
         }
-        # Reassign i to maintain original order in parallel operation
-        i <- i+12+(nrow(SNPs2)*(n-1))
         ##combine with rs-id, BP, CHR, etc.
-        final2 <- cbind(i,SNPs2[i,],final,row.names=NULL)
+        final2 <- cbind(i+(12*(n-1))+(nrow(SNPs2)*(n-1)),SNPs2[i,],final,row.names=NULL)
 
         if(smooth_check){
             final2 <- cbind(final2,Z_smooth)
@@ -283,10 +281,8 @@
                 final$error <- c("This particular run produced negative (residual) variances for either your latent or observed variables. You may discard the run for this SNP, re-run the model with constraints to keep variances above 0, or specify an alternative model.")
             }
             final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
-        # Reassign i to maintain original order in parallel operation
-        i <- i+12+(nrow(SNPs2)*(n-1))
         ##combine results with SNP, CHR, BP, A1, A2 for particular model
-        final2 <- cbind(i,SNPs2[i,],final,row.names=NULL)
+        final2 <- cbind(i+(12*(n-1))+(nrow(SNPs2)*(n-1)),SNPs2[i,],final,row.names=NULL)
     }
     if(TWAS){
         new_names <- c("i", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
