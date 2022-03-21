@@ -195,3 +195,6 @@ userGWAS of **1.8M** SNPs from 12 summary statistics
 | 30    |       8,820        |       7,412        |
 | 60    |       5,147        |       4,362        |
 | 120   |       3,708        |       3,304        |
+
+**Code update 21.03.2022**
+- Fixed issue that caused CHR/BP/MAF merges to fail in userGWAS and commonfactorGWAS
