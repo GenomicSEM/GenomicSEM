@@ -200,9 +200,11 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
   if(parallel){
     if(is.null(cores)){
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
-      int <- detectCores() - 1
+      int <- min(c(nrow(SNPs2), detectCores() - 1))
     }else{
-      int <- cores
+      if (cores > nrow(SNPs))
+        warning(paste0("Provided number of cores was greater than number of SNPs, reverting to cores=",nrow(SNPs2)))
+      int <- min(c(nrow(SNPs2), cores))
     }
     if(MPI){
       #register MPI
