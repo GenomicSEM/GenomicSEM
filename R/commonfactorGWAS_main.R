@@ -11,9 +11,9 @@
   if(smooth_check){
     if(GC == "conserv"){
       Z_pre<-beta_SNP[i,]/(SE_SNP[i,]*diag(I_LD))
-    } else if(GC=="standard"){
+    } else if(GC == "standard"){
       Z_pre<-beta_SNP[i,]/(SE_SNP[i,]*sqrt(diag(I_LD)))
-    } else if(GC=="none"){
+    } else if(GC == "none"){
       Z_pre<-beta_SNP[i,]/SE_SNP[i,]
     }
   }
@@ -28,7 +28,7 @@
   }
 
   #reorder sampling covariance matrix based on what lavaan expects given the specified model
-  V_Full_Reorder <- V_Full[order,order]
+  V_Full_Reorder <- V_Full[order, order]
   u<-nrow(V_Full_Reorder)
   W<-diag(u)
   diag(W)<-diag(V_Full_Reorder)
@@ -54,8 +54,8 @@
   S_Fullrun[(2:(k+1)),(2:(k+1))]<-S_LD
 
   ##add in observed SNP variances as first row/column
-  S_Fullrun[1:(k+1),1]<-S_SNP
-  S_Fullrun[1,1:(k+1)]<-t(S_SNP)
+  S_Fullrun[1:(k+1), 1] <- S_SNP
+  S_Fullrun[1, 1:(k+1)] <- t(S_SNP)
 
   colnames(S_Fullrun)<-c("SNP", colnames(S_LD))
 

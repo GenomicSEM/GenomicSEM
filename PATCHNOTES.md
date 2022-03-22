@@ -198,3 +198,6 @@ userGWAS of **1.8M** SNPs from 12 summary statistics
 
 **Code update 21.03.2022**
 - Fixed issue that caused CHR/BP/MAF merges to fail in userGWAS and commonfactorGWAS
+
+**Code update 22.03.2022** `labeled 0.0.5b`
+- Fixed issue that caused `infinite or missing values in x` errors when N(snps) < N(cores)
