@@ -1,4 +1,4 @@
-.userGWAS_main <- function(i, k, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP,
+.userGWAS_main <- function(i, cores, k, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP,
                            varSNP, GC, coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
                            df, npar, utilfuncs=NULL, basemodel=NULL, returnlavmodel=FALSE) {
     # utilfuncs contains utility functions to enable this code to work on PSOC clusters (for Windows)
@@ -262,7 +262,7 @@
             final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]
         }
         ##combine with rs-id, BP, CHR, etc.
-        final2 <- cbind(i+(12*(n-1))+(nrow(SNPs2)*(n-1)),SNPs2[i,],final,row.names=NULL)
+        final2 <- cbind(n + (i-1) * cores,SNPs2[i,],final,row.names=NULL)
 
         if(smooth_check){
             final2 <- cbind(final2,Z_smooth)
@@ -282,7 +282,7 @@
             }
             final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
         ##combine results with SNP, CHR, BP, A1, A2 for particular model
-        final2 <- cbind(i+(12*(n-1))+(nrow(SNPs2)*(n-1)),SNPs2[i,],final,row.names=NULL)
+        final2 <- cbind(n + (i-1) * cores, SNPs2[i,], final, row.names=NULL)
     }
     if(TWAS){
         new_names <- c("i", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
