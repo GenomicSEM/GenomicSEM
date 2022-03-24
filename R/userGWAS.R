@@ -182,7 +182,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   rm(SNPs)
   f <- nrow(beta_SNP)
   # Run a single SNP to obtain base Lavaan model object
-  LavModel1 <- .userGWAS_main(i=1, n_phenotypes, n=1, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
+  LavModel1 <- .userGWAS_main(i=1, cores=1, n_phenotypes, n=1, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
       coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, returnlavmodel=TRUE)
   if(!parallel){
     #make empty list object for model results if not saving specific model parameter
@@ -204,8 +204,9 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
           cat(paste0("Running Model: ", i, "\n"))
         }
       }
-      final2 <- .userGWAS_main(i, n_phenotypes, 1, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
+      final2 <- .userGWAS_main(i, cores=1, n_phenotypes, 1, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
           coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, basemodel=LavModel1)
+      final2$i <- NULL
       if(sub[[1]] != FALSE){
         final3 <- as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
         final3[1:length(sub),] <- final2[1:length(sub),]
@@ -269,7 +270,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     if (Operating != "Windows") {
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
       foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% 
-        .userGWAS_main(i, n_phenotypes, n, I_LD, V_LD, S_LD,
+        .userGWAS_main(i, int, n_phenotypes, n, I_LD, V_LD, S_LD,
         std.lv, varSNPSE2, order, SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC,
         coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, basemodel=LavModel1)
     } else {
@@ -282,7 +283,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
       foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
       .export=c(".userGWAS_main")) %dopar% {
-        .userGWAS_main(i, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order,
+        .userGWAS_main(i, int, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order,
         SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC, coords,
         smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
         df, npar, utilfuncs, basemodel=LavModel1)

@@ -185,7 +185,7 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
   } else {
     colnamesresults <- c("i", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning")
   }
-  LavModel1 <- .commonfactorGWAS_main(1, 1, S_LD, V_LD, I_LD, beta_SNP, SE_SNP, varSNP, varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order,returnlavmodel=TRUE)
+  LavModel1 <- .commonfactorGWAS_main(1, cores=1, 1, S_LD, V_LD, I_LD, beta_SNP, SE_SNP, varSNP, varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order,returnlavmodel=TRUE)
   if(!parallel){
     if(smooth_check){
       results <- as.data.frame(matrix(NA, ncol=11, nrow=f))
@@ -194,7 +194,7 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
     }
     colnames(results) <- colnamesresults
     for (i in 1:f) {
-      results[i, ] <- .commonfactorGWAS_main(i, 1, S_LD, V_LD, I_LD, beta_SNP, SE_SNP, varSNP, varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, basemodel=LavModel1)
+      results[i, ] <- .commonfactorGWAS_main(i,cores=1, 1, S_LD, V_LD, I_LD, beta_SNP, SE_SNP, varSNP, varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, basemodel=LavModel1)
     }
   }
   if(parallel){
@@ -230,7 +230,7 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
     if (Operating != "Windows") {
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
         foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% {
-        .commonfactorGWAS_main(i, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, basemodel=LavModel1)
+        .commonfactorGWAS_main(i,cores=int, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, basemodel=LavModel1)
       }
     } else {
       utilfuncs <- list()
@@ -240,7 +240,7 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
         foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
                  .export=c(".commonfactorGWAS_main")) %dopar% {
-        .commonfactorGWAS_main(i, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, utilfuncs, basemodel=LavModel1)
+        .commonfactorGWAS_main(i,cores=int, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, utilfuncs, basemodel=LavModel1)
       }
     }
     colnames(results) <- colnamesresults

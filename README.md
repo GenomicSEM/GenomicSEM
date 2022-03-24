@@ -1,10 +1,10 @@
 # GenomicSEM
 
 R-package which allows the user to fit structural equation models 
-based on the summary statistics obtained from genome wide association studies (GWAS). Until explicitly stated otherwise the code on this github is an alpha version (now on version **0.0.5b**) and under active development. The code may thus produce undesired results on certain operating systems or when run concurrently with specific packages or R versions. Feel free to raise issues if (or when...) the package produces undesired results, we will attempt to swiftly deal with known issues. Please  **[visit the wiki](https://github.com/MichelNivard/GenomicSEM/wiki)** to get started, or **[check out the paper](https://www.nature.com/articles/s41562-019-0566-x)**. If you are having issues and not finding the answers anywhere on the wiki or FAQs page, we encourage you to post your question on the **[google group](https://groups.google.com/forum/#!forum/genomic-sem-users)**.
+based on the summary statistics obtained from genome wide association studies (GWAS). Until explicitly stated otherwise the code on this github is an alpha version (now on version **0.0.5c**) and under active development. The code may thus produce undesired results on certain operating systems or when run concurrently with specific packages or R versions. Feel free to raise issues if (or when...) the package produces undesired results, we will attempt to swiftly deal with known issues. Please  **[visit the wiki](https://github.com/MichelNivard/GenomicSEM/wiki)** to get started, or **[check out the paper](https://www.nature.com/articles/s41562-019-0566-x)**. If you are having issues and not finding the answers anywhere on the wiki or FAQs page, we encourage you to post your question on the **[google group](https://groups.google.com/forum/#!forum/genomic-sem-users)**.
 
 **For Linux users** Please read [1.1 For Linux users in the wiki](https://github.com/GenomicSEM/GenomicSEM/wiki/1.1-For-Linux-users).
-**v0.0.5b Patch notes**: This update contains several bug fixes.
+**v0.0.5c Patch notes**: This update contains several bug fixes.
 **v0.0.5 Patch notes**: This update contains some bug fixes as well as optimizations making `userGWAS()` and `commonfactorGWAS()` 5-20% faster while using slightly less RAM, greater improvement at higher core counts in parallel (see [patchnotes](PATCHNOTES.md)).  
  
 
