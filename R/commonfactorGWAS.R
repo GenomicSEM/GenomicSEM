@@ -202,7 +202,7 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
       int <- min(c(nrow(SNPs2), detectCores() - 1))
     }else{
-      if (cores > nrow(SNPs))
+      if (cores > nrow(SNPs2))
         warning(paste0("Provided number of cores was greater than number of SNPs, reverting to cores=",nrow(SNPs2)))
       int <- min(c(nrow(SNPs2), cores))
     }
