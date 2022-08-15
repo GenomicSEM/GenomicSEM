@@ -269,15 +269,17 @@
     }
   }else{
     
-    if(smooth_check){
-      final <- data.frame(t(rep(NA, 14)))
-    }else{final <- data.frame(t(rep(NA, 13)))}
+     final <- data.frame(t(rep(NA, 13)))
  
     if(printwarn){
       final$error <- ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
       final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
     ##combine results with SNP, CHR, BP, A1, A2 for particular model
     final2 <- cbind(n + (i-1) * cores, SNPs2[i,], final, row.names=NULL)
+    
+    if(smooth_check){
+      final2 <- cbind(final2,Z_smooth)
+    }
   }
   if(TWAS){
     new_names <- c("i", "Gene","Panel","HSQ", "lhs", "op", "rhs", "free", "label", "est", "SE", "Z_Estimate", "Pval_Estimate","chisq","chisq_df","chisq_pval", "AIC","error","warning")
@@ -287,6 +289,6 @@
   if(smooth_check)
     new_names <- c(new_names, "Z_smooth")
   colnames(final2) <- new_names
-  
+
   return(final2)
 }
