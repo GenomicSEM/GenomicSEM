@@ -9,7 +9,7 @@
   interpreted_names <- list(
     SNP=c("SNP","SNPID","RSID","RS_NUMBER","RS_NUMBERS", "MARKERNAME", "ID","PREDICTOR","SNP_ID", "VARIANTID", "VARIANT_ID", "RSIDS"),
     A1=c("A1", "ALLELE1","EFFECT_ALLELE","INC_ALLELE","REFERENCE_ALLELE","EA","REF"),
-    A2=c("A2","ALLELE2","ALLELE0","OTHER_ALLELE","REF","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA", "ALT", "A0"),
+    A2=c("A2","ALLELE2","ALLELE0","OTHER_ALLELE","NON_EFFECT_ALLELE","DEC_ALLELE","OA","NEA", "ALT", "A0"),
     effect=c("OR","B","BETA","LOG_ODDS","EFFECTS","EFFECT","SIGNED_SUMSTAT","EST", "BETA1", "LOGOR"),
     INFO=c("INFO", "IMPINFO"),
     P=c("P","PVALUE","PVAL","P_VALUE","P-VALUE","P.VALUE","P_VAL","GC_PVALUE","WALD_P"),
@@ -33,15 +33,18 @@
         assign(j, utilfuncs[[j]], envir=environment())
     }
   }
+  if (all(c("ALT", "REF") %in% hold_names)) {
+    .LOG(paste0("Found REF and ALT columns in the summary statistic file ", filename, ". Please note that REF will be interpreted as A1 (effect allele) and ALT as A2 (other allele)"), print=TRUE, file=log.file)
+  }
   if (N_provided) {
     interpreted_names[["N"]] <- NULL
   } else {
- if ("NEFF" %in% hold_names | "N_EFF" %in% hold_names | "N_EFFECTIVE" %in% hold_names | "SUMNEFF" %in% hold_names) {
-  .LOG("Found an NEFF column for sample size. \n
+    if ("NEFF" %in% hold_names | "N_EFF" %in% hold_names | "N_EFFECTIVE" %in% hold_names | "SUMNEFF" %in% hold_names) {
+      .LOG("Found an NEFF column for sample size. \n
 Please note that this is likely effective sample size and should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.\n
 Be aware that some NEFF columns reflect half of the effective sample size; the function will automatically double the column names if recognized [check above in .log file to determine if this is the case].
 If the Neff value is halved in the summary stats, but not recognized by the munge function, this should be manually doubled prior to running munge.", file=log.file)
-}
+    }
   }
   for (col in names(interpreted_names)) {
     if (col %in% names(userprovided)) {

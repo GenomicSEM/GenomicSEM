@@ -202,5 +202,5 @@ userGWAS of **1.8M** SNPs from 12 summary statistics
 **Code update 22.03.2022** `labeled 0.0.5b`
 - Fixed issue that caused `infinite or missing values in x` errors when N(snps) < N(cores)
 
-**Code update 22.03.2022** `labeled 0.0.5c`
+**Code update 24.03.2022** `labeled 0.0.5c`
 - Fixed SNP order issue in commonfactorGWAS and userGWAS 
