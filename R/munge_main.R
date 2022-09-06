@@ -17,6 +17,21 @@
   .LOG("Munging file: ", filename,file=log.file, print=TRUE)
 
   N_provided <- (!is.na(N))
+  
+  colnames(file)<-toupper(colnames(file))
+if("NEFFDIV2" %in% colnames(file)) {
+  .LOG("Found an NEFFDIV2 column for sample size. \n
+Please note that this is likely effective sample size cut in half. The function is automatically doubling this value. This should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.", file=log.file)
+  file$NEFF<-file$NEFFDIV2*2
+  file$NEFFDIV2<-NULL
+}
+
+if("NEFF_HALF" %in% colnames(file)) {
+  .LOG("Found an NEFF_HALF column for sample size. \n
+Please note that this is likely effective sample size cut in half. The function is automatically doubling this value. This should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.", file=log.file)
+  file$NEFF<-file$NEFF_HALF*2
+  file$NEFF_HALF<-NULL
+}
   hold_names <- .get_renamed_colnames(toupper(names(file)),
                                       column.names, c("P", "A1", "A2", "effect", "SNP"), filename,
                                       N_provided=N_provided, log.file=log.file,

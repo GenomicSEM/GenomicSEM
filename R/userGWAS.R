@@ -302,29 +302,26 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       }
       rm(results)
     }
-    if (TWAS) {
-      if(sub[[1]] != FALSE){
+    
+    if(sub[[1]] == FALSE){
+        if(TWAS){
         names <- unique(results$Panel)
         Results_List <- vector(mode="list", length=length(names))
         for(y in 1:length(names)){
           Results_List[[y]] <- subset(results, results$Panel == names[[y]])
           Results_List[[y]]$Model_Number <- NULL
         }
-        rm(results)
-        rm(names)
-      }
-    } else {
-      if(sub[[1]]==FALSE){
-        names <- unique(results$SNP)
-        Results_List <- vector(mode="list", length=length(names))
-        for(y in 1:length(names)){
-          Results_List[[y]] <- subset(results, results$SNP == names[[y]])
-          Results_List[[y]]$Model_Number <- NULL
+        }else{
+          names <- unique(results$SNP)
+          Results_List <- vector(mode="list", length=length(names))
+          for(y in 1:length(names)){
+            Results_List[[y]] <- subset(results, results$SNP == names[[y]])
+            Results_List[[y]]$Model_Number <- NULL
+          }
         }
         rm(results)
         rm(names)
       }
-    }
 
     time_all <- proc.time()-time
     print(time_all[3])

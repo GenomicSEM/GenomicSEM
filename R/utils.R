@@ -36,11 +36,12 @@
   if (N_provided) {
     interpreted_names[["N"]] <- NULL
   } else {
-    if ("NEFF" %in% hold_names) {
-      .LOG("Found an NEFF column for sample size. \n
+ if ("NEFF" %in% hold_names | "N_EFF" %in% hold_names | "N_EFFECTIVE" %in% hold_names | "SUMNEFF" %in% hold_names) {
+  .LOG("Found an NEFF column for sample size. \n
 Please note that this is likely effective sample size and should only be used for liability h^2 conversion for binary traits and that it should reflect the sum of effective sample sizes across cohorts.\n
-Be aware that some NEFF columns reflect half of the effective sample size, in which case sample size values should be doubled prior to running munge.", file=log.file)
-    }
+Be aware that some NEFF columns reflect half of the effective sample size; the function will automatically double the column names if recognized [check above in .log file to determine if this is the case].
+If the Neff value is halved in the summary stats, but not recognized by the munge function, this should be manually doubled prior to running munge.", file=log.file)
+}
   }
   for (col in names(interpreted_names)) {
     if (col %in% names(userprovided)) {
