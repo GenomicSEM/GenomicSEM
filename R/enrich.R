@@ -339,9 +339,15 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
       warning("All parameters are being freely estimated from the baseline model. Enrichment results should likely not be interpreted.")
     }
     
-    if(base==TRUE){
-      base_results$Fixed_Enrich<-ModelQ_WLS$free[1:nrow(base_results)]
+     if(base==TRUE){
+      Merge_base<-data.frame(paste0(ModelQ_WLS$lhs,ModelQ_WLS$op,ModelQ_WLS$rhs,sep=""),ModelQ_WLS$free)
+      colnames(Merge_base)<-c("Merge","Fixed_Enrich")
+      base_results$Merge<-paste0(base_results$lhs,base_results$op,base_results$rhs,sep="")
+      base_results<-merge(base_results,Merge_base,by="Merge")
       base_results$Fixed_Enrich<-ifelse(base_results$Fixed_Enrich == 0, "Yes", "No")
+      base_results<-base_results[order(base_results$Fixed_Enrich),]
+      base_results$Merge<-NULL
+      rm(Merge_base)
     }
     
     ModelQ_WLS$ustart <- ModelQ_WLS$est
