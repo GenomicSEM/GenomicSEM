@@ -1,13 +1,13 @@
-s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait.names=NULL,n.blocks=200){
+s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait.names=NULL,n.blocks=200,ldsc.log=NULL){
   
-  log2<-paste(traits,collapse="_")
-  
-  logtraits<-gsub(".*/","",traits)
-  log2<-paste(logtraits,collapse="_")
-  if(object.size(log2) > 200){
-    log2<-substr(log2,1,100)
-  }
-  log.file <- file(paste0(log2, "_Partitioned.log"),open="wt")
+  if(is.null(ldsc.log)){
+    logtraits<-gsub(".*/","",traits)
+    log2<-paste(logtraits,collapse="_")
+    if(object.size(log2) > 200){
+      log2<-substr(log2,1,80)
+    }
+    log.file <- file(paste0(log2, "_Partitioned.log"),open="wt")
+  }else{log.file<-file(paste0(ldsc.log, "_Partitioned.log"),open="wt")}
   
   begin.time <- Sys.time()
   
