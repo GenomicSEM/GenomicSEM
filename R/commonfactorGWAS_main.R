@@ -189,20 +189,24 @@
         Q<-t(eta)%*%P1%*%solve(Eig,tol=toler)%*%t(P1)%*%eta}} else{Q<-"Not Computed"}
 
     ##pull all the results into a single row
-    if(smooth_check){
+     if(smooth_check){
       results<-data.frame(n + (i-1) * cores,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),Z_smooth,stringsAsFactors = FALSE)
-    } else {
+      colnames(results) <- c("i", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning", "Z_smooth")
+       } else {
       results<-data.frame(n + (i-1) * cores,inspect(Model1_Results,"list")[k+1,-c(1,5:13)],se_c,Q, ifelse(class(test$value)[1] == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
-    }
-
-
+      colnames(results) <- c("i", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning")
+        }
+    
+    
   }else{
     # Reassign i to maintain original order in parallel operation
     if(smooth_check){
       results<-data.frame(n + (i-1) * cores,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),Z_smooth,stringsAsFactors = FALSE)
-    } else {
+      colnames(results) <- c("i", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning", "Z_smooth")
+      } else {
       results<-data.frame(n + (i-1) * cores,inspect(Model1_Results,"list")[k+1,-c(1,5:13,15)],t(rep(NA,3)),ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1],  ifelse(class(test$warning)[1] == 'NULL', 0, as.character(test$warning$message[1])),stringsAsFactors = FALSE)
-    }
+      colnames(results) <- c("i", "lhs", "op", "rhs", "est", "se", "se_c", "Q", "fail", "warning")
+       }
 
   }
   return(results)
