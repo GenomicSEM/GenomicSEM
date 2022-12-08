@@ -1,4 +1,4 @@
-s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait.names=NULL,n.blocks=200,ldsc.log=NULL){
+s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait.names=NULL,n.blocks=200,ldsc.log=NULL,exclude_cont=TRUE){
   
   if(is.null(ldsc.log)){
     logtraits<-gsub(".*/","",traits)
@@ -15,7 +15,6 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   
   ##print start time
   .LOG("Analysis started at",begin.time, file=log.file)
-  #print("If function stops without producing desired s_ldsc object please check the end of the .error file")
   
   if(!is.null(traits)){
     .LOG("The following traits are being analyzed analyzed:",trait.names,"\n", file=log.file)
@@ -51,7 +50,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         dum <- fread(input=LD.in, header=T, showProgress=F, data.table=F)
       }
     }}
-
+  
   if(Operating == "Linux"){
     readLdFunc <- function(LD.in){
       if(substr(x=LD.in,start=nchar(LD.in)-1,stop=nchar(LD.in))=="gz"){
@@ -64,9 +63,9 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   
   if(Operating == "Windows"){
     readLdFunc <- function(LD.in){
-        dum <- fread(input=LD.in, header=T, showProgress=F, data.table=F)
-      }
+      dum <- fread(input=LD.in, header=T, showProgress=F, data.table=F)
     }
+  }
   
   x <- suppressMessages(ldply(.data=x.files,.fun=readLdFunc))
   x$CM <- NULL
@@ -108,25 +107,23 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     stop()
   }
   
-  n.annot <- ncol(m)
-  if(n.annot < 1){
+
+  if(ncol(m) < 1){
     .LOG("ERROR:The files do not contain any annotations", file=log.file)
     sink()
     stop()
-  }else if(n.annot==1){
+  }else if(ncol(m)==1){
     .LOG("ERROR:The function cannot handle single annotation LDSR yet", file=log.file)
     sink()
     stop()
   }
   
-  colnames(m) <- tail(colnames(x),n=n.annot)
-  m <- as.matrix(colSums(m))
-  M.tot <- sum(m)
-  Prop<-m
+  colnames(m) <- tail(colnames(x),n=ncol(m))
   
-  .LOG("LD scores contain",nrow(x),"SNPs and",n.annot,"annotations","\n", file=log.file)
+  .LOG("LD scores contain ",nrow(x)," SNPs and ",ncol(m)," annotations","\n", file=log.file)
   
-  .LOG("Reading in weighted LD scores from",paste0(wld,".[1-22]"),"\n", file=log.file)
+  .LOG("Reading in weighted LD scores from ",paste0(wld,".[1-22]"),"\n", file=log.file)
+  
   
   w.files <- sort(Sys.glob(paste0(wld,"*l2.ldscor*")))
   w <- suppressMessages(ldply(w.files,readLdFunc))
@@ -136,22 +133,9 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   
   .LOG("Weighted LD scores contain ",nrow(w)," SNPs","\n",sep=" ", file=log.file)
   
-  ##ADDED FOR COVARIANCE [AG]
+  #FOR COVARIANCE
   n.traits <- length(traits)
   n.V <- (n.traits^2 / 2) + .5*n.traits
-  
-  ##create lists of S and V with length = number of annotations [AG]
-  ##in baseline model, this includes annotation with all SNPs for creating overall S and V 
-  S_List<-vector(mode="list",length=n.annot)
-  Tau_List<-vector(mode="list",length=n.annot)
-  
-  for (i in 1:n.annot) { 
-    S_List[[i]] <- matrix(NA, nrow=n.traits, ncol=n.traits)
-    Tau_List[[i]] <- matrix(NA, nrow=n.traits, ncol=n.traits)
-  } 
-  
-  total_pseudo<-matrix(NA,nrow=200,ncol=n.V*n.annot)
-  total_pseudo_tau<-matrix(NA,nrow=200,ncol=n.V*n.annot)
   
   # Storage for N and Intercept matrix [added]:
   N.vec <- matrix(NA,nrow=1,ncol=n.V)
@@ -166,10 +150,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   frq.files <- sort(Sys.glob(paste0(frq,"*.frq")))
   
   M.tot.annot <- 0
-  first.annot.matrix <- matrix(data=NA,nrow=(n.annot*length(annot.files)),ncol=n.annot)
-  replace.annot.from <- seq(from=1,to=nrow(first.annot.matrix),by=n.annot)
-  replace.annot.to <- seq(from=n.annot,to=nrow(first.annot.matrix),by=n.annot)
-  
+
   .LOG("Reading in annotation files. This step may take a few minutes.", file=log.file)
   
   for(i in 1:length(annot.files)){
@@ -216,8 +197,40 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     
     frq <- frq[frq$MAF > 0.05 & frq$MAF < 0.95,]
     selected.annot <- merge(x=frq[,c("SNP","MAF")],y=annot,by="SNP")
-    
     rm(frq,annot)
+    
+    if(i == 1){
+      
+      if(exclude_cont){
+        annot_check <- as.data.frame(matrix(NA, ncol=2))
+        
+        aa<-1
+        for(v in 5:ncol(selected.annot)){
+          annot_check[aa,1]<-colnames(selected.annot)[v]
+          if(all(selected.annot[,v] == 0 | selected.annot[,v] == 1)){
+            annot_check[aa,2]<-1
+          }else{annot_check[aa,2]<-2}
+          aa<-aa+1
+        }
+        
+        #subset to columns for continuous annotations
+        n.annot<-table(annot_check$V2 == 1)[2]
+        annot_check<-subset(annot_check, annot_check$V2 == 2)
+      }else{
+        n.annot <- ncol(m)
+      }
+      
+      first.annot.matrix <- matrix(data=NA,nrow=(n.annot*length(annot.files)),ncol=n.annot)
+      replace.annot.from <- seq(from=1,to=nrow(first.annot.matrix),by=n.annot)
+      replace.annot.to <- seq(from=n.annot,to=nrow(first.annot.matrix),by=n.annot)
+      
+    }
+    
+    if(exclude_cont){
+      #remove continuous annotatoin columns from selected.annot  
+      selected.annot<-selected.annot[ , -which(names(selected.annot) %in% c(annot_check$V1))]
+    }
+    
     gc()
     M.tot.annot <- M.tot.annot+nrow(selected.annot)
     first.annot.matrix[replace.annot.from[i]:replace.annot.to[i],] <- t(as.matrix(selected.annot[,5:ncol(selected.annot)]))%*% as.matrix(selected.annot[,5:ncol(selected.annot)])
@@ -228,10 +241,36 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   rm(first.annot.matrix)
   gc()
   
+  if(exclude_cont){
+  #remove continuous annotations from everything else 
+  header<-header[,-which(names(header) %in% c(annot_check$V1))]
+  
+  m<-m[,-(as.numeric(rownames(annot_check)))]
+
+  x<-x[ , -which(names(x) %in% c(paste0(annot_check$V1,"L2",sep="")) | names(x) %in% annot_check$V1)]
+
+  }
+  
+  m <- as.matrix(colSums(m))
+  M.tot <- sum(m)
+  Prop<-m
+  
   overlap.matrix <- matrix(data=NA,nrow=n.annot,ncol=n.annot)
   colnames(overlap.matrix) <- rownames(overlap.matrix) <- rownames(m)
   for(i in 1:n.annot){overlap.matrix[i,] <- annot.matrix[i,]/m}
   
+  total_pseudo<-matrix(NA,nrow=200,ncol=n.V*n.annot)
+  total_pseudo_tau<-matrix(NA,nrow=200,ncol=n.V*n.annot)
+  
+  ##create lists of S and V with length = number of annotations 
+  ##in baseline model, this includes annotation with all SNPs for creating overall S and V 
+  S_List<-vector(mode="list",length=n.annot)
+  Tau_List<-vector(mode="list",length=n.annot)
+  
+  for (i in 1:n.annot) { 
+    S_List[[i]] <- matrix(NA, nrow=n.traits, ncol=n.traits)
+    Tau_List[[i]] <- matrix(NA, nrow=n.traits, ncol=n.traits)
+  } 
   
   ### READ ALL CHI2 + MERGE WITH LDSC FILES
   s <- 0
@@ -302,7 +341,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         merged$x.tot.intercept <- 1
         merged$Z<-NULL
         merged$A1<-NULL
-        head(merged)
+     
         merged<-merged[,c("SNP","chi",colnames(merged)[2:(n.annot+5)],"intercept","x.tot","x.tot.intercept")]
         
         tot.agg <- (M.tot*(mean(merged$chi)-1))/mean(merged$x.tot*merged$N)
@@ -765,7 +804,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   }
   rownames(Tau_Flag)<-names(S_Tau)
   
-  ##flag non-binary annotations
+  ##flag non-binary and flanking annotations
   binary_annot <- as.data.frame(matrix(NA, ncol=2))
   tt<-1
   for(v in 6:ncol(selected.annot)){
@@ -795,4 +834,5 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   gc()
   
 }
+
 
