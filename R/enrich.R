@@ -1,4 +1,5 @@
-enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,rm_flank=TRUE,tau=FALSE,base=TRUE){ 
+
+enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,rm_flank=TRUE,tau=FALSE,base=TRUE,toler=NULL){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
   test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
@@ -95,7 +96,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   ##run model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
-
+  
   
   ##run the model
   if(std.lv == FALSE){
@@ -251,14 +252,31 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   if(check == 1){
     
     if(base==TRUE){
+      
+      base_results<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
+      base_results<-subset(base_results, base_results$free != 0)                    
+      base_results$free<-NULL
+      
+      ##fixed effects
+      base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
+      base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(base_results$lhs, base_results$op, base_results$rhs)))
+      base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
+      
+      #calculate SEs
       S2.delt <- lavInspect(Model1_Results, "delta")
       
       ##weight matrix from stage 2. S2.W is not reordered by including something like model constraints
       S2.W <- lavInspect(Model1_Results, "WLS.V") 
       
       #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-      bread2<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
+      if(is.null(toler)){
+      bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
+      }else{ bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler))}
       
+      if(class(bread_check$value)[1] != "matrix"){
+        warning("SEs could not be computed for baseline model. Results may not be trustworthy")
+      }else{
+        
       lettuce <- S2.W%*%S2.delt
       
       #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
@@ -267,20 +285,15 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
       #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
       SE <- as.matrix(sqrt(diag(Ohtt)))
       
-      unstand<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
-      unstand<-subset(unstand, unstand$free != 0)                    
-      unstand$free<-NULL
-      unstand2<-cbind(unstand,SE)
-      base_results<-unstand2
+      base_results<-cbind(base_results,SE)
       
-      ##add in fixed effects
-      base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
-      base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
-      base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
+      if(nrow(base_model) > 0){
+        base_model$SE<-""
+      }
+      }
       
       if(nrow(base_model) > 0){
         base_model$free<-NULL
-        base_model$SE<-""
         colnames(base_model)<-colnames(base_results)
         base_results<-rbind(base_results,base_model)
       }
@@ -339,7 +352,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
       warning("All parameters are being freely estimated from the baseline model. Enrichment results should likely not be interpreted.")
     }
     
-     if(base==TRUE){
+    if(base==TRUE){
       Merge_base<-data.frame(paste0(ModelQ_WLS$lhs,ModelQ_WLS$op,ModelQ_WLS$rhs,sep=""),ModelQ_WLS$free)
       colnames(Merge_base)<-c("Merge","Fixed_Enrich")
       base_results$Merge<-paste0(base_results$lhs,base_results$op,base_results$rhs,sep="")
@@ -462,9 +475,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
           S2.W <- lavInspect(ModelPart_Results, "WLS.V") 
           
           #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-          bread2<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
+          if(is.null(toler)){
+          bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
+          }else{bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler))}
           
-          if(class(bread2$value)[1] == "matrix"){
+          if(class(bread_check$value)[1] == "matrix"){
             
             lettuce <- S2.W%*%S2.delt
             
