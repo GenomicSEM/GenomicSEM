@@ -63,7 +63,7 @@
       b<-nrow(file)
       file$DIRECTION<-as.character(file$DIRECTION)
       file<-subset(file, (str_count(file$DIRECTION, "\\?")/nchar(file$DIRECTION)) < .5)
-      .LOG((b-nrow(file)), "rows were removed from the", filename, "summary statistics file due to missingness across > 50% of contributing cohorts as determined by missing info in the direction column.",file=log.file)
+      .LOG((b-nrow(file)), "rows were removed from the", filename, "summary statistics file due to missingness across 50% or more of contributing cohorts as determined by missing info in the direction column.",file=log.file)
     }else{.LOG("No DIRECTION column, cannot filter on missingness by conributing cohorts, which may influence results",file=log.file)}
   }
   
