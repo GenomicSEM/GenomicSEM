@@ -119,7 +119,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
     }
   }
   for(i in 1:len){
-    data.frame.out <- suppressWarnings(inner_join(data.frame.out,Output[[i]],by="SNP",all.x=F,all.y=F))
+    data.frame.out <- suppressWarnings(inner_join(data.frame.out,Output[[i]],by="SNP"))
   }
   
   end.time <- Sys.time()
