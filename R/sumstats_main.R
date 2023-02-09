@@ -71,7 +71,7 @@
   .LOG("Merging file: ", filename, " with the reference file: ", ref2,file=log.file)
   b<-nrow(file)
   .LOG(b, " rows present in the full ", filename, " summary statistics file.",file=log.file)
-  file <- suppressWarnings(inner_join(ref,file,by="SNP",all.x=F,all.y=F))
+  file <- suppressWarnings(inner_join(ref,file,by="SNP"))
   .LOG((b-nrow(file)), " rows were removed from the ", filename, " summary statistics file as the rsIDs for these SNPs were not present in the reference file.",file=log.file)
   
   ##remove any rows with missing p-values
