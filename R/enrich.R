@@ -1,4 +1,5 @@
 
+
 enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,rm_flank=TRUE,tau=FALSE,base=TRUE,toler=NULL){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
@@ -270,26 +271,26 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
       
       #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
       if(is.null(toler)){
-      bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
+        bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
       }else{ bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler))}
       
       if(class(bread_check$value)[1] != "matrix"){
         warning("SEs could not be computed for baseline model. Results may not be trustworthy")
       }else{
         
-      lettuce <- S2.W%*%S2.delt
-      
-      #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-      Ohtt <- bread %*% t(lettuce)%*%V_Reorder%*%lettuce%*%bread  
-      
-      #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-      SE <- as.matrix(sqrt(diag(Ohtt)))
-      
-      base_results<-cbind(base_results,SE)
-      
-      if(nrow(base_model) > 0){
-        base_model$SE<-""
-      }
+        lettuce <- S2.W%*%S2.delt
+        
+        #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+        Ohtt <- bread %*% t(lettuce)%*%V_Reorder%*%lettuce%*%bread  
+        
+        #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+        SE <- as.matrix(sqrt(diag(Ohtt)))
+        
+        base_results<-cbind(base_results,SE)
+        
+        if(nrow(base_model) > 0){
+          base_model$SE<-""
+        }
       }
       
       if(nrow(base_model) > 0){
@@ -437,8 +438,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
           S_LD<-S_LD[-remove2,-remove2]
         }
         
+         
         #check smoothing for S and V
+        if(all(diag(S_LD) < 0) == FALSE) {
         S_LDb<-S_LD
+        
         smooth1<-ifelse(eigen(S_LD)$values[ks] <= 0, S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat), S_LD<-S_LD)
         diff<-(abs(S_LD-S_LDb))
         LD_sdiff<-max(diff)
@@ -476,7 +480,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
           
           #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
           if(is.null(toler)){
-          bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
+            bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
           }else{bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler))}
           
           if(class(bread_check$value)[1] == "matrix"){
@@ -554,11 +558,20 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
           }
         }
       }else{
+        for(y in 1:length(params)){
+        final<-data.frame(as.character(names(s_covstruc$S[n])),  test1$lhs[y], test1$op[y], test1$rhs[y],NA,NA,NA,NA,NA)
+        final$error<-0
+        final$warning<-c("This annotation was not analyzed as all heritability estimates were below 0.")
+        Results_List[[y]][n,]<-final
+        }
+      }
+        }else{
+          for(y in 1:length(params)){
         final<-data.frame(as.character(names(s_covstruc$S[n])),  test1$lhs[y], test1$op[y], test1$rhs[y],NA,NA,NA,NA,NA)
         final$error<-0
         final$warning<-c("This annotation was not analyzed as it is either a continuous or flanking annotation.")
-        for(y in 1:length(params)){
-          Results_List[[y]][n,]<-final}
+          Results_List[[y]][n,]<-final
+          }
       }
     }
     
