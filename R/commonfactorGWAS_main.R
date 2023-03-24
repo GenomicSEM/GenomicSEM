@@ -135,7 +135,7 @@
     ModelQ <- parTable(Model1_Results)
     
     #2023 add: remove additional rows for internal representation of model by lavaan
-    ModelQ<-ModelQ[1:((k+1)*(k+2))/2,]
+    ModelQ<-ModelQ[1:(((k+1)*(k+2))/2),]
 
     #fix the indicator loadings from Step 1, free the direct effects of the SNP on the indicators, and fix the factor residual variance
     ModelQ$free <- c(rep(0, k+1), 1:(k*2), 0, 0)
