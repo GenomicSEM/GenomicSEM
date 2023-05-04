@@ -45,8 +45,8 @@
   }
   
   b<-nrow(file)
-  file<-file[!duplicated(file[c("SNP","A1","A2")]),]
-  .LOG((b-nrow(file)), " rows were removed from the ", filename, " summary statistics file due to entries that were duplicated across rsID, A1, and A2.",file=log.file)
+  file<-file[!(duplicated(file$SNP) | duplicated(file$SNP, fromLast = TRUE)), ]
+  .LOG((b-nrow(file)), " rows were removed from the ", filename, " summary statistics file due to entries that were duplicated for rsID. These are removed as they likely reflect multiallelic variants.",file=log.file)
   
   if(keep.indel){
     file$A1 <- factor(toupper(file$A1))
