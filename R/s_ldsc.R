@@ -16,6 +16,21 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   ##print start time
   .LOG("Analysis started at",begin.time, file=log.file)
   
+  #manually set blocks for > 18 traits to avoid NPD V matrix. 
+  n.traits <- length(traits)
+  
+  if(n.traits > 18){
+    n.blocks<-(((n.traits+1)*(n.traits+2))/2)+1
+    .LOG("     ", file=log.file, print = FALSE)
+    .LOG("Setting the number of blocks used to perform the block jacknife used to estimate the sampling covariance matrix (V) to ", n.blocks, file=log.file)
+    .LOG("This reflects the need to estimate V using at least one more block then their are nonredundant elements in the genetic covariance matrix that includes individual SNPs.", file=log.file)
+    .LOG("If the n.blocks is > 1000 you should carefully inspect output for any strange results, such as extremely significant Q_SNP estimates.", file=log.file)
+    .LOG("     ", file=log.file, print = FALSE)
+    if(n.blocks > 1000){
+      warning("The number of blocks needed to estimate V is > 1000, which may result in sampling dependencies across the blocks used to estimate standard errors and can bias results.")
+    }
+  }
+  
   if(!is.null(traits)){
     .LOG("The following traits are being analyzed analyzed:",trait.names,"\n", file=log.file)
   }
@@ -107,7 +122,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
     stop()
   }
   
-
+  
   if(ncol(m) < 1){
     .LOG("ERROR:The files do not contain any annotations", file=log.file)
     sink()
@@ -150,7 +165,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   frq.files <- sort(Sys.glob(paste0(frq,"*.frq")))
   
   M.tot.annot <- 0
-
+  
   .LOG("Reading in annotation files. This step may take a few minutes.", file=log.file)
   
   for(i in 1:length(annot.files)){
@@ -242,13 +257,13 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   gc()
   
   if(exclude_cont){
-  #remove continuous annotations from everything else 
-  header<-header[,-which(names(header) %in% c(annot_check$V1))]
-  
-  m<-m[,-(as.numeric(rownames(annot_check)))]
-
-  x<-x[ , -which(names(x) %in% c(paste0(annot_check$V1,"L2",sep="")) | names(x) %in% annot_check$V1)]
-
+    #remove continuous annotations from everything else 
+    header<-header[,-which(names(header) %in% c(annot_check$V1))]
+    
+    m<-m[,-(as.numeric(rownames(annot_check)))]
+    
+    x<-x[ , -which(names(x) %in% c(paste0(annot_check$V1,"L2",sep="")) | names(x) %in% annot_check$V1)]
+    
   }
   
   m <- as.matrix(colSums(m))
@@ -259,8 +274,8 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   colnames(overlap.matrix) <- rownames(overlap.matrix) <- rownames(m)
   for(i in 1:n.annot){overlap.matrix[i,] <- annot.matrix[i,]/m}
   
-  total_pseudo<-matrix(NA,nrow=200,ncol=n.V*n.annot)
-  total_pseudo_tau<-matrix(NA,nrow=200,ncol=n.V*n.annot)
+  total_pseudo<-matrix(NA,nrow=n.blocks,ncol=n.V*n.annot)
+  total_pseudo_tau<-matrix(NA,nrow=n.blocks,ncol=n.V*n.annot)
   
   ##create lists of S and V with length = number of annotations 
   ##in baseline model, this includes annotation with all SNPs for creating overall S and V 
@@ -341,7 +356,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         merged$x.tot.intercept <- 1
         merged$Z<-NULL
         merged$A1<-NULL
-     
+        
         merged<-merged[,c("SNP","chi",colnames(merged)[2:(n.annot+5)],"intercept","x.tot","x.tot.intercept")]
         
         tot.agg <- (M.tot*(mean(merged$chi)-1))/mean(merged$x.tot*merged$N)
@@ -365,7 +380,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         weighted.chi <- as.matrix(merged$chi*merged$weights)
         
         select.from <- floor(seq(from=1,to=n.snps,length.out =(n.blocks+1)))
-        select.to <- c(select.from[2:200]-1,n.snps)
+        select.to <- c(select.from[2:n.blocks]-1,n.snps)
         
         xty.block.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
         xtx.block.values <- matrix(data=NA,nrow =((n.annot+1)* n.blocks),ncol =(n.annot+1))
@@ -556,7 +571,7 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
         weighted.chi <- as.matrix(merged$ZZ *merged$weights_cov)
         
         select.from <- floor(seq(from=1,to=n.snps,length.out =(n.blocks+1)))
-        select.to <- c(select.from[2:200]-1,n.snps)
+        select.to <- c(select.from[2:n.blocks]-1,n.snps)
         
         xty.block.values <- matrix(data=NA,nrow=n.blocks,ncol =(n.annot+1))
         xtx.block.values <- matrix(data=NA,nrow =((n.annot+1)* n.blocks),ncol =(n.annot+1))
@@ -834,5 +849,3 @@ s_ldsc <- function(traits,sample.prev=NULL,population.prev=NULL,ld,wld,frq,trait
   gc()
   
 }
-
-
