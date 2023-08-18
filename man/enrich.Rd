@@ -5,7 +5,7 @@
 Function to take output from multivariable S-LDSC and estimate enrichment of model parameter for user specified model
 }
 \usage{
-enrich(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,rm_flank=TRUE,tau=FALSE,base=TRUE,toler=NULL, \dots)
+enrich(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,rm_flank=TRUE,tau=FALSE,base=TRUE,toler=NULL,fixparam=NULL, \dots)
 
 }
 \arguments{
@@ -18,6 +18,7 @@ enrich(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,rm_flank=TR
    \item{tau}{Optional argument to denote whether the user wants to use the tau genetic covariance matrices, as opposed to the default zero-order matrices, for estimation of enrichment (default = FALSE)}
    \item{base}{Optional argument to denote whether the user wants to include the full model output from the genome-wide (i.e., baseline) matrix (default = TRUE)}
    \item{toler}{Optional argument to manually set tolerance for matrix inverison.}
+   \item{fixparam}{Optional argument to manually fix paramters when estimating the model within annotations}
 }
 
 \value{
