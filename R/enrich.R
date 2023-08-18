@@ -1,6 +1,4 @@
-
-
-enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,rm_flank=TRUE,tau=FALSE,base=TRUE,toler=NULL){ 
+enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,rm_flank=TRUE,tau=FALSE,base=TRUE,toler=NULL,fixparam=NULL){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
   test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
@@ -98,7 +96,6 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   #transform V_LD matrix into a weight matrix: 
   W <- solve(V_LD)
   
-  
   ##run the model
   if(std.lv == FALSE){
     empty2<-.tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = +Inf,optim.force.converged=TRUE))
@@ -125,7 +122,6 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   diag(V_Reorderb)<-diag(V_Reorder)
   W_Reorder<-solve(V_Reorderb)
   
-  
   print("Running model for baseline annotation")
   check<-1
   ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
@@ -138,7 +134,6 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   }
   
   empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
-  
   
   if(class(empty4$value)[1] == "simpleError" | grepl("solution has NOT",  as.character(empty4$warning)) == TRUE){
     print("The model as initially specified failed to converge for the baseline annotation. A lower bound of 0 on residual variances has been automatically added to try and troubleshoot this.")
@@ -302,32 +297,31 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     
     ModelQ_WLS <- parTable(Model1_Results)
     
-    
     #fix all values from baseline model
     ModelQ_WLS$free<-0
     
     #remove white space from parameters for easier matching
     params<-str_replace_all(params, fixed(" "), "") 
     
-    x<-1:z
+    x<-1:nrow(ModelQ_WLS)
     u<-1
     ##freely estimate specified parameters, (residual) variances, and correlations
     #fix regression estimates including factor loadings
     #likelymost useful for estimating enrichment of factor variances
     if(fix == "regressions"){
       for(i in 1:nrow(ModelQ_WLS)){
-        if(paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% params | ModelQ_WLS$op[i] == "~~"){
+        if((paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% params | ModelQ_WLS$op[i] == "~~") & !(paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% fixparam)) {
           ModelQ_WLS$free[i]<-x[u]
           u<-u+1
         }else{ModelQ_WLS$free[i]<-0}
       }
     }
-    
+
     ##freely estimate specified parameters, regressions (including factor loadings), and (residual) variances
     #fix covariances
     if(fix == "covariances"){
       for(i in 1:nrow(ModelQ_WLS)){
-        if(paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% params | ModelQ_WLS$op[i] == "~" |  ModelQ_WLS$op[i] == "=~" | ModelQ_WLS$lhs[i] == ModelQ_WLS$rhs[i]){
+        if((paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% params | ModelQ_WLS$op[i] == "~" |  ModelQ_WLS$op[i] == "=~" | ModelQ_WLS$lhs[i] == ModelQ_WLS$rhs[i]) & !(paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% fixparam)) {
           ModelQ_WLS$free[i]<-x[u]
           u<-u+1
         }else{ModelQ_WLS$free[i]<-0}
@@ -338,7 +332,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     #fix (residual) variances
     if(fix == "variances"){
       for(i in 1:nrow(ModelQ_WLS)){
-        if(paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% params | ModelQ_WLS$op[i] == "~" |  ModelQ_WLS$op[i] == "=~" | (ModelQ_WLS$op[i] == "~~" & (ModelQ_WLS$lhs[i] != ModelQ_WLS$rhs[i]))){
+        if((paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% params | ModelQ_WLS$op[i] == "~" |  ModelQ_WLS$op[i] == "=~" | (ModelQ_WLS$op[i] == "~~" & (ModelQ_WLS$lhs[i] != ModelQ_WLS$rhs[i])))  & !(paste(ModelQ_WLS$lhs[i], ModelQ_WLS$op[i], ModelQ_WLS$rhs[i], sep = "") %in% fixparam)) {
           ModelQ_WLS$free[i]<-x[u]
           u<-u+1
         }else{ModelQ_WLS$free[i]<-0}
@@ -438,105 +432,114 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
           S_LD<-S_LD[-remove2,-remove2]
         }
         
-         
+        
         #check smoothing for S and V
         if(all(diag(S_LD) < 0) == FALSE) {
-        S_LDb<-S_LD
-        
-        smooth1<-ifelse(eigen(S_LD)$values[ks] <= 0, S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat), S_LD<-S_LD)
-        diff<-(abs(S_LD-S_LDb))
-        LD_sdiff<-max(diff)
-        
-        V_LDb<-V_LD
-        smooth2<-ifelse(eigen(V_LD)$values[kv] <= 0, V_LD<-as.matrix((nearPD(V_LD, corr = FALSE))$mat), V_LD<-V_LD)
-        diff2<-(abs(V_LD-V_LDb))
-        LD_sdiff2<-max(diff2)
-        
-        SE_pre<-matrix(0, k, k)
-        SE_pre[lower.tri(SE_pre,diag=TRUE)] <-sqrt(diag(V_LDb))
-        
-        SE_post<-matrix(0, k, k)
-        SE_post[lower.tri(SE_post,diag=TRUE)] <-sqrt(diag(V_LD))
-        
-        Z_pre<-S_LDb/SE_pre
-        Z_post<-S_LD/SE_post
-        Z_diff<-max(abs(Z_pre[lower.tri(Z_pre,diag=TRUE)]-Z_post[lower.tri(Z_post,diag=TRUE)]),na.rm=T)
-        
-        V_Reorder<-V_LD[order,order]
-        V_Reorderb<-diag(z)
-        diag(V_Reorderb)<-diag(V_Reorder)
-        W_Reorder<-solve(V_Reorderb)
-        
-        part_warn<-.tryCatch.W.E(ModelPart_Results <- sem(ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
-        
-        part_warn$warning$message[1]<-ifelse(is.null(part_warn$warning$message), part_warn$warning$message[1]<-0, part_warn$warning$message[1])
-        
-        if(class(part_warn$value)[1] != "simpleError" & grepl("solution has NOT",  as.character(part_warn$warning)) != TRUE){
-          ##that the lavaan output is also reordered so that this actually ensures that the results match up 
-          S2.delt <- lavInspect(ModelPart_Results, "delta")
+          S_LDb<-S_LD
           
-          ##weight matrix from stage 2. S2.W is not reordered by including something like model constraints
-          S2.W <- lavInspect(ModelPart_Results, "WLS.V") 
+          smooth1<-ifelse(eigen(S_LD)$values[ks] <= 0, S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat), S_LD<-S_LD)
+          diff<-(abs(S_LD-S_LDb))
+          LD_sdiff<-max(diff)
           
-          #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
-          if(is.null(toler)){
-            bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
-          }else{bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler))}
+          V_LDb<-V_LD
+          smooth2<-ifelse(eigen(V_LD)$values[kv] <= 0, V_LD<-as.matrix((nearPD(V_LD, corr = FALSE))$mat), V_LD<-V_LD)
+          diff2<-(abs(V_LD-V_LDb))
+          LD_sdiff2<-max(diff2)
           
-          if(class(bread_check$value)[1] == "matrix"){
+          SE_pre<-matrix(0, k, k)
+          SE_pre[lower.tri(SE_pre,diag=TRUE)] <-sqrt(diag(V_LDb))
+          
+          SE_post<-matrix(0, k, k)
+          SE_post[lower.tri(SE_post,diag=TRUE)] <-sqrt(diag(V_LD))
+          
+          Z_pre<-S_LDb/SE_pre
+          Z_post<-S_LD/SE_post
+          Z_diff<-max(abs(Z_pre[lower.tri(Z_pre,diag=TRUE)]-Z_post[lower.tri(Z_post,diag=TRUE)]),na.rm=T)
+          
+          V_Reorder<-V_LD[order,order]
+          V_Reorderb<-diag(z)
+          diag(V_Reorderb)<-diag(V_Reorder)
+          W_Reorder<-solve(V_Reorderb)
+          
+          part_warn<-.tryCatch.W.E(ModelPart_Results <- sem(ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = +Inf))
+          
+          part_warn$warning$message[1]<-ifelse(is.null(part_warn$warning$message), part_warn$warning$message[1]<-0, part_warn$warning$message[1])
+          
+          if(class(part_warn$value)[1] != "simpleError" & grepl("solution has NOT",  as.character(part_warn$warning)) != TRUE){
+            ##that the lavaan output is also reordered so that this actually ensures that the results match up 
+            S2.delt <- lavInspect(ModelPart_Results, "delta")
             
-            lettuce <- S2.W%*%S2.delt
+            ##weight matrix from stage 2. S2.W is not reordered by including something like model constraints
+            S2.W <- lavInspect(ModelPart_Results, "WLS.V") 
             
-            #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
-            Ohtt <- bread %*% t(lettuce)%*%V_Reorder%*%lettuce%*%bread  
+            #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
+            if(is.null(toler)){
+              bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt))
+            }else{bread_check<-.tryCatch.W.E(bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler))}
             
-            #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
-            SE <- as.matrix(sqrt(diag(Ohtt)))
-            
-            ##replace any labels with the actual parameter name
-            for(e in 1:nrow(SE)){
-              for(w in 1:nrow(ModelQ_WLS)){
-                if(rownames(SE)[e] == ModelQ_WLS$label[w]){
-                  rownames(SE)[e]<-paste(ModelQ_WLS$lhs[w], ModelQ_WLS$op[w], ModelQ_WLS$rhs[w], sep = "")
+            if(class(bread_check$value)[1] == "matrix"){
+              
+              lettuce <- S2.W%*%S2.delt
+              
+              #ohm-hat-theta-tilde is the corrected sampling covariance matrix of the model parameters
+              Ohtt <- bread %*% t(lettuce)%*%V_Reorder%*%lettuce%*%bread  
+              
+              #the lettuce plus inner "meat" (V) of the sandwich adjusts the naive covariance matrix by using the correct sampling covariance matrix of the observed covariance matrix in the computation
+              SE <- as.matrix(sqrt(diag(Ohtt)))
+              
+              ##replace any labels with the actual parameter name
+              for(e in 1:nrow(SE)){
+                for(w in 1:nrow(ModelQ_WLS)){
+                  if(rownames(SE)[e] == ModelQ_WLS$label[w]){
+                    rownames(SE)[e]<-paste(ModelQ_WLS$lhs[w], ModelQ_WLS$op[w], ModelQ_WLS$rhs[w], sep = "")
+                  }
                 }
               }
-            }
-            
-            unstand<-data.frame(inspect(ModelPart_Results, "list")[,c(2:4,7,14)])
-            unstand<-subset(unstand, unstand$free != 0)                    
-            unstand$free<-NULL
-            unstand<-subset(unstand, paste(unstand$lhs, unstand$op, unstand$rhs, sep = "") %in% params)
-            SE<-subset(SE, rownames(SE) %in% params)
-            
-            results<-cbind(as.character(names(s_covstruc$S[n])),unstand,SE,LD_sdiff,Z_diff)
-            results[,1]<-as.character(results[,1])
-            for(y in 1:nrow(results)){
-              #calculate enrichment with null = 1 divided by proportional size of annotation
-              results$enrichment[y]<-(results$est[y]/test1$est[y])/s_covstruc$Prop$Prop[n]
               
-              #caculate enrichment SE
-              results$enrichment_se[y]<-(results$SE[y]/abs(test1$est[y]))/s_covstruc$Prop$Prop[n]
+              unstand<-data.frame(inspect(ModelPart_Results, "list")[,c(2:4,7,14)])
+              unstand<-subset(unstand, unstand$free != 0)                    
+              unstand$free<-NULL
+              unstand<-subset(unstand, paste(unstand$lhs, unstand$op, unstand$rhs, sep = "") %in% params)
+              SE<-subset(SE, rownames(SE) %in% params)
               
-            }
-            
-            #compute 1-trailed p-value subtracting null of 1 from enrichment estimate
-            results$enrichment_p<-pnorm(((results$enrichment-1)/results$enrichment_se),lower.tail=FALSE)
-            
-            results$est<-NULL
-            results$SE<-NULL
-            results$error<-ifelse(class(part_warn$value) == "lavaan", 0, as.character(part_warn$value$message))[1]
-            results$warning<-ifelse(class(part_warn$warning) == 'NULL', 0, as.character(part_warn$warning$message))[1]
-            
-            if(n == 1){
-              Results_List<-vector(mode="list",length=nrow(results))
+              results<-cbind(as.character(names(s_covstruc$S[n])),unstand,SE,LD_sdiff,Z_diff)
+              results[,1]<-as.character(results[,1])
               for(y in 1:nrow(results)){
-                Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(results),nrow=length(s_covstruc$S)))
-                colnames(Results_List[[y]])<-c("Annotation", "lhs", "op", "rhs", "Cov_Smooth", "Z_smooth", "Enrichment", "Enrichment_SE", "Enrichment_p_value", "Error", "Warning")
-                Results_List[[y]][1,]<-results[y,]
+                #calculate enrichment with null = 1 divided by proportional size of annotation
+                results$enrichment[y]<-(results$est[y]/test1$est[y])/s_covstruc$Prop$Prop[n]
+                
+                #caculate enrichment SE
+                results$enrichment_se[y]<-(results$SE[y]/abs(test1$est[y]))/s_covstruc$Prop$Prop[n]
+                
+              }
+              
+              #compute 1-trailed p-value subtracting null of 1 from enrichment estimate
+              results$enrichment_p<-pnorm(((results$enrichment-1)/results$enrichment_se),lower.tail=FALSE)
+              
+              results$est<-NULL
+              results$SE<-NULL
+              results$error<-ifelse(class(part_warn$value) == "lavaan", 0, as.character(part_warn$value$message))[1]
+              results$warning<-ifelse(class(part_warn$warning) == 'NULL', 0, as.character(part_warn$warning$message))[1]
+              
+              if(n == 1){
+                Results_List<-vector(mode="list",length=nrow(results))
+                for(y in 1:nrow(results)){
+                  Results_List[[y]]<-as.data.frame(matrix(NA,ncol=ncol(results),nrow=length(s_covstruc$S)))
+                  colnames(Results_List[[y]])<-c("Annotation", "lhs", "op", "rhs", "Cov_Smooth", "Z_smooth", "Enrichment", "Enrichment_SE", "Enrichment_p_value", "Error", "Warning")
+                  Results_List[[y]][1,]<-results[y,]
+                }
+              }else{
+                for(y in 1:nrow(results)){
+                  Results_List[[y]][n,]<-results[y,]
+                }
               }
             }else{
-              for(y in 1:nrow(results)){
-                Results_List[[y]][n,]<-results[y,]
+              for(y in 1:length(params)){
+                final<-data.frame(as.character(names(s_covstruc$S[n])), test1$lhs[y], test1$op[y], test1$rhs[y],LD_sdiff, Z_diff, NA,NA,NA)
+                final$error<-ifelse(class(part_warn$value) == "lavaan", 0, as.character(part_warn$value$message))[1]
+                final$warning<-ifelse(class(part_warn$warning) == 'NULL', 0, as.character(part_warn$warning$message))[1]
+                colnames(final)<-c("Annotation", "lhs", "op", "rhs", "Cov_Smooth", "Z_smooth", "Enrichment", "Enrichment_SE", "Enrichment_p_value", "Error", "Warning")
+                Results_List[[y]][n,]<-final
               }
             }
           }else{
@@ -550,28 +553,19 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
           }
         }else{
           for(y in 1:length(params)){
-            final<-data.frame(as.character(names(s_covstruc$S[n])), test1$lhs[y], test1$op[y], test1$rhs[y],LD_sdiff, Z_diff, NA,NA,NA)
-            final$error<-ifelse(class(part_warn$value) == "lavaan", 0, as.character(part_warn$value$message))[1]
-            final$warning<-ifelse(class(part_warn$warning) == 'NULL', 0, as.character(part_warn$warning$message))[1]
-            colnames(final)<-c("Annotation", "lhs", "op", "rhs", "Cov_Smooth", "Z_smooth", "Enrichment", "Enrichment_SE", "Enrichment_p_value", "Error", "Warning")
+            final<-data.frame(as.character(names(s_covstruc$S[n])),  test1$lhs[y], test1$op[y], test1$rhs[y],NA,NA,NA,NA,NA)
+            final$error<-0
+            final$warning<-c("This annotation was not analyzed as all heritability estimates were below 0.")
             Results_List[[y]][n,]<-final
           }
         }
       }else{
         for(y in 1:length(params)){
-        final<-data.frame(as.character(names(s_covstruc$S[n])),  test1$lhs[y], test1$op[y], test1$rhs[y],NA,NA,NA,NA,NA)
-        final$error<-0
-        final$warning<-c("This annotation was not analyzed as all heritability estimates were below 0.")
-        Results_List[[y]][n,]<-final
-        }
-      }
-        }else{
-          for(y in 1:length(params)){
-        final<-data.frame(as.character(names(s_covstruc$S[n])),  test1$lhs[y], test1$op[y], test1$rhs[y],NA,NA,NA,NA,NA)
-        final$error<-0
-        final$warning<-c("This annotation was not analyzed as it is either a continuous or flanking annotation.")
+          final<-data.frame(as.character(names(s_covstruc$S[n])),  test1$lhs[y], test1$op[y], test1$rhs[y],NA,NA,NA,NA,NA)
+          final$error<-0
+          final$warning<-c("This annotation was not analyzed as it is either a continuous or flanking annotation.")
           Results_List[[y]][n,]<-final
-          }
+        }
       }
     }
     
