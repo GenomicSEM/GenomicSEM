@@ -6,7 +6,7 @@ Function to obtain model estimates for a user-specified model across SNPs.
 }
 \usage{
 userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,
-         parallel=TRUE,GC="standard",MPI=FALSE,smooth_check=FALSE,TWAS=FALSE,std.lv=FALSE, \dots)
+         parallel=TRUE,GC="standard",MPI=FALSE,smooth_check=FALSE,TWAS=FALSE,std.lv=FALSE,fix_measurement=TRUE, \dots)
 
 }
 \arguments{
@@ -25,7 +25,7 @@ userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",printwarn=TRUE,sub=F
    \item{smooth_check}{Whether the function should save the consequent largest Z-statistic difference between the pre and post-smooth matrices.}
    \item{TWAS}{Whether the function is being used to estimate a multivariate TWAS using read_fusion output for the SNPs argument.} 
    \item{std.lv}{Optional argument to denote whether all latent variables are standardized using unit variance identification (default = FALSE)}
-
+   \item{fix_measurement}{Optional argument to denote whether the measurement model should be fixed across all SNPs (default = TRUE)}
 }
 
 \value{
