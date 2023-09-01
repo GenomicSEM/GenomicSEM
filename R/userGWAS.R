@@ -1,6 +1,6 @@
 userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", printwarn=TRUE,
                      sub=FALSE,cores=NULL, toler=FALSE, SNPSE=FALSE, parallel=TRUE, GC="standard", MPI=FALSE,
-                     smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE){
+                     smooth_check=FALSE, TWAS=FALSE, std.lv=FALSE,fix_measurement=TRUE){
   # Set toler to machine precision to enable passing this to solve() directly
   if (!toler) toler <- .Machine$double.eps
   # Sanity checks
@@ -21,24 +21,24 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
   # Sanity checks finished
   time <- proc.time()
   Operating <- Sys.info()[['sysname']]
-
+  
   if(MPI == TRUE & Operating == "Windows"){
     stop("MPI is not currently available for Windows operating systems. Please set the MPI argument to FALSE, or switch to a Linux or Mac operating system.")
   }
-
+  
   if(exists("Output")){
     stop("Please note that an update was made to commonfactorGWAS on 4/1/21 so that addSNPs output CANNOT be fed directly to the function. It now expects the
             output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments.")
   }
-
+  
   ##determine if the model is likely being listed in quotes and print warning if so
   test <- c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
   if (!all(test)){
     warning("Your model name may be listed in quotes; please remove the quotes and try re-running if the function has returned stopped running after returning an error.")
   }
-
+  
   print("Please note that an update was made to userGWAS on 11/21/19 so that it combines addSNPs and userGWAS.")
-
+  
   if(class(SNPs)[1] == "character"){
     print("You are likely listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the
           output from ldsc followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usag")
@@ -52,15 +52,15 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
               output from ldsc (using covstruc = ...)  followed by the output from sumstats (using SNPs = ... ) as the first two arguments. See ?userGWAS for help on propper usage")
     }
   }
-
+  
   #remove white spacing on subset argument so will exact match lavaan representation of parameter
   if(sub[[1]] != FALSE){
     sub <- str_replace_all(sub, fixed(" "), "")
   }
-
+  
   ##make sure SNP and A1/A2 are character columns to avoid being shown as integers in ouput
   SNPs <- data.frame(SNPs)
-
+  
   if (TWAS) {
     SNPs$Gene <- as.character(SNPs$Gene)
     SNPs$Panel <- as.character(SNPs$Panel)
@@ -69,41 +69,107 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     SNPs$A1 <- as.character(SNPs$A1)
     SNPs$A2 <- as.character(SNPs$A2)
     SNPs$SNP <- as.character(SNPs$SNP)
-
+    
     #SNP variance
     varSNP <- 2*SNPs$MAF*(1-SNPs$MAF)
   }
-
+  
   #small number because treating MAF as fixed
   if(SNPSE == FALSE){
     varSNPSE2 <- (.0005)^2
   }
-
+  
   if(SNPSE != FALSE){
     varSNPSE2 <- SNPSE^2
   }
-
+  
   V_LD <- as.matrix(covstruc[[1]])
   S_LD <- as.matrix(covstruc[[2]])
   I_LD <- as.matrix(covstruc[[3]])
-
+  Model1 <- model
+  
+  for(i in 1){
+    if(fix_measurement){
+      
+      #name rownames as column names
+      rownames(S_LD)<-colnames(S_LD)
+      
+      #split by lines of code
+      lines <- strsplit(model, "\n")[[1]]
+      
+      # Use grep to find lines containing "SNP" and exclude them
+      filtered_lines <- lines[!grepl("SNP", lines)]
+      
+      # Join the filtered lines back into a single text string
+      noSNPmodel <- paste(filtered_lines, collapse = "\n")
+      
+      #estimate a no SNP model to get the estimates for the measurement model
+      W <- solve(V_LD,tol=toler)
+      
+      #estimate with incorrectly ordered V to get internal representation of V
+      testnoSNP <- .tryCatch.W.E(ReorderModelnoSNP <- sem(noSNPmodel, sample.cov = S_LD, estimator = "DWLS",
+                                                          WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf, optim.force.converged=TRUE
+                                                          ,control=list(iter.max=1),std.lv=std.lv))
+      
+      #obtain V ordering for this model
+      order <- .rearrange(k = ncol(S_LD), fit = ReorderModelnoSNP, names = colnames(S_LD))
+      
+      #reorder sampling covariance matrix based on what lavaan expects given the specified model
+      V_Reorder <- V_LD[order, order]
+      u <- nrow(V_Reorder)
+      W_Reorder<- diag(u)
+      diag(W_Reorder) <- diag(V_Reorder)
+      
+      ##invert the reordered sampling covariance matrix to create a weight matrix
+      W_Reorder <- solve(W_Reorder, tol=toler)
+      
+      #estimate the measurement model
+      if(estimation == "DWLS"){
+        ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
+        if(std.lv == FALSE){
+          emptynoSNP<-.tryCatch.W.E(Model1_Results <- sem(noSNPmodel, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = +Inf))
+        }
+        
+        if(std.lv == TRUE){
+          emptynoSNP<-.tryCatch.W.E(Model1_Results <- sem(noSNPmodel, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = +Inf))
+        }
+      }
+      
+      if(estimation == "ML"){
+        if(std.lv == FALSE){
+          emptynoSNP<-.tryCatch.W.E(Model1_Results <- sem(noSNPmodel, sample.cov = S_LD, estimator = "ML",  sample.nobs = 200,optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+        }
+        
+        if(std.lv == TRUE){
+          emptynoSNP<-.tryCatch.W.E(Model1_Results <- sem(noSNPmodel, sample.cov = S_LD, estimator = "ML", sample.nobs = 200,std.lv=TRUE, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+        }
+      }
+      
+      #pull the model results
+      Model1<- parTable(Model1_Results)
+      
+      #fix any parameter that is not a (residual) variance
+      for(p in 1:nrow(Model1)){
+        Model1$free[p]<-ifelse(Model1$lhs[p] != Model1$rhs[p], 0, Model1$free[p]) 
+      }
+      
+    }
+  }
+  
   beta_SNP <- SNPs[,grep("beta.",fixed=TRUE,colnames(SNPs))]
   SE_SNP <- SNPs[,grep("se.",fixed=TRUE,colnames(SNPs))]
-
+  
   #enter in k for number of phenotypes
   n_phenotypes <- ncol(beta_SNP)
-
+  
   #set univariate intercepts to 1 if estimated below 1
   diag(I_LD) <- ifelse(diag(I_LD)<= 1, 1, diag(I_LD))
-
-  Model1 <- model
-
-
+  
   coords <- which(I_LD != 'NA', arr.ind= T)
-  i <- 1  # TODO: reason for this?
+  i <- 1  
   #create empty shell of V_SNP matrix
   V_SNP <- diag(n_phenotypes)
-
+  
   #loop to add in the GWAS SEs, correct them for univariate and bivariate intercepts, and multiply by SNP variance from reference panel
   for (p in 1:nrow(coords)) {
     x <- coords[p,1]
@@ -114,88 +180,106 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       V_SNP[x,x] <- (SE_SNP[i,x]*I_LD[x,x]*varSNP[i])^2
     }
   }
-
+  
   V_full <- .get_V_full(n_phenotypes, V_LD, varSNPSE2, V_SNP)
-
+  
   kv <- nrow(V_full)
   smooth2 <- ifelse(eigen(V_full)$values[kv] <= 0, V_full <- as.matrix((nearPD(V_full, corr = FALSE))$mat), V_full <- V_full)
-
+  
   #create empty vector for S_SNP
   S_SNP <- vector(mode="numeric",length=n_phenotypes+1)
-
+  
   #enter SNP variance from reference panel as first observation
   S_SNP[1] <- varSNP[i]
-
+  
   #enter SNP covariances (standardized beta * SNP variance from refference panel)
   for (p in 1:n_phenotypes) {
     S_SNP[p+1] <- varSNP[i]*beta_SNP[i,p]
   }
-
+  
   #create shell of the full S (observed covariance) matrix
   S_Full <- diag(n_phenotypes+1)
-
+  
   ##add the LD portion of the S matrix
   S_Full[(2:(n_phenotypes+1)),(2:(n_phenotypes+1))] <- S_LD
-
+  
   ##add in observed SNP variances as first row/column
   S_Full[1:(n_phenotypes+1),1] <- S_SNP
   S_Full[1,1:(n_phenotypes+1)] <- t(S_SNP)
-
+  
   ##pull in variables names specified in LDSC function and name first column as SNP
   if(TWAS){
     colnames(S_Full) <- c("Gene", colnames(S_LD))
   } else {
     colnames(S_Full) <- c("SNP", colnames(S_LD))
   }
-
+  
   ##name rows like columns
   rownames(S_Full) <- colnames(S_Full)
-
+  
   ##smooth to near positive definite if either V or S are non-positive definite
   ks <- nrow(S_Full)
   smooth1 <- ifelse(eigen(S_Full)$values[ks] <= 0, S_Full <- as.matrix((nearPD(S_Full, corr = FALSE))$mat), S_Full <- S_Full)
-
+  
   k2 <- ncol(S_Full)
-
+  
   ##run one model that specifies the factor structure so that lavaan knows how to rearrange the V (i.e., sampling covariance) matrix
   for (i in 1) {
-
+    
     W <- solve(V_full,tol=toler)
-
-    test2 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",
-    WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf, optim.force.converged=TRUE
-      ,control=list(iter.max=1),std.lv=std.lv))
-
+    
+    test2 <- .tryCatch.W.E(ReorderModel <- sem(model, sample.cov = S_Full, estimator = "DWLS",
+                                               WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf, optim.force.converged=TRUE
+                                               ,control=list(iter.max=1),std.lv=std.lv))
+    
+    if(fix_measurement){
+      #pull the model with SNP effects
+      withSNP<-parTable(ReorderModel)
+      
+      #rbind SNP effects to the measurement model 
+      for(p in 1:nrow(withSNP)){
+        if(withSNP$rhs[p] == "SNP" | withSNP$lhs[p] == "SNP"){
+          Model1<-rbind(Model1,withSNP[p,])
+        }
+      }
+      
+      #estimate model with SNP effects and fixed measurement model to get ordering of V
+      test3 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",
+                                                 WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf, optim.force.converged=TRUE,
+                                                 control=list(iter.max=1),std.lv=std.lv))
+    }
+    
+    #final ordering to use for multivariate GWAS model
     order <- .rearrange(k = k2, fit = ReorderModel, names = rownames(S_Full))
-
+    
     suppressWarnings(df <- lavInspect(ReorderModel, "fit")["df"])
     suppressWarnings(npar <- lavInspect(ReorderModel, "fit")["npar"])
-
+    
   }
-
+  
   if(TWAS){
     SNPs2 <- SNPs[,1:3]
   } else {
     SNPs2 <- SNPs[,1:6]
   }
-
+  
   rm(SNPs)
   f <- nrow(beta_SNP)
   # Run a single SNP to obtain base Lavaan model object
   LavModel1 <- .userGWAS_main(i=1, cores=1, n_phenotypes, n=1, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
-      coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, returnlavmodel=TRUE)
+                              coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, returnlavmodel=TRUE)
   if(!parallel){
     #make empty list object for model results if not saving specific model parameter
     if(sub[[1]]==FALSE){
       Results_List <- vector(mode="list",length=nrow(beta_SNP))
     }
-
+    
     if(TWAS){
       print("Starting TWAS Estimation")
     } else {
       print("Starting GWAS Estimation")
     }
-
+    
     for (i in 1:nrow(beta_SNP)) {
       if(i == 1){
         cat(paste0("Running Model: ", i, "\n"))
@@ -205,7 +289,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
         }
       }
       final2 <- .userGWAS_main(i, cores=1, n_phenotypes, 1, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order, SNPs2, beta_SNP, SE_SNP, varSNP, GC,
-          coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, basemodel=LavModel1)
+                               coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, basemodel=LavModel1)
       final2$i <- NULL
       if(sub[[1]] != FALSE){
         final3 <- as.data.frame(matrix(NA,ncol=ncol(final2),nrow=length(sub)))
@@ -226,11 +310,11 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
         Results_List[[i]] <- final2
       }
     }
-
+    
     time_all <- proc.time()-time
     print(time_all[3])
     return(Results_List)
-
+    
   } else {
     if(is.null(cores)){
       ##if no default provided use 1 less than the total number of cores available so your computer will still function
@@ -255,13 +339,13 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       registerDoParallel(cl)
       on.exit(stopCluster(cl))
     }
-
+    
     #split the V_SNP and S_SNP matrices into as many (cores - 1) as are aviailable on the local computer
     SNPs2 <- suppressWarnings(split(SNPs2,1:int))
     beta_SNP <- suppressWarnings(split(beta_SNP,1:int))
     SE_SNP <- suppressWarnings(split(SE_SNP,1:int))
     varSNP <- suppressWarnings(split(varSNP,1:int))
-
+    
     if(TWAS){
       print("Starting TWAS Estimation")
     } else {
@@ -269,10 +353,10 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     }
     if (Operating != "Windows") {
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
-      foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% 
+        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% 
         .userGWAS_main(i, int, n_phenotypes, n, I_LD, V_LD, S_LD,
-        std.lv, varSNPSE2, order, SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC,
-        coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, basemodel=LavModel1)
+                       std.lv, varSNPSE2, order, SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC,
+                       coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, basemodel=LavModel1)
     } else {
       #Util-functions have to be explicitly passed to the analysis function in PSOCK cluster
       utilfuncs <- list()
@@ -281,15 +365,15 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       utilfuncs[[".get_Z_pre"]] <- .get_Z_pre
       utilfuncs[[".get_V_full"]] <- .get_V_full
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
-      foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
-      .export=c(".userGWAS_main")) %dopar% {
-        .userGWAS_main(i, int, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order,
-        SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC, coords,
-        smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
-        df, npar, utilfuncs, basemodel=LavModel1)
-      }
+        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
+                 .export=c(".userGWAS_main")) %dopar% {
+                   .userGWAS_main(i, int, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order,
+                                  SNPs2[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC, coords,
+                                  smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
+                                  df, npar, utilfuncs, basemodel=LavModel1)
+                 }
     }
-
+    
     ##sort results so it is in order of the output lists provided for the function
     results <-  results[order(results$i),]
     results$i <- NULL
@@ -304,28 +388,28 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     }
     
     if(sub[[1]] == FALSE){
-        if(TWAS){
+      if(TWAS){
         names <- unique(results$Panel)
         Results_List <- vector(mode="list", length=length(names))
         for(y in 1:length(names)){
           Results_List[[y]] <- subset(results, results$Panel == names[[y]])
           Results_List[[y]]$Model_Number <- NULL
         }
-        }else{
-          names <- unique(results$SNP)
-          Results_List <- vector(mode="list", length=length(names))
-          for(y in 1:length(names)){
-            Results_List[[y]] <- subset(results, results$SNP == names[[y]])
-            Results_List[[y]]$Model_Number <- NULL
-          }
+      }else{
+        names <- unique(results$SNP)
+        Results_List <- vector(mode="list", length=length(names))
+        for(y in 1:length(names)){
+          Results_List[[y]] <- subset(results, results$SNP == names[[y]])
+          Results_List[[y]]$Model_Number <- NULL
         }
-        rm(results)
-        rm(names)
       }
-
+      rm(results)
+      rm(names)
+    }
+    
     time_all <- proc.time()-time
     print(time_all[3])
     return(Results_List)
-
+    
   }
 }
