@@ -102,6 +102,10 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       
       # Join the filtered lines back into a single text string
       noSNPmodel <- paste(filtered_lines, collapse = "\n")
+
+      #smooth S and V matrices if necessary
+      smoothS<-ifelse(eigen(S_LD)$values[nrow(S_LD)] <= 0, S_LD<-as.matrix((nearPD(S_LD, corr = FALSE))$mat), S_LD<-S_LD)
+      smoothV<-ifelse(eigen(V_LD)$values[nrow(V_LD)] <= 0, V_LD<-as.matrix((nearPD(V_LD, corr = FALSE))$mat), V_LD<-V_LD)
       
       #estimate a no SNP model to get the estimates for the measurement model
       W <- solve(V_LD,tol=toler)
