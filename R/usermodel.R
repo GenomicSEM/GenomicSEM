@@ -480,10 +480,16 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         if(estimation == "DWLS"){
           emptystand<-.tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, std.lv=std.lv,sample.nobs = 2, optim.dx.tol = +Inf))
+          if(is.null(emptystand$warning$message[1])) {
+             emptystand$warning$message[1] <- 0
+             }
         }
         
         if(estimation == "ML"){
             emptystand<-.tryCatch.W.E(Fit_stand <- sem(Model1, sample.cov = S_Stand, estimator = "ML",  sample.nobs = 200, std.lv=std.lv, optim.dx.tol = +Inf,sample.cov.rescale=FALSE))
+            if(is.null(emptystand$warning$message[1])) {
+             emptystand$warning$message[1] <- 0
+             }
         }
       
         ##perform same procedures for sandwich correction as in the unstandardized case
