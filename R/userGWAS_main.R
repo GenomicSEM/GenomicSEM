@@ -238,7 +238,10 @@
       final$Z_Estimate <- NA
       final$Pval_Estimate <- NA
     }
-    
+
+    #remove redundant internal representations of model from lavaan
+    final<-subset(final, final$op != "da")
+  
     ##add in model fit components to each row
     if(!(is.na(Q))){
       final$chisq <- rep(Q,nrow(final))
