@@ -241,13 +241,21 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     if(fix_measurement){
       #pull the model with SNP effects
       withSNP<-parTable(ReorderModel)
-      
-      #rbind SNP effects to the measurement model 
+
+      #rbind back in Gene/SNP effects
+      if(TWAS){
+          for(p in 1:nrow(withSNP)){
+        if(withSNP$rhs[p] == "Gene" | withSNP$lhs[p] == "Gene"){
+          Model1<-rbind(Model1,withSNP[p,])
+        }
+      }
+        }else{ 
       for(p in 1:nrow(withSNP)){
         if(withSNP$rhs[p] == "SNP" | withSNP$lhs[p] == "SNP"){
           Model1<-rbind(Model1,withSNP[p,])
         }
       }
+        }
       
       #estimate model with SNP effects and fixed measurement model to get ordering of V
       test3 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",
