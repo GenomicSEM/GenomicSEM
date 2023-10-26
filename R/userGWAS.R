@@ -97,8 +97,10 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       #split by lines of code
       lines <- strsplit(model, "\n")[[1]]
       
-      # Use grep to find lines containing "SNP" and exclude them
-      filtered_lines <- lines[!grepl("SNP", lines)]
+      # Use grep to find lines containing "SNP" or "Gene" and exclude them
+      if(TWAS){
+      filtered_lines <- lines[!grepl("Gene", lines)]
+      }else{filtered_lines <- lines[!grepl("SNP", lines)]}
       
       # Join the filtered lines back into a single text string
       noSNPmodel <- paste(filtered_lines, collapse = "\n")
