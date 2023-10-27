@@ -37,7 +37,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     warning("Your model name may be listed in quotes; please remove the quotes and try re-running if the function has returned stopped running after returning an error.")
   }
   
-  print("Please note that an update was made to userGWAS on 11/21/19 so that it combines addSNPs and userGWAS.")
+  print("Please note that an update was made to userGWAS on Sept 1 2023  so that the default behavior is to fix the measurement model using the fix_measurement argument.")
   
   if(class(SNPs)[1] == "character"){
     print("You are likely listing arguments in the order of a previous version of userGWAS, if you have yur results stored after running addSNPs you can still explicitly call Output = ... to provide them to userGWAS. The current version of the function is faster and saves memory. It expects the
