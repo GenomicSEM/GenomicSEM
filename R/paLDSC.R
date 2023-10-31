@@ -367,14 +367,3 @@ paLDSC <- function(S = S, V = V, r = NULL, p = NULL, save.pdf = F, diag = F, fa 
     }
   }
 }
-
-
-##### EXAMPLE ######
-#1. Load multivariate LDSC output
-load("LDSC_output_paLDSC_example.RData")
-#2. Genetic correlation matrix from LDSC output
-S_Stand <- LDSCoutputfull$S_Stand
-#3. Associated standardized multivariate sampling distribution matrix from LDSC output
-V_Stand <- LDSCoutputfull$V_Stand
-#4. Run the`paLDSC` function
-paLDSC(S=S_Stand,V=V_Stand,r=10,save.pdf=F)
