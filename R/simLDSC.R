@@ -11,7 +11,7 @@ simLDSC <- function(covmat,N,seed,ld,rPheno=NULL,int=NULL,N_overlap=.99,r=1,gzip
       if ((N_overlap < 0) | (N_overlap > 1)) stop("argument N_overlap should be between 0 and 1 (inclusive)")
     }
   }
-  if (!dir.exists(ld)) stop("directory for argument ld (", ref, ") not found")
+  if (!dir.exists(ld)) stop("directory for argument ld (", ld, ") not found")
   if (!is.numeric(r)) stop("argument r should be numeric")
   if (is.numeric(r)) {if (r < 1) stop("argument r should be equal to or greater than 1")}
   if (!is.numeric(seed)) stop("argument seed should be numeric")
@@ -30,7 +30,7 @@ simLDSC <- function(covmat,N,seed,ld,rPheno=NULL,int=NULL,N_overlap=.99,r=1,gzip
   }))
   cat("--------------------","\n","Filtering MHC region","\n","--------------------","\n", sep ="")
   x<-data.frame(x)
-  if(class(covmat)=="character"){
+  if(class(covmat)[1]=="character"){
     model <- covmat
     A <- simulateData(model = model, model.type = "cfa", std.lv = F, sample.nobs = 5, empirical = T, return.fit = TRUE)
     names <- names(A)
