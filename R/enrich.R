@@ -496,7 +496,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
                 }
               }
               
-              unstand<-data.frame(inspect(ModelPart_Results, "list")[,c(2:4,7,14)])
+              unstand<-data.frame(inspect(ModelPart_Results, "list")[,c(2:4,8,14)])
               unstand<-subset(unstand, unstand$free != 0)                    
               unstand$free<-NULL
               unstand<-subset(unstand, paste(unstand$lhs, unstand$op, unstand$rhs, sep = "") %in% params)
