@@ -101,6 +101,9 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       if(TWAS){
       filtered_lines <- lines[!grepl("Gene", lines)]
       }else{filtered_lines <- lines[!grepl("SNP", lines)]}
+
+      #remove ghost parameters as this could include SNP/Gene effects 
+      filtered_lines<-filtered_lines[!grepl(c(":="), filtered_lines)]
       
       # Join the filtered lines back into a single text string
       noSNPmodel <- paste(filtered_lines, collapse = "\n")
@@ -256,6 +259,13 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
         }
       }
         }
+
+        #rbind back in ghost parameters if relevant
+      for(p in 1:nrow(withSNP)){
+        if(withSNP$op[p] == ":="){
+          Model1<-rbind(Model1,withSNP[p,])
+        }
+      }
       
       #estimate model with SNP effects and fixed measurement model to get ordering of V
       test3 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",
