@@ -175,6 +175,43 @@ If the Neff value is halved in the summary stats, but not recognized by the mung
     return(V_SNP)
 }
 
+         
+.get_S_Full<-function(n_phenotypes,S_LD,varSNP,beta_SNP,TWAS,i){
+  #create empty vector for S_SNP
+  S_SNP <- vector(mode="numeric",length=n_phenotypes+1)
+
+#enter SNP variance from reference panel as first observation
+S_SNP[1] <- varSNP[i]
+
+#enter SNP covariances (standardized beta * SNP variance from refference panel)
+for (p in 1:n_phenotypes) {
+  S_SNP[p+1] <- varSNP[i]*beta_SNP[i,p]
+}
+
+#create shell of the full S (observed covariance) matrix
+S_Full <- diag(n_phenotypes+1)
+
+##add the LD portion of the S matrix
+S_Full[(2:(n_phenotypes+1)),(2:(n_phenotypes+1))] <- S_LD
+
+##add in observed SNP variances as first row/column
+S_Full[1:(n_phenotypes+1),1] <- S_SNP
+S_Full[1,1:(n_phenotypes+1)] <- t(S_SNP)
+
+##pull in variables names specified in LDSC function and name first column as SNP
+if(TWAS){
+  colnames(S_Full) <- c("Gene", colnames(S_LD))
+} else {
+  colnames(S_Full) <- c("SNP", colnames(S_LD))
+}
+
+##name rows like columns
+rownames(S_Full) <- colnames(S_Full)
+
+return(S_Full)
+}
+
+
 .get_Z_pre <- function(i, beta_SNP, SE_SNP, I_LD, GC) {
     if(GC == "conserv"){
         Z_pre<-beta_SNP[i,]/(SE_SNP[i,]*diag(I_LD))
