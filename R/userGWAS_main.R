@@ -29,7 +29,7 @@
   ##invert the reordered sampling covariance matrix to create a weight matrix
   W <- solve(W, tol=toler)
   
-  S_Full<-.get_S_Full(n_phenotypes,S_LD,varSNP,beta_SNP,TWAS,i)
+  S_Full<-.get_S_Full(k,S_LD,varSNP,beta_SNP,TWAS,i)
   
   ##smooth to near positive definite if either V or S are non-positive definite
   ks <- nrow(S_Fullrun)
