@@ -709,11 +709,11 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     results$p_value<-2*pnorm(abs(as.numeric(results$Unstand_Est)/as.numeric(results$Unstand_SE)),lower.tail=FALSE)
     results$p_value<-ifelse(results$p_value == 0, "< 5e-300", results$p_value)
 
-    if(empty4$warning$message[1] != 0){
+   if(empty4$warning$message[1] != 0 & !grepl("not recommended for continuous data", empty4$warning$message[1])){
       warning(paste0("The unstandardized model produced the following warning: ", empty4$warning$message[1],sep=""))
     }  
     
-    if(emptystand$warning$message[1] != 0){
+    if(emptystand$warning$message[1] != 0 & !grepl("not recommended for continuous data", emptystand$warning$message[1])){
       warning(paste0("The standardized model produced the following warning: ", emptystand$warning$message[1],sep=""))
     }  
     
