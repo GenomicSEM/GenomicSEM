@@ -313,7 +313,7 @@
       final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]
     }
     ##combine with rs-id, BP, CHR, etc.
-    final2 <- cbind(n + (i-1) * cores,SNPs2[i,],final,row.names=NULL)
+    final2 <- cbind(n + (i-1) * cores,SNPs[i,],final,row.names=NULL)
     
     if(smooth_check){
       final2 <- cbind(final2,Z_smooth)
@@ -336,7 +336,7 @@
       final$error <- ifelse(class(test$value) == "lavaan", 0, as.character(test$value$message))[1]
       final$warning <- ifelse(class(test$warning) == 'NULL', 0, as.character(test$warning$message))[1]}
     ##combine results with SNP, CHR, BP, A1, A2 for particular model
-    final2 <- cbind(n + (i-1) * cores, SNPs2[i,], final, row.names=NULL)
+    final2 <- cbind(n + (i-1) * cores, SNPs[i,], final, row.names=NULL)
     
     if(smooth_check){
       final2 <- cbind(final2,Z_smooth)
