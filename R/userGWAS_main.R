@@ -99,7 +99,11 @@
     }
     
   }
-  if (returnlavmodel) {
+   if (returnlavmodel) {
+    if(class(test$value)[1] == "simpleError"){
+      print("Something has gone wrong early in the estimation process. This is the error the model is returning:")
+      print(test$value)
+    }
     return(Model1_Results)
   }
   
