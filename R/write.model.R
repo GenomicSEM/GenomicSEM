@@ -20,7 +20,7 @@ write.model<-function(Loadings,S_LD,cutoff,fix_resid=TRUE,bifactor=FALSE,mustloa
       Mins<-apply(abs(Loadings),1,max)
       for(i in 1:nrow(Loadings)){
         for(f in 1:ncol(Loadings)){
-          if(Mins[i] == Loadings[i,f]){
+          if(Mins[i] == abs(Loadings[i,f])){
             Loadings[i,f]<-cutoff+.01
           }
         }
