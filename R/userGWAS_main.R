@@ -318,6 +318,9 @@
     if(smooth_check){
       final2 <- cbind(final2,Z_smooth)
     }
+
+    #remove redundant output in lavaan representation of model
+    final2<-subset(final2, final2$op != "da")
     
     if(!(sub[[1]])==FALSE){
       final2 <- subset(final2, paste0(final2$lhs, final2$op, final2$rhs, sep = "") %in% sub)
