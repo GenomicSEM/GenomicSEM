@@ -186,6 +186,9 @@
       #number of factors with estimated SNP effects
       #split model code by line
       lines_SNP <- strsplit(model, "\n")[[1]]
+
+      #remove any spacing to ensure matching
+      lines_SNP <- str_replace_all(lines_SNP, fixed(" "), "")
       
       # Use grep to find lines containing "SNP" 
       if(TWAS){
