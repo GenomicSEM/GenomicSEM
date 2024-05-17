@@ -1,5 +1,7 @@
 
 read_fusion <- function(files,trait.names=NULL,binary=NULL,N=NULL,perm=FALSE){
+
+  print("Please note that the TWAS files should be in the same order that they were listed for the ldsc function")
   
   length <- length(files)
   
@@ -16,7 +18,7 @@ read_fusion <- function(files,trait.names=NULL,binary=NULL,N=NULL,perm=FALSE){
   }
   
   files = lapply(files, read.table, header=T, quote="\"",fill=T,na.string=c(".",NA,"NA",""))
-
+  
   print("Done reading in FUSION files")
   
   if(is.null(binary)){
