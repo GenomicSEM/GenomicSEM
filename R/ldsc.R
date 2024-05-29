@@ -371,7 +371,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         }
         .LOG("Heritability Results for trait: ", chi1, file=log.file)
         if(int.est ==FALSE){
-        .LOG("LD score INTERCEPTS CONSTRAINED TO 1: This setting implies there is no residual confounding of any kind in your GWAS, if there is this might introduce detrimental bias.", file=log.file)
+        .LOG("LD score INTERCEPTS CONSTRAINED TO ",int.est.val[j,k],": This setting implies there is no residual confounding of any kind in your GWAS, if there is this might introduce detrimental bias.", file=log.file)
         }
         .LOG("Mean Chi^2 across remaining SNPs: ", round(mean.Chi, 4), file=log.file)
         .LOG("Lambda GC: ", round(lambda.gc, 4), file=log.file)
@@ -529,7 +529,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
         }
         .LOG("Results for genetic covariance between: ", chi1, " and ", chi2, file=log.file)
         if(ct.int.est ==FALSE){
-          .LOG("LD score Cross trait INTERCEPTS CONSTRAINED TO 0: This setting implies there is no sample overlap between your GWASs, if there is this might introduce detrimental bias.", file=log.file)
+          .LOG("LD score Cross trait INTERCEPTS CONSTRAINED TO ",int.est.val[j,k],": This setting implies there is no sample overlap between your GWASs, if there is this might introduce detrimental bias.", file=log.file)
         }
         .LOG("Mean Z*Z: ", round(mean(merged$ZZ), 4), file=log.file)
         if(ct.int.est==T){
