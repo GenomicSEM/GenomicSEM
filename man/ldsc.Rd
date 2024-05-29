@@ -5,7 +5,7 @@
 Function to run LD score regression (\link{https://github.com/bulik/ldsc}) to compute the genetic covariance between a series of traits based on genome wide summary statistics obtained from GWAS. The results generate by this function are necessary and sufficient to facilitate the fit of structural equation models (or other multivariate models) to the genetic covariance matrix.
 }
 \usage{
-ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = FALSE,chr=22,n.blocks=200,ldsc.log=NULL,stand=FALSE,select=FALSE, \dots)
+ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = FALSE,chr=22,n.blocks=200,ldsc.log=NULL,stand=FALSE,select=FALSE, int.est=TRUE,ct.int.est=TRUE,int.est.mat = NULL,int.est.val=NULL,\dots)
 
 }
 \arguments{
