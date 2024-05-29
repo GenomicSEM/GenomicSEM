@@ -52,7 +52,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   # If needed set default intercpt constrained values
   if((int.est==TRUE || ct.int.est==TRUE || !is.null(int.est.mat)) && is.null(int.est.val)){
 
-    int.est.val <- diag(length(traits))
+    int.est.val <- diag(n.traits)
 
     }
   
