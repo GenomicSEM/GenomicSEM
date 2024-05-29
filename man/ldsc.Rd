@@ -21,7 +21,11 @@ ldsc(traits,sample.prev,population.prev,ld,wld,trait.names=NULL, sep_weights = F
    \item{ldsc.log}{How you want to name your .log file for ldsc. The default is NULL as the package will automatically name the log based in the file names unless a log file name is provided to this arugment. }
    \item{stand}{Whether you want the package to also output a genetic correlation and sampling correlation matrix. Default is FALSE.}
    \item{select}{Whether you want the package to estimate LDSC using only even or odd chromosomes by setting select to "ODD" and "EVEN" respectively. It can also be set to a set of numbers, such as c(1,3,10), to run ldsc on a specific chromosome or chromosomes.  Default is FALSE, in which case LDSC is estimated using all chromosomes.}             
-   \item{chisq.max}{Maximum value of the squared Z statistics for a SNP that is considered in the LD-score regression. Default behaviour is to set to the maximum of 80 and N*0.001}                 
+   \item{chisq.max}{Maximum value of the squared Z statistics for a SNP that is considered in the LD-score regression. Default behaviour is to set to the maximum of 80 and N*0.001}    
+   \item{int.est}{Should the heritability intercepts be estimated, defaults to TRUE, leave alone unless you know what you are doing!}
+   \item{ct.int.est}{Should the cross trait intercepts be estimated, defaults to TRUE, leave alone unless you know what you are doing!}
+   \item{int.est.mat}{A matrix of logicals describing the pattern of intercepts to be estimated, defaults to NULL, absolutely leave alone unless you know what you are doing!}
+   \item{int.est.val}{A matrix of values specifying the values to which intercepts are to be fixed, defaults to NULL, if unspecified and needed becomes a unit matrix (1 on diag, 0 off diag) which impleis no connfounding and no sample overlap, leave alone unless you know what you are doing!}
        }
 
 \value{
