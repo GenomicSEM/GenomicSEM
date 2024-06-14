@@ -88,7 +88,7 @@
                                                            slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
     }
     else {
-      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf))
+      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = .01))
     }
   }
 
@@ -99,7 +99,7 @@
                                                            slotOptions=basemodel@Options, slotParTable=basemodel@ParTable, slotSampleStats=NULL,
                                                            slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
     } else {
-      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
+      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = .01, sample.cov.rescale=FALSE))
     }
 
   }
@@ -150,9 +150,9 @@
 
     #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
     if(estimation == "DWLS"){
-      testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2,  optim.dx.tol = +Inf))
+      testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2,  optim.dx.tol = .01))
     } else if(estimation == "ML"){
-      testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = +Inf, sample.cov.rescale=FALSE))
+      testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = .01, sample.cov.rescale=FALSE))
     }
 
     testQ$warning$message[1]<-ifelse(is.null(testQ$warning$message), testQ$warning$message[1]<-"Safe", testQ$warning$message[1])
