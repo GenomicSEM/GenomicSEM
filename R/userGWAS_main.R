@@ -57,7 +57,7 @@
                                                      slotOptions=basemodel@Options, slotParTable=basemodel@ParTable, slotSampleStats=NULL,
                                                      slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
     } else {
-      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,std.lv=std.lv))
+      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = .01,std.lv=std.lv))
     }
   } else if(estimation == "ML"){
     if (!is.null(basemodel)) {
@@ -66,7 +66,7 @@
                                                      slotOptions=basemodel@Options, slotParTable=basemodel@ParTable, slotSampleStats=NULL,
                                                      slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
     } else {
-      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = +Inf,sample.cov.rescale=FALSE,std.lv=std.lv))
+      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "ML",sample.nobs = 200, optim.dx.tol = .01,sample.cov.rescale=FALSE,std.lv=std.lv))
     }
     
   }
