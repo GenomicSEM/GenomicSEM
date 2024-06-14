@@ -167,7 +167,7 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
     ks <- nrow(S_Fullrun)
     smooth1 <- ifelse(eigen(S_Fullrun)$values[ks] <= 0, S_Fullrun<-as.matrix((nearPD(S_Fullrun, corr = FALSE))$mat), S_Fullrun<-S_Fullrun)
 
-    suppress <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = +Inf,optim.force.converged=TRUE,control=list(iter.max=1)))
+    suppress <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = .01,optim.force.converged=TRUE,control=list(iter.max=1)))
 
     order <- .rearrange(k = k+1, fit = ReorderModel, names = rownames(S_Fullrun))
   }
