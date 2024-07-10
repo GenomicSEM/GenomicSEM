@@ -140,6 +140,9 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       for(p in 1:nrow(Model1)){
         Model1$free[p]<-ifelse(Model1$lhs[p] != Model1$rhs[p], 0, Model1$free[p]) 
       }
+
+     #swap out NA values in ustart column to avoid lavaan error
+    Model1$ustart<-ifelse(is.na(Model1$ustart),0,Model1$ustart)
       
     }
   
