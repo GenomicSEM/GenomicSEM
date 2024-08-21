@@ -300,8 +300,9 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     #fix all values from baseline model
     ModelQ_WLS$free<-0
     
-    #remove white space from parameters for easier matching
+    #remove white space from parameters and fixed parameters for easier matching
     params<-str_replace_all(params, fixed(" "), "") 
+    fixparam<-str_replace_all(fixparam, fixed(" "), "") 
     
     x<-1:nrow(ModelQ_WLS)
     u<-1
