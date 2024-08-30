@@ -520,7 +520,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
               results$est<-NULL
               results$SE<-NULL
               results$error<-ifelse(class(part_warn$value) == "lavaan", 0, as.character(part_warn$value$message))[1]
-              results$warning<-ifelse(class(part_warn$warning) == 'NULL', 0, as.character(part_warn$warning$message))[1]
+              results$warning<-ifelse(class(part_warn$warning) == 'NULL' | grepl("not recommended for continuous data",part_warn$warning), 0, as.character(part_warn$warning$message))[1]
               
               if(n == 1){
                 Results_List<-vector(mode="list",length=nrow(results))
