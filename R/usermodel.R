@@ -622,7 +622,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           results<-cbind(unstand2, stand2)
           
           ##add in fixed effects
-          base_model<-data.frame(inspect(ReorderModel, "list")[,c(2:4,8,14)])
+             base_model<-data.frame(inspect(ReorderModel, "list")[,c("lhs","op","rhs","free","est")])
           base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(unstand2$lhs, unstand2$op, unstand2$rhs)))
           base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
           if(nrow(base_model) > 0){
