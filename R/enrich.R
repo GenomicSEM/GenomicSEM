@@ -249,12 +249,12 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     
     if(base==TRUE){
       
-      base_results<-data.frame(inspect(Model1_Results, "list")[,c(2:4,8,14)])
+      base_results<-data.frame(inspect(Model1_Results, "list")[,c("lhs","op","rhs","free","est")])
       base_results<-subset(base_results, base_results$free != 0)                    
       base_results$free<-NULL
       
       ##fixed effects
-      base_model<-data.frame(inspect(ReorderModel1, "list")[,c(2:4,8,14)])
+      base_model<-data.frame(inspect(ReorderModel1, "list")[,c("lhs","op","rhs","free","est")])
       base_model<-subset(base_model,  !(paste0(base_model$lhs, base_model$op,base_model$rhs) %in% paste0(base_results$lhs, base_results$op, base_results$rhs)))
       base_model<-subset(base_model, base_model$op == "=~" | base_model$op == "~~" | base_model$op == "~")
       
@@ -497,7 +497,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
                 }
               }
               
-              unstand<-data.frame(inspect(ModelPart_Results, "list")[,c(2:4,8,14)])
+              unstand<-data.frame(inspect(ModelPart_Results, "list")[,c("lhs","op","rhs","free","est")])
               unstand<-subset(unstand, unstand$free != 0)                    
               unstand$free<-NULL
               unstand<-subset(unstand, paste(unstand$lhs, unstand$op, unstand$rhs, sep = "") %in% params)
