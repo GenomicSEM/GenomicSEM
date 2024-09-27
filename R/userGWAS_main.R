@@ -88,7 +88,7 @@
     
     ##weight matrix from stage 2
     S2.W <- lavInspect(Model1_Results, "WLS.V")
-  
+    
     #the "bread" part of the sandwich is the naive covariance matrix of parameter estimates that would only be correct if the fit function were correctly specified
     bread <- solve(t(S2.delt)%*%S2.W%*%S2.delt,tol=toler)
     
@@ -126,7 +126,7 @@
         se.ghost <- sqrt(diag(var.ind))
         
         #pull the ghost parameter point estiamte
-        ghost <- subset(Model_Output, Model_Output$op == ":=")[,c(2:4,8,11,14)]
+        ghost <- subset(Model_Output, Model_Output$op == ":=")[,c("lhs","op","rhs","free","label","est")]
         
         ##combine with delta method SE
         ghost2 <- cbind(ghost,se.ghost)
@@ -135,7 +135,7 @@
         if(":=" %in% Model_Output$op & (NA %in% Model_Output$se)){
           se.ghost <- rep(NA, sum(":=" %in% Model_Output$op))
           warning("SE for ghost parameter not available for ML")
-          ghost <- subset(Model_Output, Model_Output$op == ":=")[,c(2:4,8,11,14)]
+          ghost <- subset(Model_Output, Model_Output$op == ":=")[,c("lhs","op","rhs","free","label","est")]
           ghost2 <- cbind(ghost,se.ghost)
           colnames(ghost2)[7] <- "SE"
         }
@@ -146,7 +146,7 @@
     if(estimation == "ML"){
       if(":=" %in% Model_Output$op){
         #pull the ghost parameter point estiamte
-        ghost <- subset(Model_Output, Model_Output$op == ":=")[,c(2:4,8,11,14)]
+        ghost <- subset(Model_Output, Model_Output$op == ":=")[,c("lhs","op","rhs","free","label","est")]
         se.ghost <- rep(NA, sum(":=" %in% Model_Output$op))
         warning("SE for ghost parameter not available for ML")
         ##combine with delta method SE
@@ -156,7 +156,7 @@
         if(":=" %in% Model_Output$op & (NA %in% Model_Output$se)){
           se.ghost <- rep(NA, sum(":=" %in% Model_Output$op))
           warning("SE for ghost parameter not available for ML")
-          ghost <- subset(Model_Output, Model_Output$op == ":=")[,c(2:4,8,11,14)]
+          ghost <- subset(Model_Output, Model_Output$op == ":=")[,c("lhs","op","rhs","free","label","est")]
           ghost2 <- cbind(ghost,se.ghost)
           colnames(ghost2)[7] <- "SE"
         }
@@ -186,7 +186,7 @@
       #number of factors with estimated SNP effects
       #split model code by line
       lines_SNP <- strsplit(model, "\n")[[1]]
-
+      
       #remove any spacing to ensure matching
       lines_SNP <- str_replace_all(lines_SNP, fixed(" "), "")
       
@@ -245,7 +245,7 @@
     }
     
     ##remove parameter constraints, ghost parameters, and fixed effects from output to merge with SEs
-    unstand <- subset(Model_Output, Model_Output$plabel != "" & Model_Output$free > 0)[,c(2:4,8,11,14)]
+    unstand <- subset(Model_Output, Model_Output$plabel != "" & Model_Output$free > 0)[,c("lhs","op","rhs","free","label","est")]
     
     ##combine ghost parameters with rest of output
     if(exists("ghost2") == "TRUE"){
@@ -255,7 +255,7 @@
     }
     
     ##add in fixed effects and parameter constraints to output
-    other <- subset(Model_Output, (Model_Output$plabel == "" & Model_Output$op != ":=") | (Model_Output$free == 0 & Model_Output$plabel != ""))[,c(2:4,8,11,14)]
+    other <- subset(Model_Output, (Model_Output$plabel == "" & Model_Output$op != ":=") | (Model_Output$free == 0 & Model_Output$plabel != ""))[,c("lhs","op","rhs","free","label","est")]
     other$SE <- rep(NA, nrow(other))
     
     ##combine fixed effects and parameter constraints with output if there are any
@@ -321,7 +321,7 @@
     if(smooth_check){
       final2 <- cbind(final2,Z_smooth)
     }
-
+    
     #remove redundant output in lavaan representation of model
     final2<-subset(final2, final2$op != "da")
     
