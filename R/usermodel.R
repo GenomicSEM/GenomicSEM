@@ -589,7 +589,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
           unstand2<-rbind(cbind(unstand,SE),ghost2)
         }else{unstand2<-cbind(unstand,SE)}
         
-        stand<-data.frame(inspect(Fit_stand,"list")[,c(8,14)])
+        stand<-data.frame(inspect(Fit_stand,"list")[,c("free","est")])
         stand<-subset(stand, stand$free != 0)
         stand$free<-NULL
         
