@@ -115,11 +115,11 @@
   
   file$Z <- sign(file$effect) * sqrt(qchisq(file$P,1,lower=F))
   
-  if(OLS & beta){
+  if(OLS & is.character(beta)){
     .LOG("User provided arguments indicate that a GWAS of a continuous trait with already standardized betas is being provided for: ", filename,file=log.file)
   }
   
-  if(OLS & !beta){
+  if(OLS & !(is.character(beta))){
     if("N" %in% colnames(file)){
       file$effect <- file$Z/sqrt(file$N * file$varSNP)
     }else{
