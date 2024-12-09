@@ -347,7 +347,10 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     if(max(ModelQ_WLS$free) == nrow(ModelQ_WLS)){
       warning("All parameters are being freely estimated from the baseline model. Enrichment results should likely not be interpreted.")
     }
-    
+
+    #ensure that freely estimated values are not being constrained by lavaan lower column
+    ModelQ_WLS$lower<-ifelse(ModelQ_WLS$free != 0 & ModelQ_WLS$label == "", -Inf,ModelQ_WLS$lower)
+
     if(base==TRUE){
       Merge_base<-data.frame(paste0(ModelQ_WLS$lhs,ModelQ_WLS$op,ModelQ_WLS$rhs,sep=""),ModelQ_WLS$free)
       colnames(Merge_base)<-c("Merge","Fixed_Enrich")
