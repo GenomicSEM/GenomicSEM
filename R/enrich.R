@@ -317,7 +317,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
         }else{ModelQ_WLS$free[i]<-0}
       }
     }
-
+    
     ##freely estimate specified parameters, regressions (including factor loadings), and (residual) variances
     #fix covariances
     if(fix == "covariances"){
@@ -347,10 +347,16 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     if(max(ModelQ_WLS$free) == nrow(ModelQ_WLS)){
       warning("All parameters are being freely estimated from the baseline model. Enrichment results should likely not be interpreted.")
     }
-
-    #ensure that freely estimated values are not being constrained by lavaan lower column
-    ModelQ_WLS$lower<-ifelse(ModelQ_WLS$free != 0 & ModelQ_WLS$label == "", -Inf,ModelQ_WLS$lower)
-
+    
+    #ensure that freely estimated values are not being constrained by lavaan upper/lower column
+    if("lower" %in% colnames(ModelQ_WLS)){
+      ModelQ_WLS$lower<-ifelse(ModelQ_WLS$free != 0 & ModelQ_WLS$label == "", -Inf,ModelQ_WLS$lower)
+    }
+    
+    if("upper" %in% colnames(ModelQ_WLS)){
+      ModelQ_WLS$upper<-ifelse(ModelQ_WLS$free != 0 & ModelQ_WLS$label == "", Inf,ModelQ_WLS$upper)
+    }
+    
     if(base==TRUE){
       Merge_base<-data.frame(paste0(ModelQ_WLS$lhs,ModelQ_WLS$op,ModelQ_WLS$rhs,sep=""),ModelQ_WLS$free)
       colnames(Merge_base)<-c("Merge","Fixed_Enrich")
@@ -538,6 +544,10 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
                 }
               }
             }else{
+              if(n == 1){
+                print(bread_check$value)
+                stop("Your baseline model produced tolerance issues; consider using the toler argument to set a lower threshold")
+              }
               for(y in 1:length(params)){
                 final<-data.frame(as.character(names(s_covstruc$S[n])), test1$lhs[y], test1$op[y], test1$rhs[y],LD_sdiff, Z_diff, NA,NA,NA)
                 final$error<-ifelse(class(part_warn$value) == "lavaan", 0, as.character(part_warn$value$message))[1]
