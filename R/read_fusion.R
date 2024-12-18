@@ -1,4 +1,3 @@
-
 read_fusion <- function(files,trait.names=NULL,binary=NULL,N=NULL,perm=FALSE){
 
   print("Please note that the TWAS files should be in the same order that they were listed for the ldsc function")
@@ -78,8 +77,8 @@ read_fusion <- function(files,trait.names=NULL,binary=NULL,N=NULL,perm=FALSE){
     
     colnames(output) <- c("Panel","Gene",names.beta[i],names.se[i])
     
-    #remove weights folder naming of Panel automatically added by FUSION
-    output$Panel<-gsub(".*//","", output$Panel)
+    #remove directory specific naming from PANEL to enable matching across files
+    output$Panel <- sub(".*//([^/]+/[^/]+)$|.*/([^/]+/[^/]+)$", "\\1\\2", output$Panel)
  
     if(i ==1){
       data.frame.out <- cbind.data.frame(files[[i]]$HSQ,output)
