@@ -20,3 +20,4 @@ indexS <- function(LDSC_OBJECT = NULL, MATRIX = NULL, R = F){
     Snum[upper.tri(Snum,diag=FALSE)]=(t(Snum))[upper.tri(Snum,diag=FALSE)]
     Snum
   }  
+  }
