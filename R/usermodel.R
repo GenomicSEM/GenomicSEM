@@ -262,9 +262,10 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
     constraints<-subset(Model_Output$label, Model_Output$label != "")
     constraints2<-duplicated(constraints)
     
-    #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
-    if(estimation == "DWLS"){
-      if(":=" %in% Model_Output$op & !(is.na(SE[1]))){
+    #code for computing SE of ghost parameter (e.g., indirect effect in mediation model
+    if(estimation == "DWLS" & ":=" %in% Model_Output$op){
+      if(!(is.na(SE[1]))){
+  
         #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
         vcov <- lavInspect(Model1_Results, "vcov") 
         
@@ -288,24 +289,20 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         #pull the ghost parameter point estiamte
         ghost<-subset(Model_Output, Model_Output$op == ":=")[,c("lhs","op","rhs","free","label","est")]
- 
+        
         ##combine with delta method SE
         ghost2<-cbind(ghost,se.ghost)
         colnames(ghost2)[7]<-"SE"
         
-      }else{se.ghost<-NA
-      if(":=" %in% Model_Output$op & is.na(se.ghost[1])){
-        se.ghost<-rep("SE could not be computed", count(":=" %in% Model_Output$op)$freq)
+      }else{
+        se.ghost<-rep("SE could not be computed", sum(":=" %in% Model_Output$op))
         ghost<-subset(Model_Output, Model_Output$op == ":=")[,c("lhs","op","rhs","free","label","est")]
         ghost2<-cbind(ghost,se.ghost)
-        colnames(ghost2)[7]<-"SE"}else{}}
-    }
+        colnames(ghost2)[7]<-"SE"}
+      }
     
-    if(estimation == "ML"){
-      if(":=" %in% Model_Output$op){
-        
+    if(estimation == "ML" & ":=" %in% Model_Output$op){
         print("SEs of ghost parameters are not available for ML estimation")
-        
         #pull the ghost parameter point estiamte
         ghost<-subset(Model_Output, Model_Output$op == ":=")[,c("lhs","op","rhs","free","label","est")]
         se.ghost<-rep(NA, sum(":=" %in% Model_Output$op))
@@ -314,9 +311,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         ghost2<-cbind(ghost,se.ghost)
         colnames(ghost2)[7]<-"SE"
       }
-    }
-    
-    
+  
     ##check whether correlations among latent variables is positive definite
     if(r > 1){
       empty<-.tryCatch.W.E(check<-lowerTriangle(lavInspect(Model1_Results,"cor.lv")[1:r,1:r]))
@@ -525,9 +520,8 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
         
         Model_Stand <- parTable(Fit_stand)
         
-        if(estimation == "DWLS"){
-          #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
-          if(":=" %in% Model_Stand$op & !(NA %in% Model_Stand$se)){
+       if(estimation == "DWLS" & ":=" %in% Model_Stand$op){
+          if(!(NA %in% Model_Stand$se)){
             #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
             vcov <- lavInspect(Fit_stand, "vcov") 
             
@@ -556,18 +550,14 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
             ghost2_stand<-cbind(ghost_stand,se.ghost_stand)
             colnames(ghost2_stand)[7]<-"SE_stand"
           }else{
-            if(":=" %in% Model_Stand$op & (NA %in% Model_Stand$se)){
-              se.ghost_stand<-rep("SE could not be computed", count(":=" %in% Model_Stand$op)$freq)
+              se.ghost_stand<-rep("SE could not be computed", sum(":=" %in% Model_Stand$op))
               ghost_stand<-subset(Model_Stand, Model_Stand$op == ":=")[,c("lhs","op","rhs","free","label","est")]
               ghost2_stand<-cbind(ghost_stand,se.ghost_stand)
-              colnames(ghost2_stand)[7]<-"SE_stand"}else{}}
+              colnames(ghost2_stand)[7]<-"SE_stand"}
         }
         
-        if(estimation == "ML"){
-          if(":=" %in% Model_Stand$op){
-            
+        if(estimation == "ML" & ":=" %in% Model_Stand$op){
             print("SEs of ghost parameters are not available for ML estimation")
-            
             #pull the ghost parameter point estiamte
             ghost_stand<-subset(Model_Stand, Model_Stand$op == ":=")[,c("lhs","op","rhs","free","label","est")]
             se.ghost_stand<-rep(NA, sum(":=" %in% Model_Stand$op))
@@ -576,7 +566,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
             ghost2<-cbind(ghost_stand,se.ghost_stand)
             colnames(ghost2_stand)[7]<-"SE_stand"
           }
-        }
         
         unstand<-data.frame(inspect(Model1_Results, "list")[,c("lhs","op","rhs","free","est")])
         unstand<-subset(unstand, unstand$free != 0)                    
