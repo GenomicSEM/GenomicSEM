@@ -1,9 +1,12 @@
+
+
+
 summaryGLSbands <- function(OBJECT = NULL, 
                             Y = NULL, V_Y = NULL, 
                             PREDICTORS, INTERVALS = 20,
                             CONTROLVARS = NULL, INTERCEPT = T,
                             QUAD = F, BANDS = T, BAND_SIZE = 1, 
-                            XLAB = "", YLAB = "",
+                            XLAB = "", YLAB = "", TITLELAB = "",
                             XCOORDS = c(-2,2),
                             YCOORDS = c(0,1)){
   
@@ -80,21 +83,24 @@ summaryGLSbands <- function(OBJECT = NULL,
   ###Creating sets of predictors to estimate bands along the length of predictors by shifting
   if (QUAD) {
     confintval <- matrix(NA, nrow = num_predictors, ncol = INTERVALS*2)
-    for (i in 1:INTERVALS){
-      confintval[,2*i-1] <- confintvalpredictors -  
-        (i)*(max(range(confintvalpredictors))-min(range(confintvalpredictors)))/INTERVALS
-      confintval[,(2*i)] <- (confintvalpredictors -    
-                               (i)*(max(range(confintvalpredictors))-min(range(confintvalpredictors)))/INTERVALS)^2
+    for (i in 0:(INTERVALS-1)){
+      confintval[,2*i + 1] <- confintvalpredictors -  (min(range(confintvalpredictors)) + 
+                                                         (i) * (max(range(confintvalpredictors)) - 
+                                                                  min(range(confintvalpredictors)))/INTERVALS)
+      
+      confintval[,(2*i + 2)] <- (confintvalpredictors -  (min(range(confintvalpredictors)) + 
+                                                            (i) * (max(range(confintvalpredictors)) - 
+                                                                     min(range(confintvalpredictors)))/INTERVALS))^2
     }
   } else { 
     confintval <- matrix(NA, nrow = num_predictors, ncol = INTERVALS)
-    for (i in 1:INTERVALS){
-      confintval[,i] <- confintvalpredictors - 
-        (i)*(max(range(confintvalpredictors))-min(range(confintvalpredictors)))/INTERVALS
+    for (i in 0:(INTERVALS)){
+      confintval[,i] <- confintvalpredictors - (min(range(confintvalpredictors)) +
+                                                  (i)*(max(range(confintvalpredictors)) - 
+                                                         min(range(confintvalpredictors)))/INTERVALS)
     }
   }
   
-  ###### DO I NEED TO CHANGE THIS
   #Adding an intercept column to the object of all shifted predictors
   confintval <- cbind(rep(1,num_predictors),confintval)
   
@@ -207,51 +213,45 @@ summaryGLSbands <- function(OBJECT = NULL,
   if (QUAD) {
     if (BANDS) {
       plot <- ggplot(plotdata, aes(x = Predictors, y = rGs)) +
-        #geom_line(aes(x = Predictors, y = (rGs + SEs)), color = "#FFC300") +
         geom_point() +
         stat_function(fun = function(Predictors) BETAS[1] + BETAS[2] * Predictors + BETAS[3] * Predictors^2, 
                       color = "#7A9083", linewidth = 0.8, linetype = 2) +
         geom_point(size = 3, color = "black") +
         geom_point(size = 1.2, color = "#DFD0B7") +
-        # scale_x_continuous(breaks = seq(-2, 2, by = 0.5)) +
         coord_cartesian(ylim = YCOORDS,
                         xlim = XCOORDS) +
         theme_classic() +
-        labs(x = XLAB, y = YLAB) +
+        labs(x = XLAB, y = YLAB, title = TITLELAB) +
         geom_line(data = plotdatases, aes(x = Predictors, y = SEss), linewidth = 0.4, linetype = 3) +
         geom_line(data = plotdatases, aes(x = Predictors, y = SEs), linewidth = 0.4, linetype = 3) +
-        geom_ribbon(data = plotdatases, inherit.aes = FALSE, aes(x = Predictors, ymin = SEss, ymax = SEs),                fill = "#7A9083", alpha = 0.1) 
+        geom_ribbon(data = plotdatases, inherit.aes = FALSE, aes(x = Predictors, ymin = SEss, ymax = SEs), fill = "#7A9083", alpha = 0.1) 
     } else {
-      plot <- ggplot(plotdata, aes(x = Predictors, y = rGs)) +
-        #geom_line(aes(x = Predictors, y = (rGs + SEs)), color = "#FFC300") +
+      plot <- ggplot(plotdata, aes(x = Predictors, y = rGs)) + 
         geom_point() +
         stat_function(fun = function(Predictors) BETAS[1] + BETAS[2] * Predictors + BETAS[3] * Predictors^2, 
                       color = "#7A9083", linewidth = 0.8, linetype = 2) +
         geom_point(size = 3, color = "black") +
         geom_point(size = 1.2, color = "#DFD0B7") +
-        # scale_x_continuous(breaks = seq(-2, 2, by = 0.5)) +
         coord_cartesian(ylim = YCOORDS,
                         xlim = XCOORDS) +
         theme_classic() +
-        labs(x = XLAB, y = YLAB)}
+        labs(x = XLAB, y = YLAB, title = TITLELAB)}
   } else { 
     
     if (BANDS) {
       plot <- ggplot(plotdata, aes(x = Predictors, y = rGs)) +
-        #geom_line(aes(x = Predictors, y = (rGs + SEs)), color = "#FFC300") +
         geom_point() +
         stat_function(fun = function(Predictors) BETAS[1] + BETAS[2] * Predictors, 
                       color = "#7A9083", linewidth = 0.8, linetype = 2) +
         geom_point(size = 3, color = "black") +
         geom_point(size = 1.2, color = "#DFD0B7") +
-        # scale_x_continuous(breaks = seq(-2, 2, by = 0.5)) +
         coord_cartesian(ylim = YCOORDS,
                         xlim = XCOORDS) +
         theme_classic() +
-        labs(x = XLAB, y = YLAB) +
+        labs(x = XLAB, y = YLAB, title = TITLELAB) +
         geom_line(data = plotdatases, aes(x = Predictors, y = SEss), linewidth = 0.4, linetype = 3) +
         geom_line(data = plotdatases, aes(x = Predictors, y = SEs), linewidth = 0.4, linetype = 3) +
-        geom_ribbon(data = plotdatases, inherit.aes = FALSE, aes(x = Predictors, ymin = SEss, ymax = SEs),                fill = "#7A9083", alpha = 0.1) 
+        geom_ribbon(data = plotdatases, inherit.aes = FALSE, aes(x = Predictors, ymin = SEss, ymax = SEs), fill = "#7A9083", alpha = 0.1) 
     } else {
       plot <- ggplot(plotdata, aes(x = Predictors, y = rGs)) +
         #geom_line(aes(x = Predictors, y = (rGs + SEs)), color = "#FFC300") +
@@ -264,7 +264,7 @@ summaryGLSbands <- function(OBJECT = NULL,
         coord_cartesian(ylim = YCOORDS,
                         xlim = XCOORDS) +
         theme_classic() +
-        labs(x = XLAB, y = YLAB)}
+        labs(x = XLAB, y = YLAB, title = TITLELAB)}
   }
   print(outputGLS)
   plot
