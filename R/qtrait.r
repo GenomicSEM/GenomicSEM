@@ -22,6 +22,17 @@ QTrait <- function(LDSCoutput,indicators,traits,
     }
   }
   
+  # check if LDSCoutput is a list with the expected elements
+  if(!is.list(LDSCoutput) | any(!c("V", "S", "I", "N", "m") %in% names(LDSCoutput))) {
+    LDSCoutput_name <- deparse(substitute(LDSCoutput))
+    stop(paste(LDSCoutput_name, "is not an ldsc() object"))
+  }
+  
+  # check if LDSCoutput has genetic correlation matrices
+  if(!all(c("V_Stand", "S_Stand") %in% names(LDSCoutput))) {
+    stop(paste("QTrait() requires a genetic correlation and sampling correlation matrix. Rebuild the covariance structure with ldsc(..., stand = TRUE)"))
+  }
+  
   # Write Common Factor Model syntax 
   CF_model_syntax <- paste(
     paste("F1 =~ ", paste(indicators, collapse = " + ",sep=""), collapse = " "),
