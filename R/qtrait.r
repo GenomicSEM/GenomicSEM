@@ -8,8 +8,30 @@ QTrait <- function(LDSCoutput,indicators,traits,
   new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
   if(length(new.packages)) stop("Missing package(s) ", paste0(new.packages, collapse=" and "))
   lapply(list.of.packages, library,character.only = TRUE)
-  # Load LDSC output 
-  load(LDSCoutput)
+  # Load LDSC output
+  # check if variable is a file path
+  if(is.character(LDSCoutput)) {
+    if(file.exists(LDSCoutput)) {
+      # load serialized LDSC output from the file and 
+      # capture the loaded object's name
+      object_name <- load(LDSCoutput)
+      # assign loaded object by name
+      LDSCoutput <- get(object_name)
+    } else {
+      stop(paste("LDSC file", LDSCoutput, "does not exist."))
+    }
+  }
+  
+  # check if LDSCoutput is a list with the expected elements
+  if(!is.list(LDSCoutput) | any(!c("V", "S", "I", "N", "m") %in% names(LDSCoutput))) {
+    LDSCoutput_name <- deparse(substitute(LDSCoutput))
+    stop(paste(LDSCoutput_name, "is not an ldsc() object"))
+  }
+  
+  # check if LDSCoutput has genetic correlation matrices
+  if(!all(c("V_Stand", "S_Stand") %in% names(LDSCoutput))) {
+    stop(paste("QTrait() requires a genetic correlation and sampling correlation matrix. Rebuild the covariance structure with ldsc(..., stand = TRUE)"))
+  }
   
   # Write Common Factor Model syntax 
   CF_model_syntax <- paste(
