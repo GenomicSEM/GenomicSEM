@@ -9,4 +9,4 @@ License: GPL-3.0
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.5.0)
-Imports: plyr,e1071,readr,gdata,lavaan,doParallel,parallel,foreach,data.table,stringr,splitstackshape,Matrix,R.utils,dplyr,iterators,Rcpp,utils,mgsub
+Imports: plyr,e1071,readr,gdata,lavaan,doParallel,parallel,foreach,data.table,stringr,splitstackshape,Matrix,R.utils,dplyr,iterators,Rcpp,utils,mgsub,ggpubr,tidyr
