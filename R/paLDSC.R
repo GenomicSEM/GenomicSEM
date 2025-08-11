@@ -1,36 +1,47 @@
-#--------------------------------------------------------------------------------------------------------------------------
-# Author: Javier de la Fuente
-# Date: 10-31-2023
-#
-# Filename: paLDSC.R
-#
-# Purpose: Defining a function to perform Parallel Analysis (PA) on LDSC genetic correlation matrices. 
-# The method compares the eigenvalues generated from the eigen decomposition of the LDSC genetic 
-# correlation matrix to the eigenvalues of a Monte-Carlo simulated null correlation matrix with random noise drawn from 
-# the multivariate LDSC sampling distribution V. The suggested number of factors to be extracted
-# corresponds with the last component with a larger eigenvalue than the same component in the null
-# correlation matrix.
-# The mandatory arguments of the function are S and V, corresponding either
-# with the genetic correlation and standardized sampling distribution matrices (i.e., S_Stand and V_Stand matrices
-# from the LDSC output), or the genetic covariance and unstandardized sampling distribution matrices from the LDSC output (S and V matrices, 
-# respectively, which can be obtained by setting stand = TRUE in the LDSC function). 
-# The following optional arguments are also implemented:
-#  - r: defines the number of replications for the Monte-Carlo simulations of null correlation matrices (500 by default).
-#  - p: defines the percentile for the simulated eigen-values.
-#  - diag: defines whether diagonallized PA should be conducted (FALSE by default). Diagonallized PA assumes uncorrelated sampling
-#          errors for the simulated null correlation matrices, as would happen if the data were pure noise. 
-#          Thus, if diag = TRUE, the function will only use the diagonal of the sampling distribution V (i.e., the sampling variances
-#          or the phenotypes in the original genetic correlation matrix) to introduce variation in the simulated null correlation matrices.
-#          If diag = FALSE (by default), the whole multivariate sampling distribution LDSC V matrix will be used to simulate the null 
-#          correlation matrices, thus assuming correlated sampling errors.
-#  - fa: defines whether the eigenvalues should also be computed from a common factor solution from a explotory factor analysis of 
-#        n factors (by default 1) using the factor method fm (by default minimum residual). By default this argument is set to FALSE, since
-#        there is some degree of variation on the factor analysis eigenvalues depending on the number of factors extracted.
-#  - fm: factor method for the exploratory factor analysis if fa = T (by default minimum residual).
-#  - nfactors: number of factors to be extracted in the exploratory factor analysis if fa = T (by default = 1).
-#  - save.pdf: whether the scree-plots derived from the PA function should be saved into a .pdf file.
-#--------------------------------------------------------------------------------------------------------------------------
-
+#' Parallel Analysis Based on Multivariate LDSC
+#'
+#' \code{paLDSC} performs parallel analysis using LDSC-derived genetic (co)variance matrices to determine the number of non-spurious latent dimensions in genomic data. The function compares the eigenvalues from the LDSC matrix to those derived from null matrices generated under the multivariate LDSC sampling distribution.
+#'
+#' @param S A genetic correlation matrix (\code{S_Stand}) or genetic covariance matrix (\code{S}) from LDSC output.
+#'           We recommend using the genetic correlation matrix (\code{S_Stand}) to maximize explained genetic variance.
+#' @param V The corresponding multivariate sampling covariance matrix from LDSC (\code{V_Stand} or \code{V}),
+#'          matching the scaling of \code{S}.
+#' @param r Number of Monte Carlo replications to simulate null correlation matrices. Default is \code{500}.
+#' @param p Percentile threshold for significance (default = \code{0.95}). Eigenvalues from \code{S} must exceed this threshold to be considered significant.
+#' @param diag Logical. If \code{TRUE}, diagonalized PA is performed assuming uncorrelated sampling errors. Default is \code{FALSE}.
+#' @param fa Logical. If \code{TRUE}, also performs exploratory factor analysis and computes eigenvalues from factor solutions. Default is \code{FALSE}.
+#' @param fm Factor extraction method used when \code{fa = TRUE}. Default is \code{"minres"}. See \code{psych::fa.parallel()}.
+#' @param nfactors Number of factors to extract in factor analysis if \code{fa = TRUE}. Default is \code{1}.
+#' @param save.pdf Logical. Whether to save scree plots to a PDF file. Default is \code{FALSE}.
+#' @param only.values Logical. If \code{TRUE}, only eigenvalues are returned. Default is \code{FALSE}.
+#'
+#' @details
+#' This method adapts Horn’s (1965) classic parallel analysis approach to LDSC-based genomic data. Eigenvalues from the observed LDSC-derived matrix are compared against distributions of eigenvalues simulated under the null model using the multivariate LDSC sampling distribution. The number of components to retain is determined by comparing each observed eigenvalue to the corresponding percentile threshold from the simulated distribution.
+#'
+#' If \code{diag = TRUE}, diagonal sampling variances are used to construct null matrices (faster, but less conservative). If \code{diag = FALSE}, the full LDSC sampling covariance matrix \code{V} is used to simulate the null distribution.
+#'
+#' Factor analysis mode (\code{fa = TRUE}) follows the logic of \code{psych::fa.parallel}, allowing users to inspect common factor solutions.
+#'
+#' @return A list containing observed eigenvalues, simulated eigenvalue distributions, and the suggested number of factors/components to extract.
+#'
+#' @references
+#' de la Fuente, J., & Tucker-Drob, E. M. (2023). *paLDSC: Parallel Analysis Based on Multivariate LDSC*. \cr
+#' \url{https://rpubs.com/JaFuente/paLDSC}
+#'
+#' Horn, J. L. (1965). A rationale and test for the number of factors in factor analysis. *Psychometrika*, 30(2), 179–185.
+#'
+#' @examples
+#' \dontrun{
+#' # Load LDSC output
+#' load("LDSC_output_paLDSC_example.RData")
+#'
+#' # Run paLDSC with 10 replications
+#' paLDSC(S = LDSCoutputfull$S_Stand, V = LDSCoutputfull$V_Stand, r = 10)
+#' }
+#'
+#' @seealso \link[psych]{fa.parallel}, \link[stats]{eigen}
+#'
+#' @export
 paLDSC <- function(S = S, V = V, r = NULL, p = NULL, save.pdf = F, diag = F, fa = F,
                    fm = NULL, nfactors = NULL) {
   list.of.packages <- c("ggplot2", "MASS","matrixStats","gdata","psych","matrixStats","egg","ggpubr","Matrix")

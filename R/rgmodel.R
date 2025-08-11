@@ -1,3 +1,38 @@
+#' Estimate a model-implied genetic covariance matrix
+#'
+#' `rgmodel` uses LDSC-derived output from Genomic SEM's multivariable LD Score regression (`ldsc()`)
+#' to estimate a genetic covariance structure using a user-specified structural equation model.
+#' The function takes an object from `ldsc()` and returns an expanded list including covariance matrices,
+#' intercepts, sample sizes, and model results.
+#'
+#' @param LDSCoutput A list output from `ldsc()` containing genetic covariance matrices and related data.
+#' @param model A lavaan-style syntax string or list of character vectors specifying the structural equation model.
+#' @param std.lv Logical; whether to standardize latent variances. Default is TRUE.
+#' @param estimation Logical; whether to estimate parameters. Default is TRUE.
+#' @param sub Optional character vector to subset phenotypes in the model.
+#' @param ... Additional arguments passed to `usermodel()`.
+#'
+#' @return A list containing an updated LDSC object with the following elements:
+#' \describe{
+#'   \item{S}{Observed genetic covariance matrix (on liability scale for case/control designs).}
+#'   \item{V}{Sampling covariance matrix in lavaan format.}
+#'   \item{I}{Matrix of LDSC intercepts and cross-trait (bivariate) intercepts.}
+#'   \item{N}{Sample sizes for heritabilities and \eqn{\sqrt{N_1 N_2}} for co-heritabilities.}
+#'   \item{m}{Number of SNPs used to construct the LD score.}
+#'   \item{V_Stand}{Sampling covariance matrix for standardized genetic covariances, if present in input.}
+#'   \item{S_Stand}{Standardized genetic covariance matrix, if present in input.}
+#'   \item{R}{Genetic correlation matrix.}
+#'   \item{V_R}{Sampling covariance matrix of the genetic correlation matrix.}
+#'   \item{modelResults}{Output list from `usermodel()` if estimation = TRUE, containing parameter estimates.}
+#' }
+#'
+#'
+#' @seealso \code{\link{usermodel}}, and the full tutorial at \url{https://rpubs.com/JaFuente/rgmodel}
+#'
+#' @export
+rgmodel <- function(LDSCoutput, model, std.lv = TRUE, estimation = TRUE, sub = NULL, ...) {
+  # your existing rgmodel function code here
+}
 rgmodel <- function(LDSCoutput) {
   # Load required packages
   list.of.packages <- c("data.table", "GenomicSEM","dplyr","stringr","stringr","simsalapar","gdata","Matrix","lavaan")
