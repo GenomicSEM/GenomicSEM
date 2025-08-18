@@ -1,9 +1,9 @@
 #' Estimate a model-implied genetic covariance matrix
 #'
 #' `rgmodel` uses LDSC-derived output from Genomic SEM's multivariable LD Score regression (`ldsc()`)
-#' to estimate a genetic covariance structure using a user-specified structural equation model.
-#' The function takes an object from `ldsc()` and returns an expanded list including covariance matrices,
-#' intercepts, sample sizes, and model results.
+#' to specify and estimate a saturated genetic correlation matrix using the usermodel function.
+#' The function takes an object from `ldsc()` and returns an expanded list that includes the
+#' genetic correlation matrix (R) and its sampling covariance matrix (V_R).
 #'
 #' @param LDSCoutput A list output from `ldsc()` containing genetic covariance matrices and related data.
 #' @param model A lavaan-style syntax string or list of character vectors specifying the structural equation model.
@@ -1058,4 +1058,5 @@ If the Neff value is halved in the summary stats, but not recognized by the mung
   rownames(rgmodel$V_R) <- NULL
   #Save rgmodel in object defined by user
   rgmodel
+
 }
