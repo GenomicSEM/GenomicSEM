@@ -36,9 +36,9 @@ A list containing an updated LDSC object with the following elements:
 }
 \description{
 `rgmodel` uses LDSC-derived output from Genomic SEM's multivariable LD Score regression (`ldsc()`)
-to specify and estimate a saturated genetic correlation matrix using the usermodel function.
-The function takes an object from `ldsc()` and returns an expanded list that includes the
-genetic correlation matrix (R) and its sampling covariance matrix (V_R).
+to estimate a genetic covariance structure using a user-specified structural equation model.
+The function takes an object from `ldsc()` and returns an expanded list including covariance matrices,
+intercepts, sample sizes, and model results.
 }
 \seealso{
 \code{\link{usermodel}}, and the full tutorial at \url{https://rpubs.com/JaFuente/rgmodel}
