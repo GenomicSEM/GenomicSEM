@@ -457,6 +457,12 @@ QTrait <- function(LDSCoutput,indicators,traits,
                    BetaF1Trait_significat,
                    nested_chi_FUM,nested_df_FUM,pchisq(nested_chi_FUM,nested_df_FUM,lower.tail = F),
                    Qsignificant_FUM,lsrmr_FUM,lSRMR_above_threshold_FUM,pct_reduction_lSRMR_FUM,SigHet_FUM,Unconstrained_paths)
+    
+    n_outliers <- length(unlist(strsplit(outlier_fum, split = ",")))
+    # Print warning if outliers exceed 50% of indicators
+    if (n_outliers > 0.50 * length(indicators)) {
+      warning("Majority of indicators identified as outlying; common factor model may be inadequate!")
+    }
 
    } else {
     #Store QTrait results
