@@ -487,7 +487,7 @@ if(SigHet=="No"){
                    nested_chi,nested_df,pchisq(nested_chi, nested_df, lower.tail = FALSE),Qsignificant,
                    lsrmr_cpm,lSRMR_above_threshold,SigHet,
                    "-","-","-","-",
-                   "-","-","-","-",
+                   "-","-","-","-","-",
                    "-","-","-","None")
     }
   
