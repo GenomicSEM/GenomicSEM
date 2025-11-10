@@ -145,6 +145,7 @@ QTrait <- function(LDSCoutput,indicators,traits,
       Qsignificant_FUM = numeric(),
       lSRMR_FUM = numeric(),
       lSRMR_above_threshold_FUM = numeric(),
+      reduction_lSRMR = numeric(),
       heterogeneity_FUM = character(),
       Unconstrained_paths = character(),
       stringsAsFactors = FALSE  # To prevent strings from being converted to factors
@@ -441,6 +442,8 @@ QTrait <- function(LDSCoutput,indicators,traits,
         outliers_fum = outlier_fum  
         Unconstrained_paths <- paste(outliers_fum, collapse = ",") 
 
+    pct_reduction_lSRMR_FUM <- paste0(round(((lsrmr_cpm - lsrmr_FUM) /  lsrmr_cpm) * 100,2),"%")
+
     #Store QTrait results
     Q_mat[i,] <- c(betaF1Trait[[i]][["CPM"]][[1]],
                    SEF1Trait[[i]][["CPM"]][[1]],
@@ -453,7 +456,13 @@ QTrait <- function(LDSCoutput,indicators,traits,
                    pvalbetaF1Trait[[i]][[length(betaF1Trait[[i]])]],
                    BetaF1Trait_significat,
                    nested_chi_FUM,nested_df_FUM,pchisq(nested_chi_FUM,nested_df_FUM,lower.tail = F),
-                   Qsignificant_FUM,lsrmr_FUM,lSRMR_above_threshold_FUM,SigHet_FUM,Unconstrained_paths)
+                   Qsignificant_FUM,lsrmr_FUM,lSRMR_above_threshold_FUM,pct_reduction_lSRMR_FUM,SigHet_FUM,Unconstrained_paths)
+    
+    n_outliers <- length(unlist(strsplit(outlier_fum, split = ",")))
+    # Print warning if outliers exceed 50% of indicators
+    if (n_outliers > 0.50 * length(indicators)) {
+      warning("Majority of indicators identified as outlying; common factor model may be inadequate!")
+    }
 
    } else {
     #Store QTrait results
@@ -464,7 +473,7 @@ QTrait <- function(LDSCoutput,indicators,traits,
                    nested_chi,nested_df,pchisq(nested_chi, nested_df, lower.tail = FALSE),Qsignificant,
                    lsrmr_cpm,lSRMR_above_threshold,SigHet,
                    "-","-","-","-",
-                   "-","-","-","-",
+                   "-","-","-","-","-",
                    "-","-","-","None")
    }  
 } 
@@ -478,7 +487,7 @@ if(SigHet=="No"){
                    nested_chi,nested_df,pchisq(nested_chi, nested_df, lower.tail = FALSE),Qsignificant,
                    lsrmr_cpm,lSRMR_above_threshold,SigHet,
                    "-","-","-","-",
-                   "-","-","-","-",
+                   "-","-","-","-","-",
                    "-","-","-","None")
     }
   
@@ -717,7 +726,7 @@ plot_list[[i]] <- my_graph
   
   # List of non-numeric columns to exclude from conversion
   non_numeric_columns <- c("rGF1Trait_significat_CPM", "Qsignificant_CPM", "lSRMR_above_threshold_CPM","heterogeneity_CPM",
-                         "rGF1Trait_significat_FUM", "Qsignificant_FUM", "heterogeneity_FUM", "lSRMR_above_threshold_FUM",
+                         "rGF1Trait_significat_FUM", "Qsignificant_FUM", "heterogeneity_FUM", "lSRMR_above_threshold_FUM","reduction_lSRMR",
                          "Unconstrained_paths")
   Q_mat <- Q_mat %>%
   mutate(across(-all_of(non_numeric_columns), ~ as.numeric(.)))
