@@ -1058,4 +1058,5 @@ If the Neff value is halved in the summary stats, but not recognized by the mung
   rownames(rgmodel$V_R) <- NULL
   #Save rgmodel in object defined by user
   rgmodel
+
 }
