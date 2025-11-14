@@ -83,7 +83,7 @@ sumstats <- function(files,ref,trait.names=NULL,se.logit,OLS=NULL,linprob=NULL,N
   
   if(!parallel){
     ##note that fread is not used here as we have observed different formatting for column headers causing mismatched columns
-    files <- lapply(files, read.table, header=T, quote="\"", fill=T, na.string=c(".", NA, "NA", ""))
+    files <- lapply(files, read.table, header=T, quote="\"", fill=T, colClasses = c(P = "character"), na.string=c(".", NA, "NA", ""))
     
     .LOG("All files loaded into R!",file=log.file)
     Output <- list()
