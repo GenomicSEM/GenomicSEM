@@ -795,14 +795,12 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       return(list(modelfit=modelfit,results=results))
     }
     
-    if(imp_cov == TRUE){
+    if(imp_cov){
       resid_cov<-list()
       resid_cov[[1]]<-implied[[1]]  
       resid_cov[[2]]<-implied2
       names(resid_cov) <- c("Model Implied Covariance Matrix", "Residual Covariance Matrix: Calculated as Observed Cov - Model Implied Cov")
-      return(list(modelfit=modelfit,results=results,resid_cov=resid_cov))
-    }
-    if(Q_Factor){
+      if(Q_Factor){
         return(list(modelfit=modelfit,results=results,resid_cov=resid_cov,Q_Factor=Q_Factor_results))
       }else{return(list(modelfit=modelfit,results=results,resid_cov=resid_cov))}
     }else{
@@ -811,4 +809,7 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       }else{return(list(modelfit=modelfit,results=results))
       }
     }
+    
   }
+  
+}
