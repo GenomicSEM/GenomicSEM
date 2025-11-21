@@ -1,4 +1,4 @@
-usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.lv=FALSE, imp_cov=FALSE,fix_resid=TRUE,toler=NULL){ 
+usermodel <-function(covstruc,estimation="DWLS", model = "", std.lv=FALSE, imp_cov=FALSE,fix_resid=TRUE,toler=NULL,Q_Factor=FALSE){ 
   time<-proc.time()
   ##determine if the model is likely being listed in quotes and print warning if so
   test<-c(str_detect(model, "~"),str_detect(model, "="),str_detect(model, "\\+"))
@@ -357,6 +357,91 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       implied2<-S_LD-implied[[1]]
       eta<-as.vector(lowerTriangle(implied2,diag=TRUE))
       Q<-t(eta)%*%P1%*%solve(Eig2)%*%t(P1)%*%eta
+      
+      if(Q_Factor){
+        
+        #factors with estimated correlations
+        lv<-as.matrix(lavInspect(Model1_Results,"cor.lv"))
+        lv[upper.tri(lv,diag=TRUE)] <- 0
+        
+        #pull out all factors for which correlations were estimated
+        indices <- data.frame(which(lv != 0, arr.ind = TRUE))
+        
+        #index the different combinations of factors
+        row_lv <- rownames(lv)[indices[, 1]]
+        col_lv <- colnames(lv)[indices[, 2]]
+        
+        #pull model output to subset indicators that define the factors
+        Model_Output_lv <- parTable(Model1_Results)
+        
+        Q_Factor_results<-data.frame(matrix(ncol = 5, nrow = nrow(indices)))
+        colnames( Q_Factor_results)<-c("Factor1","Factor2", "QFactor_chisq", "QFactor_df", "QFactor_p")
+        Q_Factor_results$Factor1<-row_lv
+        Q_Factor_results$Factor2<-col_lv
+        #calculate Q_factor for each factor combination
+        for(p in 1:nrow(indices)){
+          
+          #pull indicators for first factor
+          lv1_ind<-subset(Model_Output_lv, Model_Output_lv$lhs == row_lv[p] & op == "=~")
+          lv1_ind<-lv1_ind$rhs
+          
+          #pull out indicators for second factor
+          lv2_ind<-subset(Model_Output_lv, Model_Output_lv$lhs == col_lv[p] & op == "=~")
+          lv2_ind<-lv2_ind$rhs
+          
+          #subset the residual matrix to those indicators
+          implied_sub<-implied2[lv1_ind,lv2_ind]
+          
+          #vector of misfit for the cross-factor indicators
+          eta_sub<-as.vector(implied_sub)
+          
+          #get column names of V (split across two traits) to subset V to only the indicators being compared
+          split_names <- strsplit(colnames(V_LD), " ")
+          
+          # Find the column names that match both lists
+          matching_cols <- sapply(1:length(split_names), function(i) 
+            (split_names[[i]][1] %in% lv1_ind & split_names[[i]][2] %in% lv2_ind) |
+              (split_names[[i]][1] %in% lv2_ind & split_names[[i]][2] %in% lv1_ind))
+          
+          # Subset the V matrix
+          V_sub <- V_LD[matching_cols, matching_cols]
+          
+          #now order V based on implied_sub
+          if(length(lv1_ind) > 1 & length(lv2_ind) > 1){
+            y<-expand.grid(rownames(implied_sub),colnames(implied_sub))
+            y$V_Names1<-paste(y$Var1,y$Var2,sep=" ")
+            y$V_Names2<-paste(y$Var2,y$Var1,sep=" ")
+            y$V_Names<-""
+            
+            for(i in 1:nrow(y)){
+              y$V_Names[i]<-ifelse(y$V_Names1[i] %in% colnames(V_sub), y$V_Names1[i],y$V_Names2[i])
+            }
+            
+            V_positions <- match(y$V_Names, colnames(V_sub))
+            V_sub<-V_sub[V_positions,V_positions]
+            
+          }else{
+            positions<-match(names(implied_sub),colnames(S_LD))
+            implied_sub<-implied_sub[order(positions)]
+          }
+          
+          #calculate eigen values of subset V matrix
+          Eig_sub<-as.matrix(eigen(V_sub)$values)
+          Eig2_sub<-diag(length(Eig_sub))
+          diag(Eig2_sub)<-Eig_sub
+          
+          #Pull P1sub (the eigen vectors of subset V_eta)
+          P1_sub<-eigen(V_sub)$vectors
+          
+          #calculate misfit across the factors 
+          if((length(eta_sub)-1) > 0){
+            Q_Factor_results$QFactor_chisq[p]<-t(eta_sub)%*%P1_sub%*%solve(Eig2_sub,tol=toler)%*%t(P1_sub)%*%eta_sub
+          }else{Q_Factor_results$QFactor_chisq[p]<-NA}
+          Q_Factor_results$QFactor_df[p]<-length(eta_sub)-1
+        }
+        Q_Factor_results$QFactor_p<-pchisq( Q_Factor_results$QFactor_chisq, Q_Factor_results$QFactor_df,lower.tail=FALSE)
+        
+      }
       
       if(CFIcalc == TRUE){
         print("Calculating CFI")
@@ -717,6 +802,13 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       names(resid_cov) <- c("Model Implied Covariance Matrix", "Residual Covariance Matrix: Calculated as Observed Cov - Model Implied Cov")
       return(list(modelfit=modelfit,results=results,resid_cov=resid_cov))
     }
+    if(Q_Factor){
+        return(list(modelfit=modelfit,results=results,resid_cov=resid_cov,Q_Factor=Q_Factor_results))
+      }else{return(list(modelfit=modelfit,results=results,resid_cov=resid_cov))}
+    }else{
+      if(Q_Factor){
+        return(list(modelfit=modelfit,results=results,Q_Factor=Q_Factor_results))
+      }else{return(list(modelfit=modelfit,results=results))
+      }
+    }
   }
-  
-}
