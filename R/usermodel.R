@@ -791,10 +791,6 @@ usermodel <-function(covstruc,estimation="DWLS", model = "", CFIcalc=TRUE, std.l
       warning(paste0("The standardized model produced the following warning: ", emptystand$warning$message[1],sep=""))
     }  
     
-    if(imp_cov == FALSE){
-      return(list(modelfit=modelfit,results=results))
-    }
-    
     if(imp_cov){
       resid_cov<-list()
       resid_cov[[1]]<-implied[[1]]  
