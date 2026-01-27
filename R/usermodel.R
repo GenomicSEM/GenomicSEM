@@ -128,7 +128,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc = TRUE
         print(S_LD)
         print(W)
         empty <- .tryCatch.W.E(fitCFI <- sem(modelCFI, sample.cov = S_LD, 
-            estimator = "DWLS", WLS.V = W,NACOV=W, sample.nobs = 2, optim.dx.tol = 0.01, 
+            estimator = "DWLS", WLS.V = W,se="standard", sample.nobs = 2, optim.dx.tol = 0.01, 
             optim.force.converged = T, control = list(iter.max = 1)))
         orderCFI <- .rearrange(k = k, fit = fitCFI, names = rownames(S_LD))
         V_Reorder2 <- V_LD[orderCFI, orderCFI]
@@ -137,7 +137,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc = TRUE
         W_CFI <- solve(W_CFI)
     }
     empty3 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, 
-        estimator = "DWLS", WLS.V = W,NACOV=W, sample.nobs = 2, warn = FALSE, 
+        estimator = "DWLS", WLS.V = W,se="standard", sample.nobs = 2, warn = FALSE, 
         std.lv = std.lv, optim.dx.tol = 0.01, optim.force.converged = T, 
         control = list(iter.max = 1)))
     r <- nrow(lavInspect(ReorderModel, "cor.lv"))
@@ -153,7 +153,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc = TRUE
     if (estimation == "DWLS") {
         empty4 <- .tryCatch.W.E(Model1_Results <- sem(Model1, 
             sample.cov = S_LD, estimator = "DWLS", std.lv = std.lv, 
-            WLS.V = W_Reorder,NACOV=W_Reorder, sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T))
+            WLS.V = W_Reorder,se="standard", sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T))
     }
     if (estimation == "ML") {
         empty4 <- .tryCatch.W.E(Model1_Results <- sem(Model1, 
@@ -180,7 +180,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc = TRUE
             if (estimation == "DWLS") {
                 empty4 <- .tryCatch.W.E(Model1_Results <- sem(Model1, 
                   sample.cov = S_LD, estimator = "DWLS", std.lv = std.lv, 
-                  WLS.V = W_Reorder,NACOV=W_Reorder, sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T))
+                  WLS.V = W_Reorder,se="standard", sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T))
             }
             if (estimation == "ML") {
                 empty4 <- .tryCatch.W.E(Model1_Results <- sem(Model1, 
@@ -337,7 +337,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc = TRUE
                   if (estimation == "DWLS") {
                     testCFI2 <- .tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, 
                       sample.cov = S_LD, estimator = "DWLS", 
-                      WLS.V = W_CFI,NACOV=W_CFI, sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T))
+                      WLS.V = W_CFI,se="standard", sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T))
                   }
                   if (estimation == "ML") {
                     testCFI2 <- .tryCatch.W.E(ModelQ_Results_CFI <- sem(model = ModelQ_CFI, 
@@ -405,7 +405,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc = TRUE
             W_stand <- solve(V_stand2[order, order])
             if (estimation == "DWLS") {
                 emptystand <- .tryCatch.W.E(Fit_stand <- sem(Model1, 
-                  sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, NACOV=W_stand,
+                  sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, se="standard",
                   std.lv = std.lv, sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = F))
                 if (is.null(emptystand$warning$message[1])) {
                   emptystand$warning$message[1] <- 0
@@ -664,3 +664,4 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc = TRUE
         }
     }
 }
+
