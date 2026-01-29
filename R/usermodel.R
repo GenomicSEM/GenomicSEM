@@ -315,7 +315,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc = TRUE
                 print("Calculating CFI")
                 if (estimation == "DWLS") {
                   testCFI <- .tryCatch.W.E(fitCFI <- sem(modelCFI, 
-                    sample.cov = S_LD, estimator = "DWLS", WLS.V = W_CFI, 
+                    sample.cov = S_LD, se="standard",estimator = "DWLS", WLS.V = W_CFI, 
                     sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = F))
                 }
                 if (estimation == "ML") {
