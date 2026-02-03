@@ -52,12 +52,12 @@
   ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error.
   if(estimation == "DWLS"){
     if (!is.null(basemodel)) {
-      test <- .tryCatch.W.E(Model1_Results <- lavaan(sample.cov = S_Fullrun, WLS.V=W, ordered=NULL, sampling.weights = NULL,
+      test <- .tryCatch.W.E(Model1_Results <- lavaan(sample.cov = S_Fullrun, WLS.V=W, ordered=NULL, sampling.weights = NULL,se="standard",
                                                      sample.mean=NULL, sample.th=NULL, sample.nobs=2, group=NULL, cluster= NULL, constraints='', NACOV=NULL,
                                                      slotOptions=basemodel@Options, slotParTable=basemodel@ParTable, slotSampleStats=NULL,
                                                      slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
     } else {
-      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", WLS.V = W, sample.nobs = 2, optim.dx.tol = .01,std.lv=std.lv))
+      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS",se="standard", WLS.V = W, sample.nobs = 2, optim.dx.tol = .01,std.lv=std.lv))
     }
   } else if(estimation == "ML"){
     if (!is.null(basemodel)) {

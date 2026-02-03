@@ -203,4 +203,7 @@ userGWAS of **1.8M** SNPs from 12 summary statistics
 - Fixed issue that caused `infinite or missing values in x` errors when N(snps) < N(cores)
 
 **Code update 24.03.2022** `labeled 0.0.5c`
-- Fixed SNP order issue in commonfactorGWAS and userGWAS 
+- Fixed SNP order issue in commonfactorGWAS and userGWAS
+
+**Code update 03.02.2026** 
+- Fixed compatability with lavaan 6.21
