@@ -107,7 +107,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       W <- solve(V_LD,tol=toler)
       
       #estimate with incorrectly ordered V to get internal representation of V
-      testnoSNP <- .tryCatch.W.E(ReorderModelnoSNP <- sem(noSNPmodel, sample.cov = S_LD, estimator = "DWLS",
+      testnoSNP <- .tryCatch.W.E(ReorderModelnoSNP <- sem(noSNPmodel, sample.cov = S_LD, estimator = "DWLS",se="standard",
                                                           WLS.V = W, sample.nobs = 2, optim.dx.tol = .01, optim.force.converged=TRUE
                                                           ,control=list(iter.max=1),std.lv=std.lv))
       
@@ -126,7 +126,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       #estimate the measurement model
       if(estimation == "DWLS"){
         ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
-        emptynoSNP<-.tryCatch.W.E(Model1_Results <- sem(noSNPmodel, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = .01,std.lv=std.lv))
+        emptynoSNP<-.tryCatch.W.E(Model1_Results <- sem(noSNPmodel, sample.cov = S_LD, se="standard", estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = .01,std.lv=std.lv))
       }
       
       if(estimation == "ML"){
@@ -177,7 +177,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     
     W <- solve(V_full,tol=toler)
     
-    test2 <- .tryCatch.W.E(ReorderModel <- sem(model, sample.cov = S_Full, estimator = "DWLS",
+    test2 <- .tryCatch.W.E(ReorderModel <- sem(model, sample.cov = S_Full, estimator = "DWLS",se="standard",
                                                WLS.V = W, sample.nobs = 2, optim.dx.tol = .01, optim.force.converged=TRUE
                                                ,control=list(iter.max=1),std.lv=std.lv))
     
@@ -208,7 +208,7 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       }
       
       #estimate model with SNP effects and fixed measurement model to get ordering of V
-      test3 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",
+      test3 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",se="standard",
                                                  WLS.V = W, sample.nobs = 2, optim.dx.tol = .01, optim.force.converged=TRUE,
                                                  control=list(iter.max=1),std.lv=std.lv))
     }
