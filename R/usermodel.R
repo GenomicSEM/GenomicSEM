@@ -1,4 +1,4 @@
-usermodel <- function (covstruc, estimation = "DWLS", model = "", 
+usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc=TRUE,
                        std.lv = FALSE, imp_cov = FALSE, fix_resid = TRUE, toler = NULL) 
 {
   time <- proc.time()
