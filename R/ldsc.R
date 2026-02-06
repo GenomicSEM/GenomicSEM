@@ -39,9 +39,9 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   }
 
   if(!(is.null(trait.names))){
-    check_names<-str_detect(trait.names, "-")
+    check_names<-str_detect(trait.names, "[+\\-*/^]")
     if(any(check_names))
-      warning("Your trait names specified include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits using the trait.names argument.")
+      warning("Your trait names specified include mathematical arguments (e.g., +, -, *, /) that will be misread by lavaan. Please rename the traits using the trait.names argument.")
   }
 
   if(length(traits)==1)
