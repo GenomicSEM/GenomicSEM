@@ -207,6 +207,13 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
         }
       }
       
+      #rbind back in parameter constraints if relevant
+      for(p in 1:nrow(withSNP)){
+        if(withSNP$op[p] %in% c("==", "<", ">", "<=", ">=")){
+          Model1<-rbind(Model1,withSNP[p,])
+        }
+      }
+      
       #estimate model with SNP effects and fixed measurement model to get ordering of V
       test3 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_Full, estimator = "DWLS",se="standard",
                                                  WLS.V = W, sample.nobs = 2, optim.dx.tol = .01, optim.force.converged=TRUE,
