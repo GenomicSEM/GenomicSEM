@@ -103,42 +103,73 @@
     
     #code for computing SE of ghost parameter (e.g., indirect effect in mediation model)
     if(estimation == "DWLS"){
-      if(":=" %in% Model_Output$op & !(NA %in% Model_Output$se)){
-        #variance-covariance matrix of parameter estimates, q-by-q (this is the naive one)
-        vcov <- lavInspect(Model1_Results, "vcov")
+      if(":=" %in% Model_Output$op){
         
-        #internal lavaan representation of the model
+        # Use the sandwich-corrected sampling covariance matrix, Ohtt.
+        vcov_full <- Ohtt
+        
+        # Internal lavaan representation of the model.
         lavmodel <- Model1_Results@Model
-        
-        #lavaan representation of the indirect effect
         func <- lavmodel@def.function
         
-        #vector of parameter estimates
+        # Vector of free parameter estimates.
         x <- lav_model_get_parameters(lavmodel, type = "free")
         
-        #vector of indirect effect derivatives evaluated @ parameter estimates
+        # Jacobian of defined parameters wrt free parameters, restricting to the minimal subspace needed.
         Jac <- lav_func_jacobian_complex(func = func, x = x)
+        col_use <- which(colSums(abs(Jac)) > 0)
         
-        #replace vcov here with our corrected one. this gives parameter variance
-        var.ind <- Jac %*% vcov %*% t(Jac)
+        Jac_sub <- Jac[, col_use, drop = FALSE]
+        V_sub <- vcov_full[col_use, col_use, drop = FALSE]
         
-        #square root of parameter variance = parameter SE.
-        se.ghost <- sqrt(diag(var.ind))
+        # Guard against tiny numerical asymmetry.
+        V_sub <- 0.5 * (V_sub + t(V_sub))
         
-        #pull the ghost parameter point estiamte
+        # Apply a minimal local PSD regularization only if the Jacobian-relevant submatrix is problematic.
+        tol_eig <- 1e-10
+        do_psd <- FALSE
+        
+        # If non-finite values are present, replace them as a numerical fallback so that the PSD check/projection can proceed.
+        if (any(!is.finite(V_sub))) {
+          do_psd <- TRUE
+          V_sub[!is.finite(V_sub)] <- 0
+          V_sub <- 0.5 * (V_sub + t(V_sub))
+        }
+        
+        # Check whether the submatrix is sufficiently PSD up to a small numerical tolerance.
+        eig_vals <- tryCatch(
+          eigen(V_sub, symmetric = TRUE, only.values = TRUE)$values,
+          error = function(e) NA_real_
+        )
+        
+        if (any(!is.finite(eig_vals))) {
+          do_psd <- TRUE
+        } else if (min(eig_vals) < -tol_eig) {
+          do_psd <- TRUE
+        }
+        
+        # If needed, project to a PSD approximation by truncating negative eigenvalues at zero, then re-symmetrize.
+        if (do_psd) {
+          eig <- eigen(V_sub, symmetric = TRUE)
+          vals_adj <- pmax(eig$values, 0)
+          V_use <- eig$vectors %*% (vals_adj * t(eig$vectors))
+          V_use <- 0.5 * (V_use + t(V_use))
+        } else {
+          V_use <- V_sub
+        }
+        
+        # Delta-method variance for the user-defined parameters.
+        var.ind <- Jac_sub %*% V_use %*% t(Jac_sub)
+        vdiag <- diag(var.ind)
+        
+        # Preserve non-finite results as missing and clamp tiny negative diagonal values before taking square roots.
+        vdiag[!is.finite(vdiag)] <- NA_real_
+        vdiag[vdiag < 0] <- 0
+        se.ghost <- sqrt(vdiag)
+        
         ghost <- subset(Model_Output, Model_Output$op == ":=")[,c("lhs","op","rhs","free","label","est")]
-        
-        ##combine with delta method SE
         ghost2 <- cbind(ghost,se.ghost)
         colnames(ghost2)[7] <- "SE"
-      }else{
-        if(":=" %in% Model_Output$op & (NA %in% Model_Output$se)){
-          se.ghost <- rep(NA, sum(":=" %in% Model_Output$op))
-          warning("SE for ghost parameter not available for ML")
-          ghost <- subset(Model_Output, Model_Output$op == ":=")[,c("lhs","op","rhs","free","label","est")]
-          ghost2 <- cbind(ghost,se.ghost)
-          colnames(ghost2)[7] <- "SE"
-        }
       }
     }
     

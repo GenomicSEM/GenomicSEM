@@ -164,30 +164,73 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc=TRUE,
                             "")
     constraints2 <- duplicated(constraints)
     if (estimation == "DWLS" & ":=" %in% Model_Output$op) {
-      if (!(is.na(SE[1]))) {
-        vcov <- lavInspect(Model1_Results, "vcov")
-        lavmodel <- Model1_Results@Model
-        func <- lavmodel@def.function
-        x <- lav_model_get_parameters(lavmodel, type = "free")
-        Jac <- lav_func_jacobian_complex(func = func, 
-                                         x = x)
-        var.ind <- Jac %*% vcov %*% t(Jac)
-        se.ghost <- sqrt(diag(var.ind))
-        ghost <- subset(Model_Output, Model_Output$op == 
-                          ":=")[, c("lhs", "op", "rhs", "free", "label", 
-                                    "est")]
-        ghost2 <- cbind(ghost, se.ghost)
-        colnames(ghost2)[7] <- "SE"
+      # Use the sandwich-corrected sampling covariance matrix, Ohtt.
+      vcov_full <- Ohtt
+      
+      # Internal lavaan representation of the model.
+      lavmodel <- Model1_Results@Model
+      func <- lavmodel@def.function
+      
+      # Vector of free parameter estimates.
+      x <- lav_model_get_parameters(lavmodel, type = "free")
+      
+      # Jacobian of defined parameters wrt free parameters, restricting to the minimal subspace needed.
+      Jac <- lav_func_jacobian_complex(func = func, x = x)
+      col_use <- which(colSums(abs(Jac)) > 0)
+      
+      Jac_sub <- Jac[, col_use, drop = FALSE]
+      V_sub <- vcov_full[col_use, col_use, drop = FALSE]
+      
+      # Guard against tiny numerical asymmetry.
+      V_sub <- 0.5 * (V_sub + t(V_sub))
+      
+      # Apply a minimal local PSD regularization only if the Jacobian-relevant submatrix is problematic.
+      tol_eig <- 1e-10
+      do_psd <- FALSE
+      
+      # If non-finite values present, replace them as a numerical fallback so that the PSD check/projection can proceed.
+      if (any(!is.finite(V_sub))) {
+        do_psd <- TRUE
+        V_sub[!is.finite(V_sub)] <- 0
+        V_sub <- 0.5 * (V_sub + t(V_sub))
       }
-      else {
-        se.ghost <- rep("SE could not be computed", sum(":=" %in% 
-                                                          Model_Output$op))
-        ghost <- subset(Model_Output, Model_Output$op == 
-                          ":=")[, c("lhs", "op", "rhs", "free", "label", 
-                                    "est")]
-        ghost2 <- cbind(ghost, se.ghost)
-        colnames(ghost2)[7] <- "SE"
+      
+      # Check whether submatrix is sufficiently PSD up to a small numerical tolerance.
+      eig_vals <- tryCatch(
+        eigen(V_sub, symmetric = TRUE, only.values = TRUE)$values,
+        error = function(e) NA_real_
+      )
+      
+      if (any(!is.finite(eig_vals))) {
+        do_psd <- TRUE
+      } else if (min(eig_vals) < -tol_eig) {
+        do_psd <- TRUE
       }
+      
+      # If needed, project to a PSD approximation by truncating negative eigenvalues at zero, then re-symmetrize.
+      if (do_psd) {
+        eig <- eigen(V_sub, symmetric = TRUE)
+        vals_adj <- pmax(eig$values, 0)
+        V_use <- eig$vectors %*% (vals_adj * t(eig$vectors))
+        V_use <- 0.5 * (V_use + t(V_use))
+      } else {
+        V_use <- V_sub
+      }
+      
+      # Delta-method variance for the user-defined parameters.
+      var.ind <- Jac_sub %*% V_use %*% t(Jac_sub)
+      vdiag <- diag(var.ind)
+      
+      # Preserve non-finite results as missing and clamp tiny negative diagonal values before taking square roots.
+      vdiag[!is.finite(vdiag)] <- NA_real_
+      vdiag[vdiag < 0] <- 0
+      se.ghost <- sqrt(vdiag)
+      
+      ghost <- subset(Model_Output, Model_Output$op == 
+                        ":=")[, c("lhs", "op", "rhs", "free", "label", 
+                                  "est")]
+      ghost2 <- cbind(ghost, se.ghost)
+      colnames(ghost2)[7] <- "SE"
     }
     if (estimation == "ML" & ":=" %in% Model_Output$op) {
       print("SEs of ghost parameters are not available for ML estimation")
@@ -391,30 +434,73 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc=TRUE,
         SE_stand <- as.matrix(sqrt(diag(Ohtt_stand)))
         Model_Stand <- parTable(Fit_stand)
         if (estimation == "DWLS" & ":=" %in% Model_Stand$op) {
-          if (!(NA %in% Model_Stand$se)) {
-            vcov <- lavInspect(Fit_stand, "vcov")
-            lavmodel <- Fit_stand@Model
-            func <- lavmodel@def.function
-            x <- lav_model_get_parameters(lavmodel, type = "free")
-            Jac <- lav_func_jacobian_complex(func = func, 
-                                             x = x)
-            var.ind <- Jac %*% vcov %*% t(Jac)
-            se.ghost_stand <- sqrt(diag(var.ind))
-            ghost_stand <- subset(Model_Stand, Model_Stand$op == 
-                                    ":=")[, c("lhs", "op", "rhs", "free", "label", 
-                                              "est")]
-            ghost2_stand <- cbind(ghost_stand, se.ghost_stand)
-            colnames(ghost2_stand)[7] <- "SE_stand"
+          # Use the sandwich-corrected sampling covariance matrix, Ohtt_stand.
+          vcov_full <- Ohtt_stand
+          
+          # Internal lavaan representation of the model.
+          lavmodel <- Fit_stand@Model
+          func <- lavmodel@def.function
+          
+          # Vector of free parameter estimates.
+          x <- lav_model_get_parameters(lavmodel, type = "free")
+          
+          # Jacobian of defined parameters wrt free parameters, restricting to the minimal subspace needed.
+          Jac <- lav_func_jacobian_complex(func = func, x = x)
+          col_use <- which(colSums(abs(Jac)) > 0)
+          
+          Jac_sub <- Jac[, col_use, drop = FALSE]
+          V_sub <- vcov_full[col_use, col_use, drop = FALSE]
+          
+          # Guard against tiny numerical asymmetry.
+          V_sub <- 0.5 * (V_sub + t(V_sub))
+          
+          # Apply a minimal local PSD regularization only if the Jacobian-relevant submatrix is problematic.
+          tol_eig <- 1e-10
+          do_psd <- FALSE
+          
+          # If non-finite values are present, replace them as a numerical fallback so that the PSD check/projection can proceed.
+          if (any(!is.finite(V_sub))) {
+            do_psd <- TRUE
+            V_sub[!is.finite(V_sub)] <- 0
+            V_sub <- 0.5 * (V_sub + t(V_sub))
           }
-          else {
-            se.ghost_stand <- rep("SE could not be computed", 
-                                  sum(":=" %in% Model_Stand$op))
-            ghost_stand <- subset(Model_Stand, Model_Stand$op == 
-                                    ":=")[, c("lhs", "op", "rhs", "free", "label", 
-                                              "est")]
-            ghost2_stand <- cbind(ghost_stand, se.ghost_stand)
-            colnames(ghost2_stand)[7] <- "SE_stand"
+          
+          # Check whether the submatrix is sufficiently PSD up to a small numerical tolerance.
+          eig_vals <- tryCatch(
+            eigen(V_sub, symmetric = TRUE, only.values = TRUE)$values,
+            error = function(e) NA_real_
+          )
+          
+          if (any(!is.finite(eig_vals))) {
+            do_psd <- TRUE
+          } else if (min(eig_vals) < -tol_eig) {
+            do_psd <- TRUE
           }
+          
+          # If needed, project to a PSD approximation by truncating negative eigenvalues at zero, then re-symmetrize.
+          if (do_psd) {
+            eig <- eigen(V_sub, symmetric = TRUE)
+            vals_adj <- pmax(eig$values, 0)
+            V_use <- eig$vectors %*% (vals_adj * t(eig$vectors))
+            V_use <- 0.5 * (V_use + t(V_use))
+          } else {
+            V_use <- V_sub
+          }
+          
+          # Delta-method variance for the user-defined parameters.
+          var.ind <- Jac_sub %*% V_use %*% t(Jac_sub)
+          vdiag <- diag(var.ind)
+          
+          # Preserve non-finite results as missing and clamp tiny negative diagonal values before taking square roots.
+          vdiag[!is.finite(vdiag)] <- NA_real_
+          vdiag[vdiag < 0] <- 0
+          se.ghost_stand <- sqrt(vdiag)
+          
+          ghost_stand <- subset(Model_Stand, Model_Stand$op == 
+                                  ":=")[, c("lhs", "op", "rhs", "free", "label", 
+                                            "est")]
+          ghost2_stand <- cbind(ghost_stand, se.ghost_stand)
+          colnames(ghost2_stand)[7] <- "SE_stand"
         }
         if (estimation == "ML" & ":=" %in% Model_Stand$op) {
           print("SEs of ghost parameters are not available for ML estimation")
