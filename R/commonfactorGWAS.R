@@ -226,11 +226,27 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
     beta_SNP <- suppressWarnings(split(beta_SNP,1:int))
     SE_SNP   <- suppressWarnings(split(SE_SNP,1:int))
     varSNP   <- suppressWarnings(split(varSNP,1:int))
+
+    # Bind the worker helper before entering foreach so wrapper variants can
+    # swap only the backend implementation while reusing the same GWAS logic.
+    worker_main <- .commonfactorGWAS_main
+    worker_packages <- if (exists(".parallel_worker_packages", inherits = TRUE)) {
+      .parallel_worker_packages
+    } else {
+      "lavaan"
+    }
+    worker_packages_windows <- if (exists(".parallel_worker_packages_windows", inherits = TRUE)) {
+      .parallel_worker_packages_windows
+    } else {
+      c("lavaan", "gdata")
+    }
+
     ##foreach parallel processing that rbinds results across cores
     if (Operating != "Windows") {
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
-        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% {
-        .commonfactorGWAS_main(i,cores=int, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, basemodel=LavModel1)
+        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = worker_packages,
+                 .export = "worker_main") %dopar% {
+        worker_main(i,cores=int, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, basemodel=LavModel1)
       }
     } else {
       utilfuncs <- list()
@@ -238,9 +254,9 @@ output from ldsc (using covstruc = ...)  followed by the output from sumstats (u
       utilfuncs[[".get_V_SNP"]] <- .get_V_SNP
       utilfuncs[[".get_V_full"]] <- .get_V_full
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
-        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
-                 .export=c(".commonfactorGWAS_main")) %dopar% {
-        .commonfactorGWAS_main(i,cores=int, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, utilfuncs, basemodel=LavModel1)
+        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = worker_packages_windows,
+                 .export = "worker_main") %dopar% {
+        worker_main(i,cores=int, n, S_LD, V_LD, I_LD, beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], varSNPSE2, GC, coords, k, smooth_check,Model1, toler, estimation, order, utilfuncs, basemodel=LavModel1)
       }
     }
     colnames(results) <- colnamesresults

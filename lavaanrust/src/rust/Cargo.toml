@@ -1,0 +1,22 @@
+[package]
+name = 'lavaanrust'
+publish = false
+version = '0.1.0'
+edition = '2021'
+rust-version = '1.65'
+
+[lib]
+crate-type = [ 'rlib', 'staticlib' ]
+name = 'lavaanrust'
+
+[[bin]]
+name = 'document'
+path = 'document.rs'
+
+[dependencies]
+extendr-api = '0.9.0'
+nalgebra = '0.34'
+
+[profile.release]
+lto = true
+codegen-units = 1

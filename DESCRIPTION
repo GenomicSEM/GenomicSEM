@@ -8,5 +8,12 @@ Description: Later
 License: GPL-3.0
 Encoding: UTF-8
 LazyData: true
-Imports: plyr,e1071,readr,gdata,lavaan,doParallel,parallel,foreach,data.table,stringr,splitstackshape,Matrix,R.utils,dplyr,iterators,Rcpp,utils,mgsub
+Imports: plyr,e1071,readr,gdata,lavaan,lavaanrust,doParallel,parallel,foreach,data.table,stringr,splitstackshape,Matrix,R.utils,dplyr,iterators,Rcpp,utils,mgsub
+Suggests:
+    testthat (>= 3.0.0)
 RoxygenNote: 7.2.3
+Config/rextendr/version: 0.5.0
+Config/testthat/edition: 3
+SystemRequirements: Cargo (Rust's package manager), rustc >= 1.65.0, xz
+Depends: 
+    R (>= 4.2)

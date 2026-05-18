@@ -315,6 +315,20 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     beta_SNP <- suppressWarnings(split(beta_SNP,1:int))
     SE_SNP <- suppressWarnings(split(SE_SNP,1:int))
     varSNP <- suppressWarnings(split(varSNP,1:int))
+
+    # Bind the worker helper before entering foreach so wrapper variants can
+    # swap only the backend implementation while reusing the same GWAS logic.
+    worker_main <- .userGWAS_main
+    worker_packages <- if (exists(".parallel_worker_packages", inherits = TRUE)) {
+      .parallel_worker_packages
+    } else {
+      "lavaan"
+    }
+    worker_packages_windows <- if (exists(".parallel_worker_packages_windows", inherits = TRUE)) {
+      .parallel_worker_packages_windows
+    } else {
+      c("lavaan", "gdata")
+    }
     
     if(TWAS){
       print("Starting TWAS Estimation")
@@ -323,8 +337,9 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
     }
     if (Operating != "Windows") {
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
-        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = "lavaan") %dopar% 
-        .userGWAS_main(i, int, n_phenotypes, n, I_LD, V_LD, S_LD,
+        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = worker_packages,
+                .export = "worker_main") %dopar% 
+        worker_main(i, int, n_phenotypes, n, I_LD, V_LD, S_LD,
                        std.lv, varSNPSE2, order, SNPs[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC,
                        coords, smooth_check, TWAS, printwarn, toler, estimation, sub, Model1, df, npar, basemodel=LavModel1,Q_SNP=Q_SNP,model=model)
     } else {
@@ -335,9 +350,9 @@ userGWAS <- function(covstruc=NULL, SNPs=NULL, estimation="DWLS", model="", prin
       utilfuncs[[".get_Z_pre"]] <- .get_Z_pre
       utilfuncs[[".get_V_full"]] <- .get_V_full
       results <- foreach(n = icount(int), .combine = 'rbind') %:%
-        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = c("lavaan", "gdata"),
-                 .export=c(".userGWAS_main")) %dopar% {
-                   .userGWAS_main(i, int, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order,
+        foreach (i=1:nrow(beta_SNP[[n]]), .combine='rbind', .packages = worker_packages_windows,
+                 .export = "worker_main") %dopar% {
+                   worker_main(i, int, n_phenotypes, n, I_LD, V_LD, S_LD, std.lv, varSNPSE2, order,
                                   SNPs[[n]], beta_SNP[[n]], SE_SNP[[n]], varSNP[[n]], GC, coords,
                                   smooth_check, TWAS, printwarn, toler, estimation, sub, Model1,
                                   df, npar, utilfuncs, basemodel=LavModel1,Q_SNP=Q_SNP,model=model)

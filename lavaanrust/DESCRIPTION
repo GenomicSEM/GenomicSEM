@@ -1,0 +1,21 @@
+Package: lavaanrust
+Type: Package
+Title: Rust Backends for the GenomicSEM lavaan Compatibility Experiment
+Version: 0.0.0.9000
+Authors@R: person("Andrew", "Ho", role = c("aut", "cre"), email = "ajh@example.com")
+Author: Andrew Ho
+Maintainer: Andrew Ho <ajh@example.com>
+Description: Experimental Rust-backed implementations of the narrow lavaan
+    surface used by GenomicSEM. This package is intentionally incomplete and is
+    meant to support side-by-side backend experiments, not to act as a general
+    replacement for lavaan.
+License: GPL-3
+Encoding: UTF-8
+SystemRequirements: Cargo (Rust's package manager), rustc
+Imports:
+    methods
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
