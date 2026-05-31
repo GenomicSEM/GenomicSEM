@@ -8,5 +8,6 @@ Description: Later
 License: GPL-3.0
 Encoding: UTF-8
 LazyData: true
-Imports: plyr,e1071,readr,gdata,lavaan,doParallel,parallel,foreach,data.table,stringr,splitstackshape,Matrix,R.utils,dplyr,iterators,Rcpp,utils,mgsub
+Imports: plyr,e1071,readr,gdata,lavaan (== 0.6-21.0001),doParallel,parallel,foreach,data.table,stringr,splitstackshape,Matrix,R.utils,dplyr,iterators,Rcpp,utils,mgsub
 RoxygenNote: 7.2.3
+Remotes: github::ykhan1999/lavaan
