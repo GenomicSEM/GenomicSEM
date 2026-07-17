@@ -98,11 +98,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   
   ##run the model
   if(std.lv == FALSE){
-    empty2<-.tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = .01,optim.force.converged=TRUE))
+    empty2<-.tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS",se="standard", WLS.V = W, sample.nobs = 2,warn=FALSE, optim.dx.tol = .01,optim.force.converged=TRUE))
   }
   
   if(std.lv == TRUE){
-    empty2<-.tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = .01,optim.force.converged=TRUE))
+    empty2<-.tryCatch.W.E(ReorderModel1 <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", se="standard", WLS.V = W, sample.nobs = 2,warn=FALSE,std.lv=TRUE, optim.dx.tol = .01,optim.force.converged=TRUE))
   }
   
   if(class(empty2$value)[1] != "lavaan"){
@@ -126,11 +126,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
   check<-1
   ##run the model. save failed runs and run model. warning and error functions prevent loop from breaking if there is an error. 
   if(std.lv == FALSE){
-    empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = .01))
+    empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS",se="standard", WLS.V = W_Reorder, sample.nobs = 2,optim.dx.tol = .01))
   }
   
   if(std.lv == TRUE){
-    empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = .01))
+    empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS",se="standard", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = .01))
   }
   
   empty4$warning$message[1]<-ifelse(is.null(empty4$warning$message), empty4$warning$message[1]<-0, empty4$warning$message[1])
@@ -226,11 +226,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     Model1<-write.Model1(k)
     
     if(std.lv == FALSE){
-      empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = .01))
+      empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS",se="standard", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = .01))
     }
     
     if(std.lv == TRUE){
-      empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = .01))
+      empty4<-.tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_LD, estimator = "DWLS",se="standard", WLS.V = W_Reorder, sample.nobs = 2,std.lv=TRUE, optim.dx.tol = .01))
     }
   }
   
@@ -375,11 +375,11 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
     print("Confirming fixed model reproduces estimate from freely estimated model for baseline annotation.")
     
     if(std.lv == FALSE){
-      testQ<-.tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, optim.dx.tol = .01))
+      testQ<-.tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, se="standard",estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, optim.dx.tol = .01))
     }
     
     if(std.lv == TRUE){
-      testQ<-.tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, std.lv=TRUE, optim.dx.tol = .01))
+      testQ<-.tryCatch.W.E(ModelQ_Results_WLS <- sem(model = ModelQ_WLS, sample.cov = S_LD, se="standard", estimator = "DWLS", WLS.V = W_Reorder, sample.nobs=2, std.lv=TRUE, optim.dx.tol = .01))
     }
     
     test1<-subset(ModelQ_WLS, ModelQ_WLS$free != 0)
@@ -471,7 +471,7 @@ enrich <-function(s_covstruc, model = "",params,fix= "regressions",std.lv=FALSE,
           diag(V_Reorderb)<-diag(V_Reorder)
           W_Reorder<-solve(V_Reorderb)
           
-          part_warn<-.tryCatch.W.E(ModelPart_Results <- sem(ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = .01))
+          part_warn<-.tryCatch.W.E(ModelPart_Results <- sem(ModelQ_WLS, sample.cov = S_LD, estimator = "DWLS",se="standard", WLS.V = W_Reorder, sample.nobs = 2, optim.dx.tol = .01))
           
           part_warn$warning$message[1]<-ifelse(is.null(part_warn$warning$message), part_warn$warning$message[1]<-0, part_warn$warning$message[1])
           

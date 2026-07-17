@@ -6,8 +6,8 @@ Function to obtain model estimates for a user-specified model across SNPs.
 }
 \usage{
 userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",printwarn=TRUE,sub=FALSE,cores=NULL,toler=FALSE,SNPSE=FALSE,
-         parallel=TRUE,GC="standard",MPI=FALSE,smooth_check=FALSE,TWAS=FALSE,std.lv=FALSE,fix_measurement=TRUE, \dots)
-
+         parallel=TRUE,GC="standard",MPI=FALSE,smooth_check=FALSE,TWAS=FALSE,std.lv=FALSE,fix_measurement=TRUE,
+         Q_SNP=FALSE,analytic=FALSE,batch_size=100000,usermod=NULL, \dots)
 }
 \arguments{
    \item{covstruc}{Output from Genomic SEM `ldsc` function}
@@ -26,15 +26,19 @@ userGWAS(covstruc=NULL,SNPs=NULL,estimation="DWLS",model="",printwarn=TRUE,sub=F
    \item{TWAS}{Whether the function is being used to estimate a multivariate TWAS using read_fusion output for the SNPs argument.} 
    \item{std.lv}{Optional argument to denote whether all latent variables are standardized using unit variance identification (default = FALSE)}
    \item{fix_measurement}{Optional argument to denote whether the measurement model should be fixed across all SNPs (default = TRUE)}
+   \item{Q_SNP}{Logical. Whether to compute the Q_SNP heterogeneity statistic for each SNP. Default is \code{FALSE}.}
+   \item{analytic}{Logical. If \code{TRUE}, routes to a fast analytic GLS estimator instead of the default iterative lavaan-based approach. This is substantially faster for large GWAS datasets and returns factor-specific betas, sandwich-corrected SEs, Z-statistics, p-values, and an omnibus Q statistic per SNP. The \code{sub}, \code{cores}, \code{parallel}, and \code{MPI} arguments are ignored when \code{analytic = TRUE}. Default is \code{FALSE}.}
+   \item{batch_size}{Integer. Number of SNPs processed per batch when \code{analytic = TRUE}. Larger values increase memory use but reduce overhead. Default is \code{100000}.}
+   \item{usermod}{Optional. A pre-fitted no-SNP model results data frame (the \code{$results} element from a \code{usermodel()} call). When supplied and \code{analytic = TRUE}, the function skips fitting the no-SNP model internally and uses these parameter estimates directly to extract factor loadings. Default is \code{NULL}.}
 }
 
 \value{
   The function outputs results from the multivariate GWAS. If the sub argument is used, it will output as many list objects as there are sub objects requested. 
-  If the sub argument is FALSE (as is the package default), the function will ouput as many list objects as there are SNPs.
+  If the sub argument is FALSE (as is the package default), the function will output as many list objects as there are SNPs.
+  When \code{analytic = TRUE}, the function returns a single data frame with one row per SNP containing factor-specific betas, standard errors, Z-statistics, p-values, and omnibus Q statistics.
 }
 
-
-
 \examples{
+
 
 }

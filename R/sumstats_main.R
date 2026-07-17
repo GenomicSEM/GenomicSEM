@@ -75,9 +75,10 @@
   .LOG((b-nrow(file)), " rows were removed from the ", filename, " summary statistics file as the rsIDs for these SNPs were not present in the reference file.",file=log.file)
   
   ##remove any rows with missing p-values
+  P_numeric <- suppressWarnings(as.numeric(file$P))
   b<-nrow(file)
   if("P" %in% colnames(file)) {
-    file<-subset(file, !(is.na(file$P)))
+    file<-subset(file, !(is.na(P_numeric)))
   }
   if(b-nrow(file) > 0) .LOG(b-nrow(file), "rows were removed from the ", filename, " summary statistics file due to missing values in the P-value column",file=log.file)
   
@@ -113,8 +114,25 @@
   }
   if(b-nrow(file) > 0) .LOG(b-nrow(file), "rows were removed from the", filename, "summary statistics file due to effect values estimated at exactly 0 as this causes problems for matrix inversion necessary for later Genomic SEM analyses.",file=log.file)
   
-  file$Z <- sign(file$effect) * sqrt(qchisq(file$P,1,lower=F))
+  # identify rows with very small p-values that would underflow
+  P_numeric <- suppressWarnings(as.numeric(file$P))
+  is_tiny <- is.na(P_numeric) | P_numeric < 1e-307
+
+  # initialise Z
+  Z <- rep(NA_real_, length(file$P))
+  Z[!is_tiny] <- sign(file$effect[!is_tiny]) * sqrt(qchisq(P_numeric[!is_tiny], 1, lower.tail = FALSE))
   
+  # for tiny p-values, use Rmpfr::mpfr and approximation. for tiny p values approximation is almost perfect.
+  if (any(is_tiny)) {
+      .LOG(sum(is_tiny), " p-values were detected to be extremely small (< 1e-300) and handled with high-precision approximation.", file = log.file)
+      P_subset <- file$P[is_tiny]
+      effect_subset <- file$effect[is_tiny]
+      stopifnot(length(P_subset) == length(effect_subset))
+      P_mpfr <- Rmpfr::mpfr(P_subset, precBits = 2000)
+      Z[is_tiny] <- as.numeric(sign(effect_subset) * sqrt(-2 * log(P_mpfr)))
+  }
+  file$Z <- Z
+
   if(OLS & is.character(beta)){
     .LOG("User provided arguments indicate that a GWAS of a continuous trait with already standardized betas is being provided for: ", filename,file=log.file)
   }
@@ -150,7 +168,9 @@
   if(b-nrow(file) > 0) .LOG(b-nrow(file), " row(s) were removed from the ", filename, " summary statistics file due to the other allele (A2) column not matching A1 or A2 in the reference file.",file=log.file)
   
   #Check that p-value column does not contain an excess of 1s/0s
-  if((sum(file$P > 1) + sum(file$P < 0)) > 100){
+  P_numeric <- suppressWarnings(as.numeric(file$P))
+
+  if((sum(P_numeric > 1) + sum(P_numeric < 0)) > 100){
     .LOG("In excess of 100 SNPs have P val above 1 or below 0. The P column may be mislabled!",file=log.file)
   }
   
@@ -195,7 +215,7 @@
     output<-na.omit(output)
     colnames(output) <- c("SNP",name.beta,name.se)
   }
-  
+   
   .LOG(nrow(output), " SNPs are left in the summary statistics file ", filename, " after QC and merging with the reference file.",file=log.file)
   
   if(mean(abs(output[,2]/output[,3])) > 5){

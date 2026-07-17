@@ -1,3 +1,65 @@
+#' Run the QTrait function to test trait-specific heterogeneity in genetic correlation models
+#'
+#' \code{QTrait} tests whether the genetic association between a latent factor (defined by a set of indicator traits) and an external trait can be fully explained by the common factor, or whether specific indicator traits show heterogeneity in this relationship.
+#'
+#' @param LDSCoutput An object from the \code{ldsc()} function containing multivariate LDSC output.
+#' @param indicators A character vector specifying the names of indicator traits that define the latent factor. Must match trait names in \code{LDSCoutput}.
+#' @param traits A character vector of external traits for which QTrait statistics and genetic correlations will be estimated. Must match trait names in \code{LDSCoutput}.
+#' @param mresid A proportion (default = 0.25) of the RMS genetic correlation used to flag outlier indicator traits.
+#' @param mresidthreshold An absolute threshold (default = 0.10) for residual genetic correlation to define meaningful outliers.
+#' @param lsrmr Proportion (default = 0.25) used to define meaningful lSRMR based on the RMS genetic correlation.
+#' @param lsrmrthreshold Absolute threshold (default = 0.10) to define meaningful lSRMR.
+#' @param save.plots Logical. If TRUE, saves scatterplots of trait–indicator associations against loadings. Default is TRUE.
+#' @param stdout Logical. If TRUE, plots use standardized output (correlations vs. standardized loadings). If FALSE, uses covariances vs. unstandardized loadings. Default is TRUE.
+#'
+#' @return A data frame summarizing genetic correlations between traits and the latent factor, QTrait statistics for both common and follow-up models, heterogeneity flags, lSRMR values, and identified outlier indicators.
+#'
+#' @details
+#' \strong{Common Pathway Model Output} includes:
+#' \itemize{
+#'   \item \code{rGF1Trait_CPM}, \code{SErGF1Trait_CPM}, \code{pvalrGF1Trait_CPM}: Genetic correlation, standard error, and p-value.
+#'   \item \code{QTrait_CPM}, \code{df_CPM}, \code{p_value_CPM}, \code{Qsignificant_CPM}: Q statistic, degrees of freedom, and p-value.
+#'   \item \code{lSRMR_CPM}, \code{lSRMR_above_threshold_CPM}, \code{heterogeneity_CPM}: Local SRMR and heterogeneity status.
+#' }
+#'
+#' \strong{Follow-Up Model Output} includes analogous statistics when outlier indicators are freed:
+#' \itemize{
+#'   \item \code{rGF1Trait_FUM}, \code{SErGF1Trait_FUM}, \code{pvalrGF1Trait_FUM}
+#'   \item \code{QTrait_FUM}, \code{df_FUM}, \code{p_value_FUM}, \code{Qsignificant_FUM}
+#'   \item \code{lSRMR_FUM}, \code{lSRMR_above_threshold_FUM}, \code{heterogeneity_FUM}
+#'   \item \code{Unconstrained_paths}: Names of outlier indicator traits.
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' # Load example LDSC output
+#' load("LDSC_G_factor_QTRAIT_tutorial.RData")
+#'
+#' # Define indicators of genetic g
+#' indicators <- c("Matrix", "Memory", "RT", "Symbol_Digit", "TMTB", "Tower", "VNR")
+#'
+#' # Define external correlate
+#' traits <- "EA"
+#'
+#' # Run QTrait
+#' qtrait_out <- QTrait(
+#'   LDSCoutput = LDSC_G_factor_QTRAIT_tutorial,
+#'   indicators = indicators,
+#'   traits = traits,
+#'   mresid = 0.25,
+#'   mresidthreshold = 0.10,
+#'   lsrmr = 0.25,
+#'   lsrmrthreshold = 0.10,
+#'   save.plots = TRUE,
+#'   stdout = TRUE
+#' )
+#'
+#' print(qtrait_out)
+#' }
+#'
+#' @author Javier de la Fuente
+#' @references \url{https://rpubs.com/JaFuente/QTrait}
+#' @export
 QTrait <- function(LDSCoutput,indicators,traits,
                    mresid=.25,mresidthreshold=.10,
                    lsrmr=.25,lsrmrthreshold = .10,
@@ -83,6 +145,7 @@ QTrait <- function(LDSCoutput,indicators,traits,
       Qsignificant_FUM = numeric(),
       lSRMR_FUM = numeric(),
       lSRMR_above_threshold_FUM = numeric(),
+      reduction_lSRMR = numeric(),
       heterogeneity_FUM = character(),
       Unconstrained_paths = character(),
       stringsAsFactors = FALSE  # To prevent strings from being converted to factors
@@ -379,6 +442,8 @@ QTrait <- function(LDSCoutput,indicators,traits,
         outliers_fum = outlier_fum  
         Unconstrained_paths <- paste(outliers_fum, collapse = ",") 
 
+    pct_reduction_lSRMR_FUM <- paste0(round(((lsrmr_cpm - lsrmr_FUM) /  lsrmr_cpm) * 100,2),"%")
+
     #Store QTrait results
     Q_mat[i,] <- c(betaF1Trait[[i]][["CPM"]][[1]],
                    SEF1Trait[[i]][["CPM"]][[1]],
@@ -391,7 +456,13 @@ QTrait <- function(LDSCoutput,indicators,traits,
                    pvalbetaF1Trait[[i]][[length(betaF1Trait[[i]])]],
                    BetaF1Trait_significat,
                    nested_chi_FUM,nested_df_FUM,pchisq(nested_chi_FUM,nested_df_FUM,lower.tail = F),
-                   Qsignificant_FUM,lsrmr_FUM,lSRMR_above_threshold_FUM,SigHet_FUM,Unconstrained_paths)
+                   Qsignificant_FUM,lsrmr_FUM,lSRMR_above_threshold_FUM,pct_reduction_lSRMR_FUM,SigHet_FUM,Unconstrained_paths)
+    
+    n_outliers <- length(unlist(strsplit(outlier_fum, split = ",")))
+    # Print warning if outliers exceed 50% of indicators
+    if (n_outliers > 0.50 * length(indicators)) {
+      warning("Majority of indicators identified as outlying; common factor model may be inadequate!")
+    }
 
    } else {
     #Store QTrait results
@@ -402,7 +473,7 @@ QTrait <- function(LDSCoutput,indicators,traits,
                    nested_chi,nested_df,pchisq(nested_chi, nested_df, lower.tail = FALSE),Qsignificant,
                    lsrmr_cpm,lSRMR_above_threshold,SigHet,
                    "-","-","-","-",
-                   "-","-","-","-",
+                   "-","-","-","-","-",
                    "-","-","-","None")
    }  
 } 
@@ -416,7 +487,7 @@ if(SigHet=="No"){
                    nested_chi,nested_df,pchisq(nested_chi, nested_df, lower.tail = FALSE),Qsignificant,
                    lsrmr_cpm,lSRMR_above_threshold,SigHet,
                    "-","-","-","-",
-                   "-","-","-","-",
+                   "-","-","-","-","-",
                    "-","-","-","None")
     }
   
@@ -655,7 +726,7 @@ plot_list[[i]] <- my_graph
   
   # List of non-numeric columns to exclude from conversion
   non_numeric_columns <- c("rGF1Trait_significat_CPM", "Qsignificant_CPM", "lSRMR_above_threshold_CPM","heterogeneity_CPM",
-                         "rGF1Trait_significat_FUM", "Qsignificant_FUM", "heterogeneity_FUM", "lSRMR_above_threshold_FUM",
+                         "rGF1Trait_significat_FUM", "Qsignificant_FUM", "heterogeneity_FUM", "lSRMR_above_threshold_FUM","reduction_lSRMR",
                          "Unconstrained_paths")
   Q_mat <- Q_mat %>%
   mutate(across(-all_of(non_numeric_columns), ~ as.numeric(.)))

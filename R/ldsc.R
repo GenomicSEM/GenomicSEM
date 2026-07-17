@@ -15,9 +15,13 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
     log.file <- file(paste0(log2, "_ldsc.log"),open="wt")
   }else{log.file<-file(paste0(ldsc.log, "_ldsc.log"),open="wt")}
   
+  if(!isFALSE(select) && !identical(select, "ODD") && !identical(select, "EVEN") && !is.numeric(select)){
+    stop("select must be one of the following values: FALSE, 'ODD', 'EVEN', or a numeric vector of chromosome numbers.")
+  }
+  
   .LOG("Multivariate ld-score regression of ", length(traits), " traits ", "(", paste(traits, collapse = " "), ")", " began at: ", begin.time, file=log.file)
   
-  if(select == "ODD" | select == "EVEN"){
+  if(identical(select, "ODD") || identical(select, "EVEN")){
     odd<-seq(1,chr,2)
     even<-seq(2,chr,2)
   }
@@ -39,9 +43,9 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   }
 
   if(!(is.null(trait.names))){
-    check_names<-str_detect(trait.names, "-")
+    check_names<-str_detect(trait.names, "[+\\-*/^]")
     if(any(check_names))
-      warning("Your trait names specified include mathematical arguments (e.g., + or -) that will be misread by lavaan. Please rename the traits using the trait.names argument.")
+      warning("Your trait names specified include mathematical arguments (e.g., +, -, *, /) that will be misread by lavaan. Please rename the traits using the trait.names argument.")
   }
 
   if(length(traits)==1)
@@ -59,7 +63,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   #########  READ LD SCORES:
   .LOG("Reading in LD scores", file=log.file)
 
-  if(select == FALSE){
+  if(isFALSE(select)){
   x <- do.call("rbind", lapply(1:chr, function(i) {
     suppressMessages(read_delim(
       file.path(ld, paste0(i, ".l2.ldscore.gz")),
@@ -67,7 +71,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
   }))
   }
 
-  if(select == "ODD"){
+  if(identical(select,"ODD")){
     x <- do.call("rbind", lapply(odd, function(i) {
       suppressMessages(read_delim(
         file.path(ld, paste0(i, ".l2.ldscore.gz")),
@@ -75,7 +79,7 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
     }))
   }
 
-  if(select == "EVEN"){
+  if(identical(select,"EVEN")){
     x <- do.call("rbind", lapply(even, function(i) {
       suppressMessages(read_delim(
         file.path(ld, paste0(i, ".l2.ldscore.gz")),
@@ -98,21 +102,21 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
 
   ######### READ weights:
   if(sep_weights){
-    if(select == FALSE){
+    if(isFALSE(select)){
     w <- do.call("rbind", lapply(1:chr, function(i) {
       suppressMessages(read_delim(
         file.path(wld, paste0(i, ".l2.ldscore.gz")),
         delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE))
     }))
     }
-    if(select == "EVEN"){
+    if(identical(select, "EVEN")){
       w <- do.call("rbind", lapply(even, function(i) {
         suppressMessages(read_delim(
           file.path(wld, paste0(i, ".l2.ldscore.gz")),
           delim = "\t", escape_double = FALSE, trim_ws = TRUE, progress = FALSE))
       }))
     }
-    if(select == "ODD"){
+    if(identical(select, "ODD")){
       w <- do.call("rbind", lapply(odd, function(i) {
         suppressMessages(read_delim(
           file.path(wld, paste0(i, ".l2.ldscore.gz")),
@@ -135,19 +139,19 @@ ldsc <- function(traits, sample.prev, population.prev, ld, wld,
 
   ### READ M
 
-  if(select == FALSE){
+  if(isFALSE(select)){
   m <- do.call("rbind", lapply(1:chr, function(i) {
     suppressMessages(read_csv(file.path(ld, paste0(i, ".l2.M_5_50")), col_names = FALSE))
   }))
   }
 
-  if(select == "EVEN"){
+  if(identical(select, "EVEN")){
     m <- do.call("rbind", lapply(even, function(i) {
       suppressMessages(read_csv(file.path(ld, paste0(i, ".l2.M_5_50")), col_names = FALSE))
     }))
   }
 
-  if(select == "ODD"){
+  if(identical(select, "ODD")){
     m <- do.call("rbind", lapply(odd, function(i) {
       suppressMessages(read_csv(file.path(ld, paste0(i, ".l2.M_5_50")), col_names = FALSE))
     }))
