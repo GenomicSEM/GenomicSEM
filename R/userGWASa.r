@@ -76,6 +76,12 @@
   # Helper function: V' M V
   VMV <- function(V1, M, V2) { V1 %*% M %*% V2 }
 
+  # Helper function: correlation matrix -> covariance matrix, given SDs
+  cor2cov <- function(R, sds) {
+    D <- diag(sds, nrow = length(sds))
+    D %*% R %*% D
+  }
+
   start_time <- Sys.time()
   cat("userGWASa started at:", format(start_time, "%Y-%m-%d %H:%M:%S"), "\n")
 
@@ -176,7 +182,7 @@
 
     # V_SNP list and its diagonalised inverse
     V_SNP_list <- apply(SEs, 1, function(se) {
-    lavaan::lav_cor2cov(R = as.matrix(R_SNP), sds = as.numeric(se))
+    cor2cov(R = as.matrix(R_SNP), sds = as.numeric(se))
     }, simplify = FALSE)
 
     V_d_list_inv <- lapply(V_SNP_list, function(V_SNP) diag(1 / diag(V_SNP)))
