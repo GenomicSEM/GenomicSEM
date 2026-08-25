@@ -115,6 +115,20 @@
     nosnpmod <- usermod
   }
 
+  if (is.null(nosnpmod) || !is.data.frame(nosnpmod) || nrow(nosnpmod) == 0 ||
+      !all(c("lhs", "op", "rhs", "Unstand_Est") %in% colnames(nosnpmod))) {
+    diagnostic <- if (exists("captured_output")) paste(captured_output, collapse = "\n") else ""
+    stop(
+      "The no-SNP measurement model did not converge to a proper solution (it either ",
+      "failed to converge, or landed on an inadmissible solution -- e.g. a negative ",
+      "residual/latent variance, or an out-of-bounds latent correlation -- a 'Heywood ",
+      "case'). This can be sensitive to which indicator is used for unit-loading ",
+      "identification (the one prefixed with '1*'); try designating a different ",
+      "reference indicator for the affected factor(s), or otherwise respecify the model.",
+      if (nzchar(diagnostic)) paste0("\n\nDiagnostic output from the no-SNP model fit:\n", diagnostic) else ""
+    )
+  }
+
   # ── Extract lambda coefficients ───────────────────────────────────────────────
   factors    <- unique(nosnpmod$lhs[nosnpmod$op == "=~"])
   traits     <- colnames(LDSCoutput$S)
