@@ -82,6 +82,68 @@
     D %*% R %*% D
   }
 
+  # Helper function: parse explicit ('N*indicator') fixed factor loadings out of
+  # lavaan-style model syntax, falling back to lavaan's own default (fix the
+  # first-listed indicator to 1) for any factor with no explicit fixed indicator.
+  # Needed because usermodel() drops fixed (non-free) parameters entirely from the
+  # reduced table it prints for a non-converged/inadmissible fit.
+  parse_fixed_loadings <- function(model_text) {
+    lines         <- trimws(strsplit(model_text, "\n")[[1]])
+    loading_lines <- grep("=~", lines, fixed = TRUE, value = TRUE)
+    if (length(loading_lines) == 0) {
+      return(data.frame(lhs = character(), op = character(), rhs = character(),
+                        Unstand_Est = numeric(), stringsAsFactors = FALSE))
+    }
+
+    out <- do.call(rbind, lapply(loading_lines, function(line) {
+      parts  <- strsplit(line, "=~", fixed = TRUE)[[1]]
+      factor <- trimws(parts[1])
+      tokens <- trimws(strsplit(parts[2], "\\+")[[1]])
+      tokens <- tokens[nzchar(tokens)]
+
+      fixed_val <- rep(NA_real_, length(tokens))
+      indicator <- character(length(tokens))
+      for (t in seq_along(tokens)) {
+        m <- regmatches(tokens[t], regexec("^([0-9]*\\.?[0-9]+)\\*(.+)$", tokens[t]))[[1]]
+        if (length(m) == 3) {
+          fixed_val[t] <- as.numeric(m[2])
+          indicator[t] <- trimws(m[3])
+        } else {
+          indicator[t] <- tokens[t]
+        }
+      }
+      if (all(is.na(fixed_val))) fixed_val[1] <- 1  # lavaan's default marker rule
+
+      data.frame(lhs = factor, op = "=~", rhs = indicator,
+                Unstand_Est = fixed_val, stringsAsFactors = FALSE)
+    }))
+    out[!is.na(out$Unstand_Est), ]
+  }
+
+  # Helper function: recover the free-parameter estimate table usermodel() prints
+  # (but does not return) when the no-SNP fit is inadmissible or fails to converge.
+  parse_partial_results <- function(captured_output) {
+    header_idx <- grep("^\\s*lhs\\s+op\\s+rhs\\b", captured_output)
+    if (length(header_idx) == 0) return(NULL)
+    header_idx <- header_idx[1]
+
+    end_idx <- length(captured_output)
+    tail_blank <- which(!nzchar(trimws(captured_output[(header_idx + 1):end_idx])))
+    if (length(tail_blank) > 0) end_idx <- header_idx + tail_blank[1] - 1
+
+    table_text <- paste(captured_output[header_idx:end_idx], collapse = "\n")
+    parsed <- tryCatch(
+      read.table(text = table_text, header = TRUE, stringsAsFactors = FALSE),
+      error = function(e) NULL
+    )
+    if (is.null(parsed) || !all(c("lhs", "op", "rhs") %in% colnames(parsed))) return(NULL)
+
+    est_col <- intersect(c("Unstand_Est", "Unstandardized_Estimate"), colnames(parsed))
+    if (length(est_col) == 0) return(NULL)
+    parsed$Unstand_Est <- parsed[[est_col[1]]]
+    parsed
+  }
+
   start_time <- Sys.time()
   cat("userGWASa started at:", format(start_time, "%Y-%m-%d %H:%M:%S"), "\n")
 
@@ -114,6 +176,55 @@
   } else {
     nosnpmod <- usermod
   }
+
+  # usermodel() falls through with no explicit return (i.e. NULL) when the no-SNP
+  # fit fails to converge, or when it lands on an inadmissible solution (a Heywood
+  # case: negative residual/latent variance, or an out-of-bounds latent
+  # correlation) -- in both cases its diagnostic warning/print is swallowed by the
+  # suppressWarnings()/capture.output() above, and the free-parameter estimates it
+  # printed (but did not return) are the only usable record of that fit. Recover
+  # those from captured_output and proceed with a warning rather than silently
+  # letting the NULL/malformed table cascade into extract_lambdas() and surface
+  # many steps later as an opaque vector-length error out of paste0()/colnames<-.
+  if (is.null(nosnpmod) || !is.data.frame(nosnpmod) || nrow(nosnpmod) == 0 ||
+      !all(c("lhs", "op", "rhs") %in% colnames(nosnpmod))) {
+
+    recovered <- if (exists("captured_output")) parse_partial_results(captured_output) else NULL
+
+    if (is.null(recovered)) {
+      diagnostic <- if (exists("captured_output")) paste(utils::head(captured_output, 15), collapse = "\n") else ""
+      if (nchar(diagnostic) > 1500) diagnostic <- paste0(substr(diagnostic, 1, 1500), "\n...(truncated)")
+      stop(
+        "The no-SNP measurement model failed to fit and produced no usable parameter table ",
+        "(it did not converge, and no recoverable free-parameter estimates were printed). ",
+        "Please respecify the model.",
+        if (nzchar(diagnostic)) paste0("\n\nDiagnostic output:\n", diagnostic) else "",
+        call. = FALSE
+      )
+    }
+
+    warning(
+      "The no-SNP measurement model landed on an inadmissible solution (a Heywood case: a ",
+      "negative residual/latent variance, or an out-of-bounds latent correlation). Proceeding ",
+      "with the free-parameter estimates from that fit -- results for the affected factor(s) ",
+      "are numerically unreliable and should be interpreted with caution. Consider ",
+      "respecifying the measurement model.",
+      call. = FALSE
+    )
+    nosnpmod <- recovered
+  }
+
+  if (!"Unstand_Est" %in% colnames(nosnpmod) && "Unstandardized_Estimate" %in% colnames(nosnpmod)) {
+    nosnpmod$Unstand_Est <- nosnpmod$Unstandardized_Estimate
+  }
+
+  # Backfill any explicitly fixed ('N*indicator') loadings missing from the table --
+  # usermodel() drops these when it falls back to the free-parameters-only table
+  # above for an inadmissible/non-converged fit.
+  fixed_loadings <- parse_fixed_loadings(model)
+  missing <- !paste(fixed_loadings$lhs, fixed_loadings$op, fixed_loadings$rhs) %in%
+              paste(nosnpmod$lhs, nosnpmod$op, nosnpmod$rhs)
+  if (any(missing)) nosnpmod <- dplyr::bind_rows(nosnpmod, fixed_loadings[missing, , drop = FALSE])
 
   # ── Extract lambda coefficients ───────────────────────────────────────────────
   factors    <- unique(nosnpmod$lhs[nosnpmod$op == "=~"])
