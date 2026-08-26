@@ -82,11 +82,7 @@
     D %*% R %*% D
   }
 
-  # Helper function: parse explicit ('N*indicator') fixed factor loadings out of
-  # lavaan-style model syntax, falling back to lavaan's own default (fix the
-  # first-listed indicator to 1) for any factor with no explicit fixed indicator.
-  # Needed because usermodel() drops fixed (non-free) parameters entirely from the
-  # reduced table it prints for a non-converged/inadmissible fit.
+  # Helper function: pull explicit ('N*indicator') fixed loadings out of model syntax
   parse_fixed_loadings <- function(model_text) {
     lines         <- trimws(strsplit(model_text, "\n")[[1]])
     loading_lines <- grep("=~", lines, fixed = TRUE, value = TRUE)
@@ -120,8 +116,7 @@
     out[!is.na(out$Unstand_Est), ]
   }
 
-  # Helper function: recover the free-parameter estimate table usermodel() prints
-  # (but does not return) when the no-SNP fit is inadmissible or fails to converge.
+  # Helper function: recover the free-parameter table usermodel() prints but doesn't return
   parse_partial_results <- function(captured_output) {
     header_idx <- grep("^\\s*lhs\\s+op\\s+rhs\\b", captured_output)
     if (length(header_idx) == 0) return(NULL)
@@ -142,6 +137,12 @@
     if (length(est_col) == 0) return(NULL)
     parsed$Unstand_Est <- parsed[[est_col[1]]]
     parsed
+  }
+
+  # Helper function: flag latent factors with a negative variance estimate
+  check_latent_variances <- function(df, factors) {
+    self_var <- df[df$op == "~~" & df$lhs == df$rhs & df$lhs %in% factors, ]
+    self_var$lhs[as.numeric(self_var$Unstand_Est) < 0]
   }
 
   start_time <- Sys.time()
@@ -228,6 +229,19 @@
 
   # ── Extract lambda coefficients ───────────────────────────────────────────────
   factors    <- unique(nosnpmod$lhs[nosnpmod$op == "=~"])
+
+  # usermodel()'s own Heywood check (cor.lv-based) can miss a negative latent
+  # variance -- e.g. two correlated latents both negative cancel out in the ratio,
+  # or a single latent uncorrelated with any other skips the check entirely.
+  negative_factors <- check_latent_variances(nosnpmod, factors)
+  if (length(negative_factors) > 0) {
+    warning(
+      "Negative latent variance estimate for factor(s): ", paste(negative_factors, collapse = ", "),
+      ". Loadings/betas for the affected factor(s) may be unreliable.",
+      call. = FALSE
+    )
+  }
+
   traits     <- colnames(LDSCoutput$S)
   num_traits  <- ncol(LDSCoutput$S)
   num_factors <- length(factors)
