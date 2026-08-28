@@ -1,4 +1,4 @@
-.munge_main <- function(i, utilfuncs, file, filename, trait.name, N, ref, hm3, info.filter, maf.filter, column.names, overwrite, log.file=NULL) {
+.munge_main <- function(i, utilfuncs, file, filename, trait.name, N, ref, hm3, info.filter, maf.filter, column.names, overwrite, log.file=NULL, outdir=getwd()) {
   if (is.null(log.file)) {
     log.file <- file(paste0(trait.name, "_munge.log"),open="wt")
     on.exit(flush(log.file))
@@ -130,9 +130,9 @@ Please note that this is likely effective sample size cut in half. The function 
   #remove spaces in trait.names file to avoid errors with fread functionality used for s_ldsc
   trait.name<-str_replace_all(trait.name, fixed(" "), "") 
   
-  write.table(x = output,file = paste0(trait.name,".sumstats"),sep="\t", quote = FALSE, row.names = F)
-  gzip(paste0(trait.name,".sumstats"), overwrite=overwrite)
+  write.table(x = output,file = file.path(outdir, paste0(trait.name,".sumstats")),sep="\t", quote = FALSE, row.names = F)
+  gzip(file.path(outdir, paste0(trait.name,".sumstats")), overwrite=overwrite)
   .LOG("I am done munging file: ", filename,file=log.file)
-  .LOG("The file is saved as ", paste0(trait.name,".sumstats.gz"), " in the current working directory.",file=log.file)
+  .LOG("The file is saved as ", paste0(trait.name,".sumstats.gz"), " in the directory: ", outdir,file=log.file)
   return()
 }
