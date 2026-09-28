@@ -88,7 +88,7 @@
                                                            slotData=basemodel@Data, slotModel=basemodel@Model, slotCache=NULL, sloth1=NULL))
     }
     else {
-      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", se="standard", WLS.V = W, sample.nobs = 2, optim.dx.tol = .01))
+      test <- .tryCatch.W.E(Model1_Results <- sem(Model1, sample.cov = S_Fullrun, estimator = "DWLS", se="standard", WLS.V = W, sample.nobs = 2, optim.dx.tol = .01,ordered=FALSE))
     }
   }
 
@@ -150,7 +150,7 @@
 
     #run the updated common and independent pathways model with fixed indicator loadings and free direct effects. these direct effects are the model residuals
     if(estimation == "DWLS"){
-      testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS",se="standard", WLS.V = W, sample.nobs = 2,  optim.dx.tol = .01))
+      testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "DWLS",se="standard", WLS.V = W, sample.nobs = 2,  optim.dx.tol = .01,ordered=FALSE))
     } else if(estimation == "ML"){
       testQ<-.tryCatch.W.E(ModelQ_Results <- sem(model = ModelQ, sample.cov = S_Fullrun, estimator = "ML", sample.nobs = 200, optim.dx.tol = .01, sample.cov.rescale=FALSE))
     }
