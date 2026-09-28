@@ -69,7 +69,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc=TRUE,
   empty3 <- .tryCatch.W.E(ReorderModel <- sem(Model1, sample.cov = S_LD, 
                                               estimator = "DWLS", WLS.V = W,se="standard", sample.nobs = 2, warn = FALSE, 
                                               std.lv = std.lv, optim.dx.tol = 0.01, optim.force.converged = T, 
-                                              control = list(iter.max = 1)))
+                                              control = list(iter.max = 1),ordered = FALSE))
   r <- nrow(lavInspect(ReorderModel, "cor.lv"))
   if (class(empty3$value) != "lavaan") {
     warning(paste("The function has stopped due to convergence issues for your primary model. Please contact us with your specific model and variables used or try specifying an alternative model"))
@@ -110,7 +110,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc=TRUE,
       if (estimation == "DWLS") {
         empty4 <- .tryCatch.W.E(Model1_Results <- sem(Model1, 
                                                       sample.cov = S_LD, estimator = "DWLS", std.lv = std.lv, 
-                                                      WLS.V = W_Reorder,se="standard", sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T))
+                                                      WLS.V = W_Reorder,se="standard", sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T,ordered = FALSE))
       }
       if (estimation == "ML") {
         empty4 <- .tryCatch.W.E(Model1_Results <- sem(Model1, 
@@ -388,7 +388,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc=TRUE,
       if (estimation == "DWLS") {
         emptystand <- .tryCatch.W.E(Fit_stand <- sem(Model1, 
                                                      sample.cov = S_Stand, estimator = "DWLS", WLS.V = W_stand, se="standard",
-                                                     std.lv = std.lv, sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = F))
+                                                     std.lv = std.lv, sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = F,ordered = FALSE))
         if (is.null(emptystand$warning$message[1])) {
           emptystand$warning$message[1] <- 0
         }
