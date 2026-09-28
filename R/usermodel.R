@@ -83,7 +83,7 @@ usermodel <- function (covstruc, estimation = "DWLS", model = "", CFIcalc=TRUE,
   if (estimation == "DWLS") {
     empty4 <- .tryCatch.W.E(Model1_Results <- sem(Model1, 
                                                   sample.cov = S_LD, estimator = "DWLS", std.lv = std.lv, 
-                                                  WLS.V = W_Reorder,se="standard", sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T))
+                                                  WLS.V = W_Reorder,se="standard", sample.nobs = 2, optim.dx.tol = 0.01, optim.force.converged = T,ordered=FALSE))
   }
   if (estimation == "ML") {
     empty4 <- .tryCatch.W.E(Model1_Results <- sem(Model1, 
